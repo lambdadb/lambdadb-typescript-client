@@ -10,6 +10,9 @@ targets:
     lambda-db:
         target: typescript
         source: LambdaDB-OAS
+        publish:
+            npm:
+                token: $npm_token
         codeSamples:
             registry:
                 location: registry.speakeasyapi.dev/lambdadb-ayw/lambdadb-typescript/lambda-db-oas-code-samples
