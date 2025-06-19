@@ -23,7 +23,7 @@ LambdaDB API: LambdaDB Open API Spec
 <!-- Start Table of Contents [toc] -->
 ## Table of Contents
 <!-- $toc-max-depth=2 -->
-* [lambdadb](#lambdadb)
+* [LambdaDB](#LambdaDB)
   * [SDK Installation](#sdk-installation)
   * [Requirements](#requirements)
   * [SDK Example Usage](#sdk-example-usage)
