@@ -1,0 +1,36 @@
+speakeasyVersion: 1.561.0
+sources:
+    LambdaDB-OAS:
+        sourceNamespace: lambda-db-oas
+        sourceRevisionDigest: sha256:e4075ab73a67758c9b916aa666daf803f22b530e80c1823a65a521cda5e5729c
+        sourceBlobDigest: sha256:67f9b548f5660f3069bad255746e3630f3b91ba03eb849396fbd67a1c1472554
+        tags:
+            - latest
+            - 1.1.0
+targets:
+    lambda-db:
+        source: LambdaDB-OAS
+        sourceNamespace: lambda-db-oas
+        sourceRevisionDigest: sha256:e4075ab73a67758c9b916aa666daf803f22b530e80c1823a65a521cda5e5729c
+        sourceBlobDigest: sha256:67f9b548f5660f3069bad255746e3630f3b91ba03eb849396fbd67a1c1472554
+        codeSamplesNamespace: lambda-db-oas-code-samples
+        codeSamplesRevisionDigest: sha256:c230ef3a1ebe6ea230df6eb21f4406c325654f6262c5f2c0d26824bbcdbcca46
+workflow:
+    workflowVersion: 1.0.0
+    speakeasyVersion: latest
+    sources:
+        LambdaDB-OAS:
+            inputs:
+                - location: https://raw.githubusercontent.com/lambdadb/docs/main/api-reference/openapi.json
+            registry:
+                location: registry.speakeasyapi.dev/lambdadb-ayw/lambdadb-typescript/lambda-db-oas
+    targets:
+        lambda-db:
+            target: typescript
+            source: LambdaDB-OAS
+            codeSamples:
+                registry:
+                    location: registry.speakeasyapi.dev/lambdadb-ayw/lambdadb-typescript/lambda-db-oas-code-samples
+                labelOverride:
+                    fixedValue: Typescript (SDK)
+                blocking: false
