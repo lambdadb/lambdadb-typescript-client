@@ -5,7 +5,7 @@ Query filter.
 ## Example Usage
 
 ```typescript
-import { Filter } from "lambdadb/models/operations";
+import { Filter } from "@swkim86/lambdadb/models/operations";
 
 let value: Filter = {};
 ```

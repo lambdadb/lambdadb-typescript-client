@@ -1,14 +1,15 @@
 {
   "name": "@swkim86/lambdadb",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "author": "Speakeasy",
+  "license": "Apache-2.0",
   "type": "module",
   "bin": {
     "mcp": "bin/mcp-server.js"
   },
   "tshy": {
     "sourceDialects": [
-      "lambdadb/source"
+      "@swkim86/lambdadb/source"
     ],
     "exports": {
       ".": "./src/index.ts",
@@ -56,7 +57,7 @@
   "exports": {
     ".": {
       "import": {
-        "lambdadb/source": "./src/index.ts",
+        "@swkim86/lambdadb/source": "./src/index.ts",
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
       },
@@ -68,7 +69,7 @@
     "./package.json": "./package.json",
     "./types": {
       "import": {
-        "lambdadb/source": "./src/types/index.ts",
+        "@swkim86/lambdadb/source": "./src/types/index.ts",
         "types": "./dist/esm/types/index.d.ts",
         "default": "./dist/esm/types/index.js"
       },
@@ -79,7 +80,7 @@
     },
     "./models/errors": {
       "import": {
-        "lambdadb/source": "./src/models/errors/index.ts",
+        "@swkim86/lambdadb/source": "./src/models/errors/index.ts",
         "types": "./dist/esm/models/errors/index.d.ts",
         "default": "./dist/esm/models/errors/index.js"
       },
@@ -90,7 +91,7 @@
     },
     "./models": {
       "import": {
-        "lambdadb/source": "./src/models/index.ts",
+        "@swkim86/lambdadb/source": "./src/models/index.ts",
         "types": "./dist/esm/models/index.d.ts",
         "default": "./dist/esm/models/index.js"
       },
@@ -101,7 +102,7 @@
     },
     "./models/operations": {
       "import": {
-        "lambdadb/source": "./src/models/operations/index.ts",
+        "@swkim86/lambdadb/source": "./src/models/operations/index.ts",
         "types": "./dist/esm/models/operations/index.d.ts",
         "default": "./dist/esm/models/operations/index.js"
       },
@@ -112,7 +113,7 @@
     },
     "./*.js": {
       "import": {
-        "lambdadb/source": "./src/*.ts",
+        "@swkim86/lambdadb/source": "./src/*.ts",
         "types": "./dist/esm/*.d.ts",
         "default": "./dist/esm/*.js"
       },
@@ -123,7 +124,7 @@
     },
     "./*": {
       "import": {
-        "lambdadb/source": "./src/*.ts",
+        "@swkim86/lambdadb/source": "./src/*.ts",
         "types": "./dist/esm/*.d.ts",
         "default": "./dist/esm/*.js"
       },

@@ -18,7 +18,7 @@ Upsert documents into an collection. Note that the maximum supported payload siz
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -47,8 +47,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDocsUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsUpsertDocs.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDocsUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -109,7 +109,7 @@ Request required info to upload documents.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -132,8 +132,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDocsGetBulkUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsGetBulkUpsertDocs.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDocsGetBulkUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsGetBulkUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -187,7 +187,7 @@ Bulk upsert documents into an collection. Note that the maximum supported object
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -213,8 +213,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDocsBulkUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsBulkUpsertDocs.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDocsBulkUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsBulkUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -272,7 +272,7 @@ Delete documents by document IDs or query filter from an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -301,8 +301,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDocsDeleteDocs } from "lambdadb/funcs/projectsCollectionsDocsDeleteDocs.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDocsDeleteDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsDeleteDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -363,7 +363,7 @@ Lookup and return documents by document IDs from an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -392,8 +392,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDocsFetchDocs } from "lambdadb/funcs/projectsCollectionsDocsFetchDocs.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDocsFetchDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsFetchDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.

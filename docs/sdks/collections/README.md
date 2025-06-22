@@ -19,7 +19,7 @@ List all collections in an existing project.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -41,8 +41,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsListcollections } from "lambdadb/funcs/projectsCollectionsListcollections.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsListcollections } from "@swkim86/lambdadb/funcs/projectsCollectionsListcollections.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -95,7 +95,7 @@ Create an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -133,8 +133,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsCreateCollection } from "lambdadb/funcs/projectsCollectionsCreateCollection.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsCreateCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsCreateCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -204,7 +204,7 @@ Delete an existing collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -227,8 +227,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsDeleteCollection } from "lambdadb/funcs/projectsCollectionsDeleteCollection.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsDeleteCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsDeleteCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -282,7 +282,7 @@ Get metadata of an existing collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -305,8 +305,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsGetCollection } from "lambdadb/funcs/projectsCollectionsGetCollection.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsGetCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsGetCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -360,7 +360,7 @@ Configure an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -401,8 +401,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsUpdateCollection } from "lambdadb/funcs/projectsCollectionsUpdateCollection.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsUpdateCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsUpdateCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -475,7 +475,7 @@ Search an collection with a query and return the most similar documents.
 ### Example Usage
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -502,8 +502,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsQueryCollection } from "lambdadb/funcs/projectsCollectionsQueryCollection.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsQueryCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsQueryCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.

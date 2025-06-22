@@ -5,7 +5,7 @@ Required info to upload documents.
 ## Example Usage
 
 ```typescript
-import { GetBulkUpsertDocsResponse } from "lambdadb/models/operations";
+import { GetBulkUpsertDocsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: GetBulkUpsertDocsResponse = {};
 ```

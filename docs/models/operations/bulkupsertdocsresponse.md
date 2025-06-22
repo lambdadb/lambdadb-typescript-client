@@ -5,7 +5,7 @@ Bulk upsert request accepted.
 ## Example Usage
 
 ```typescript
-import { BulkUpsertDocsResponse } from "lambdadb/models/operations";
+import { BulkUpsertDocsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: BulkUpsertDocsResponse = {};
 ```

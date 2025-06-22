@@ -5,7 +5,7 @@ Documents selected by query.
 ## Example Usage
 
 ```typescript
-import { QueryCollectionResponse } from "lambdadb/models/operations";
+import { QueryCollectionResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: QueryCollectionResponse = {};
 ```

@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { RequestBody2 } from "lambdadb/models/operations";
+import { RequestBody2 } from "@swkim86/lambdadb/models/operations";
 
 let value: RequestBody2 = {
   filter: {},

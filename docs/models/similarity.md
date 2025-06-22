@@ -5,7 +5,7 @@ Vector similarity metric.
 ## Example Usage
 
 ```typescript
-import { Similarity } from "lambdadb";
+import { Similarity } from "@swkim86/lambdadb";
 
 let value: Similarity = "l2_norm";
 ```

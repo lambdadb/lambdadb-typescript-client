@@ -5,7 +5,7 @@ Upsert request accepted.
 ## Example Usage
 
 ```typescript
-import { UpsertDocsResponse } from "lambdadb/models/operations";
+import { UpsertDocsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: UpsertDocsResponse = {};
 ```

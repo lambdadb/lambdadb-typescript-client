@@ -49,25 +49,25 @@ The SDK can be installed with either [npm](https://www.npmjs.com/), [pnpm](https
 ### NPM
 
 ```bash
-npm add lambdadb
+npm add @swkim86/lambdadb
 ```
 
 ### PNPM
 
 ```bash
-pnpm add lambdadb
+pnpm add @swkim86/lambdadb
 ```
 
 ### Bun
 
 ```bash
-bun add lambdadb
+bun add @swkim86/lambdadb
 ```
 
 ### Yarn
 
 ```bash
-yarn add lambdadb zod
+yarn add @swkim86/lambdadb zod
 
 # Note that Yarn does not install peer dependencies automatically. You will need
 # to install zod as shown above.
@@ -95,7 +95,7 @@ Add the following server definition to your `claude_desktop_config.json` file:
     "LambdaDB": {
       "command": "npx",
       "args": [
-        "-y", "--package", "lambdadb",
+        "-y", "--package", "@swkim86/lambdadb",
         "--",
         "mcp", "start",
         "--project-api-key", "..."
@@ -118,7 +118,7 @@ Create a `.cursor/mcp.json` file in your project root with the following content
     "LambdaDB": {
       "command": "npx",
       "args": [
-        "-y", "--package", "lambdadb",
+        "-y", "--package", "@swkim86/lambdadb",
         "--",
         "mcp", "start",
         "--project-api-key", "..."
@@ -157,7 +157,7 @@ If the repo is a private repo you must add your Github PAT to download a release
 For a full list of server arguments, run:
 
 ```sh
-npx -y --package lambdadb -- mcp start --help
+npx -y --package @swkim86/lambdadb -- mcp start --help
 ```
 <!-- End SDK Installation [installation] -->
 
@@ -173,7 +173,7 @@ For supported JavaScript runtimes, please consult [RUNTIMES.md](RUNTIMES.md).
 ### Example
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -205,7 +205,7 @@ This SDK supports the following security scheme globally:
 
 To authenticate with the API the `projectApiKey` parameter must be set when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -291,7 +291,7 @@ Some of the endpoints in this SDK support retries.  If you use the SDK without a
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -322,7 +322,7 @@ run();
 
 If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   retryConfig: {
@@ -367,8 +367,8 @@ run();
 
 ### Example
 ```typescript
-import { LambdaDB } from "lambdadb";
-import * as errors from "lambdadb/models/errors";
+import { LambdaDB } from "@swkim86/lambdadb";
+import * as errors from "@swkim86/lambdadb/models/errors";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -438,7 +438,7 @@ run();
 
 The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
   serverURL: "https://{baseUrl}",
@@ -476,8 +476,8 @@ custom header and a timeout to requests and how to use the `"requestError"` hook
 to log errors:
 
 ```typescript
-import { LambdaDB } from "lambdadb";
-import { HTTPClient } from "lambdadb/lib/http";
+import { LambdaDB } from "@swkim86/lambdadb";
+import { HTTPClient } from "@swkim86/lambdadb/lib/http";
 
 const httpClient = new HTTPClient({
   // fetcher takes a function that has the same signature as native `fetch`.
@@ -518,7 +518,7 @@ You can pass a logger that matches `console`'s interface as an SDK option.
 > Beware that debug logging will reveal secrets, like API tokens in headers, in log messages printed to a console or files. It's recommended to use this feature only during local development and not in production.
 
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@swkim86/lambdadb";
 
 const sdk = new LambdaDB({ debugLogger: console });
 ```

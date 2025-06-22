@@ -5,7 +5,7 @@ Delete request accepted.
 ## Example Usage
 
 ```typescript
-import { DeleteDocsResponse } from "lambdadb/models/operations";
+import { DeleteDocsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: DeleteDocsResponse = {};
 ```

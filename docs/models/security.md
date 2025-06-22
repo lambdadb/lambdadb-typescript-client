@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { Security } from "lambdadb";
+import { Security } from "@swkim86/lambdadb";
 
 let value: Security = {
   projectApiKey: "<YOUR_PROJECT_API_KEY>",

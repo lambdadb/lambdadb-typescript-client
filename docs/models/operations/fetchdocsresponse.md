@@ -5,7 +5,7 @@ Fetched documents.
 ## Example Usage
 
 ```typescript
-import { FetchDocsResponse } from "lambdadb/models/operations";
+import { FetchDocsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: FetchDocsResponse = {};
 ```

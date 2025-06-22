@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { QueryCollectionDocDoc } from "lambdadb/models/operations";
+import { QueryCollectionDocDoc } from "@swkim86/lambdadb/models/operations";
 
 let value: QueryCollectionDocDoc = {};
 ```

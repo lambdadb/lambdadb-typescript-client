@@ -5,7 +5,7 @@ Types that do not need additional parameters.
 ## Example Usage
 
 ```typescript
-import { IndexConfigs } from "lambdadb";
+import { IndexConfigs } from "@swkim86/lambdadb";
 
 let value: IndexConfigs = {
   type: "datetime",

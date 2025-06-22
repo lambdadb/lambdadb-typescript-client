@@ -5,7 +5,7 @@ Query object.
 ## Example Usage
 
 ```typescript
-import { Query } from "lambdadb/models/operations";
+import { Query } from "@swkim86/lambdadb/models/operations";
 
 let value: Query = {};
 ```

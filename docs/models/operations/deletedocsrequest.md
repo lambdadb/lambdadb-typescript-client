@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { DeleteDocsRequest } from "lambdadb/models/operations";
+import { DeleteDocsRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: DeleteDocsRequest = {
   projectName: "<value>",

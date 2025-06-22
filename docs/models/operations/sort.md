@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { Sort } from "lambdadb/models/operations";
+import { Sort } from "@swkim86/lambdadb/models/operations";
 
 let value: Sort = {};
 ```

@@ -5,7 +5,7 @@ Collection delete request accepted.
 ## Example Usage
 
 ```typescript
-import { DeleteCollectionResponse } from "lambdadb/models/operations";
+import { DeleteCollectionResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: DeleteCollectionResponse = {};
 ```

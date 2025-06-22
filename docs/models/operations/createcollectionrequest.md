@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { CreateCollectionRequest } from "lambdadb/models/operations";
+import { CreateCollectionRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: CreateCollectionRequest = {
   projectName: "<value>",

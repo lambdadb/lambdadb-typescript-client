@@ -21,12 +21,13 @@ generation:
     oAuth2PasswordEnabled: true
   sdkHooksConfigAccess: true
 typescript:
-  version: 0.0.2
+  version: 0.0.4
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
     peerDependencies: {}
-  additionalPackageJSON: {}
+  additionalPackageJSON:
+    license: Apache-2.0
   author: Speakeasy
   baseErrorName: LambdaDBError
   clientServerStatusCodesAsErrors: true
@@ -53,7 +54,7 @@ typescript:
   methodArguments: infer-optional-args
   moduleFormat: dual
   outputModelSuffix: output
-  packageName: lambdadb
+  packageName: '@swkim86/lambdadb'
   responseFormat: flat
   templateVersion: v2
   useIndexModules: true

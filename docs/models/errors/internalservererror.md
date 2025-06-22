@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { InternalServerError } from "lambdadb/models/errors";
+import { InternalServerError } from "@swkim86/lambdadb/models/errors";
 
 // No examples available for this model
 ```

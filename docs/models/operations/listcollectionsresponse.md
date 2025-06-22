@@ -5,7 +5,7 @@ A list of collections matched with a projectName.
 ## Example Usage
 
 ```typescript
-import { ListcollectionsResponse } from "lambdadb/models/operations";
+import { ListcollectionsResponse } from "@swkim86/lambdadb/models/operations";
 
 let value: ListcollectionsResponse = {};
 ```

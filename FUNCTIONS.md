@@ -19,8 +19,8 @@ specific category of applications.
 ## Example
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { projectsCollectionsListcollections } from "lambdadb/funcs/projectsCollectionsListcollections.js";
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { projectsCollectionsListcollections } from "@swkim86/lambdadb/funcs/projectsCollectionsListcollections.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.

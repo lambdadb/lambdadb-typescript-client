@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { IndexConfigsVector } from "lambdadb";
+import { IndexConfigsVector } from "@swkim86/lambdadb";
 
 let value: IndexConfigsVector = {
   type: "vector",

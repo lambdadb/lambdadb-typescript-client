@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { TypeText } from "lambdadb";
+import { TypeText } from "@swkim86/lambdadb";
 
 let value: TypeText = "text";
 ```
