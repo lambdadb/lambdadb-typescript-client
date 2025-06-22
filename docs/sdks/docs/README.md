@@ -18,14 +18,14 @@ Upsert documents into an collection. Note that the maximum supported payload siz
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.docs.upsertDocs({
+  const result = await lambdaDB.projects.collections.docs.upsertDocs({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -47,17 +47,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDocsUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsUpsertDocs.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsUpsertDocs(lambdaDb, {
+  const res = await projectsCollectionsDocsUpsertDocs(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -100,7 +100,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## getBulkUpsertDocs
 
@@ -109,14 +109,14 @@ Request required info to upload documents.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.docs.getBulkUpsertDocs({
+  const result = await lambdaDB.projects.collections.docs.getBulkUpsertDocs({
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -132,17 +132,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDocsGetBulkUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsGetBulkUpsertDocs.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsGetBulkUpsertDocs(lambdaDb, {
+  const res = await projectsCollectionsDocsGetBulkUpsertDocs(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -178,7 +178,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## bulkUpsertDocs
 
@@ -187,14 +187,14 @@ Bulk upsert documents into an collection. Note that the maximum supported object
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.docs.bulkUpsertDocs({
+  const result = await lambdaDB.projects.collections.docs.bulkUpsertDocs({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -213,17 +213,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDocsBulkUpsertDocs } from "lambdadb/funcs/projectsCollectionsDocsBulkUpsertDocs.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsBulkUpsertDocs(lambdaDb, {
+  const res = await projectsCollectionsDocsBulkUpsertDocs(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -263,7 +263,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## deleteDocs
 
@@ -272,14 +272,14 @@ Delete documents by document IDs or query filter from an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.docs.deleteDocs({
+  const result = await lambdaDB.projects.collections.docs.deleteDocs({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -301,17 +301,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDocsDeleteDocs } from "lambdadb/funcs/projectsCollectionsDocsDeleteDocs.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsDeleteDocs(lambdaDb, {
+  const res = await projectsCollectionsDocsDeleteDocs(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -354,7 +354,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## fetchDocs
 
@@ -363,14 +363,14 @@ Lookup and return documents by document IDs from an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.docs.fetchDocs({
+  const result = await lambdaDB.projects.collections.docs.fetchDocs({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -392,17 +392,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDocsFetchDocs } from "lambdadb/funcs/projectsCollectionsDocsFetchDocs.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsFetchDocs(lambdaDb, {
+  const res = await projectsCollectionsDocsFetchDocs(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -445,4 +445,4 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |

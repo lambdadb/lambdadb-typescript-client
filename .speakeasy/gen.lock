@@ -3,14 +3,15 @@ id: 3c09732d-5406-48eb-9d43-96c8f950c3be
 management:
   docChecksum: 824d1accc5eb1e3b3c4cff80a3f168ec
   docVersion: 1.1.0
-  speakeasyVersion: 1.561.0
-  generationVersion: 2.628.0
-  releaseVersion: 0.0.1
-  configChecksum: f72d0c2760c12d5fd7c4e23729141015
+  speakeasyVersion: 1.568.0
+  generationVersion: 2.632.2
+  releaseVersion: 0.0.2
+  configChecksum: af556c0f4118810a03579dccdd8c69fd
+  published: true
 features:
   typescript:
     additionalDependencies: 0.1.0
-    constsAndDefaults: 0.1.11
+    constsAndDefaults: 0.1.12
     core: 3.21.11
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
@@ -26,7 +27,7 @@ features:
     responseFormat: 0.2.3
     retries: 2.83.0
     sdkHooks: 0.3.0
-    unions: 2.85.9
+    unions: 2.85.11
 generatedFiles:
   - .devcontainer/README.md
   - .devcontainer/devcontainer.json

@@ -19,14 +19,14 @@ List all collections in an existing project.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 
@@ -41,17 +41,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsListcollections } from "lambdadb/funcs/projectsCollectionsListcollections.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsListcollections(lambdaDb, {
+  const res = await projectsCollectionsListcollections(lambdaDB, {
     projectName: "<value>",
   });
   if (res.ok) {
@@ -86,7 +86,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## createCollection
 
@@ -95,14 +95,14 @@ Create an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.createCollection({
+  const result = await lambdaDB.projects.collections.createCollection({
     projectName: "<value>",
     requestBody: {
       collectionName: "example-collection-name",
@@ -133,17 +133,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsCreateCollection } from "lambdadb/funcs/projectsCollectionsCreateCollection.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsCreateCollection(lambdaDb, {
+  const res = await projectsCollectionsCreateCollection(lambdaDB, {
     projectName: "<value>",
     requestBody: {
       collectionName: "example-collection-name",
@@ -195,7 +195,7 @@ run();
 | errors.ResourceAlreadyExistsError | 409                               | application/json                  |
 | errors.TooManyRequestsError       | 429                               | application/json                  |
 | errors.InternalServerError        | 500                               | application/json                  |
-| errors.LambdaDbDefaultError       | 4XX, 5XX                          | \*/\*                             |
+| errors.LambdaDBDefaultError       | 4XX, 5XX                          | \*/\*                             |
 
 ## deleteCollection
 
@@ -204,14 +204,14 @@ Delete an existing collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.deleteCollection({
+  const result = await lambdaDB.projects.collections.deleteCollection({
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -227,17 +227,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsDeleteCollection } from "lambdadb/funcs/projectsCollectionsDeleteCollection.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsDeleteCollection(lambdaDb, {
+  const res = await projectsCollectionsDeleteCollection(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -273,7 +273,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## getCollection
 
@@ -282,14 +282,14 @@ Get metadata of an existing collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.getCollection({
+  const result = await lambdaDB.projects.collections.getCollection({
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -305,17 +305,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsGetCollection } from "lambdadb/funcs/projectsCollectionsGetCollection.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsGetCollection(lambdaDb, {
+  const res = await projectsCollectionsGetCollection(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
   });
@@ -351,7 +351,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## updateCollection
 
@@ -360,14 +360,14 @@ Configure an collection.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.updateCollection({
+  const result = await lambdaDB.projects.collections.updateCollection({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -401,17 +401,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsUpdateCollection } from "lambdadb/funcs/projectsCollectionsUpdateCollection.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsUpdateCollection(lambdaDb, {
+  const res = await projectsCollectionsUpdateCollection(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -466,7 +466,7 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
 
 ## queryCollection
 
@@ -475,14 +475,14 @@ Search an collection with a query and return the most similar documents.
 ### Example Usage
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.queryCollection({
+  const result = await lambdaDB.projects.collections.queryCollection({
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -502,17 +502,17 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsQueryCollection } from "lambdadb/funcs/projectsCollectionsQueryCollection.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsQueryCollection(lambdaDb, {
+  const res = await projectsCollectionsQueryCollection(lambdaDB, {
     projectName: "<value>",
     collectionName: "<value>",
     requestBody: {
@@ -553,4 +553,4 @@ run();
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
-| errors.LambdaDbDefaultError  | 4XX, 5XX                     | \*/\*                        |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |

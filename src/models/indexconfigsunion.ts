@@ -77,9 +77,9 @@ export type IndexConfigsText = {
 };
 
 export type IndexConfigsUnion =
-  | IndexConfigs
+  | IndexConfigsVector
   | IndexConfigsText
-  | IndexConfigsVector;
+  | IndexConfigs;
 
 /** @internal */
 export const Type$inboundSchema: z.ZodNativeEnum<typeof Type> = z.nativeEnum(
@@ -350,16 +350,16 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.union([
-  z.lazy(() => IndexConfigs$inboundSchema),
-  z.lazy(() => IndexConfigsText$inboundSchema),
   z.lazy(() => IndexConfigsVector$inboundSchema),
+  z.lazy(() => IndexConfigsText$inboundSchema),
+  z.lazy(() => IndexConfigs$inboundSchema),
 ]);
 
 /** @internal */
 export type IndexConfigsUnion$Outbound =
-  | IndexConfigs$Outbound
+  | IndexConfigsVector$Outbound
   | IndexConfigsText$Outbound
-  | IndexConfigsVector$Outbound;
+  | IndexConfigs$Outbound;
 
 /** @internal */
 export const IndexConfigsUnion$outboundSchema: z.ZodType<
@@ -367,9 +367,9 @@ export const IndexConfigsUnion$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   IndexConfigsUnion
 > = z.union([
-  z.lazy(() => IndexConfigs$outboundSchema),
-  z.lazy(() => IndexConfigsText$outboundSchema),
   z.lazy(() => IndexConfigsVector$outboundSchema),
+  z.lazy(() => IndexConfigsText$outboundSchema),
+  z.lazy(() => IndexConfigs$outboundSchema),
 ]);
 
 /**

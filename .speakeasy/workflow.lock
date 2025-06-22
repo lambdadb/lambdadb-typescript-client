@@ -1,8 +1,8 @@
-speakeasyVersion: 1.561.0
+speakeasyVersion: 1.568.0
 sources:
     LambdaDB-OAS:
         sourceNamespace: lambda-db-oas
-        sourceRevisionDigest: sha256:e4075ab73a67758c9b916aa666daf803f22b530e80c1823a65a521cda5e5729c
+        sourceRevisionDigest: sha256:919b7617ab4bb4b9b5cd49b3f8f68c793f47bbca195f306cfe727e354c044068
         sourceBlobDigest: sha256:67f9b548f5660f3069bad255746e3630f3b91ba03eb849396fbd67a1c1472554
         tags:
             - latest
@@ -11,10 +11,10 @@ targets:
     lambda-db:
         source: LambdaDB-OAS
         sourceNamespace: lambda-db-oas
-        sourceRevisionDigest: sha256:e4075ab73a67758c9b916aa666daf803f22b530e80c1823a65a521cda5e5729c
+        sourceRevisionDigest: sha256:919b7617ab4bb4b9b5cd49b3f8f68c793f47bbca195f306cfe727e354c044068
         sourceBlobDigest: sha256:67f9b548f5660f3069bad255746e3630f3b91ba03eb849396fbd67a1c1472554
         codeSamplesNamespace: lambda-db-oas-code-samples
-        codeSamplesRevisionDigest: sha256:c230ef3a1ebe6ea230df6eb21f4406c325654f6262c5f2c0d26824bbcdbcca46
+        codeSamplesRevisionDigest: sha256:156af5b895396ce74c3f0081ca05fea2fe6e4c00be65d62ef17d50f2d7bcdbaa
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest
@@ -28,6 +28,9 @@ workflow:
         lambda-db:
             target: typescript
             source: LambdaDB-OAS
+            publish:
+                npm:
+                    token: $npm_token
             codeSamples:
                 registry:
                     location: registry.speakeasyapi.dev/lambdadb-ayw/lambdadb-typescript/lambda-db-oas-code-samples

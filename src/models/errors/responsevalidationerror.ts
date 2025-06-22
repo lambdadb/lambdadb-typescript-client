@@ -3,10 +3,10 @@
  */
 
 import * as z from "zod";
-import { LambdaDbError } from "./lambdadberror.js";
+import { LambdaDBError } from "./lambdadberror.js";
 import { formatZodError } from "./sdkvalidationerror.js";
 
-export class ResponseValidationError extends LambdaDbError {
+export class ResponseValidationError extends LambdaDBError {
   /**
    * The raw value that failed validation.
    */

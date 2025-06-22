@@ -23,7 +23,7 @@ LambdaDB API: LambdaDB Open API Spec
 <!-- Start Table of Contents [toc] -->
 ## Table of Contents
 <!-- $toc-max-depth=2 -->
-* [LambdaDB](#LambdaDB)
+* [LambdaDB Typescript SDK](#lambdadb-typescript-sdk)
   * [SDK Installation](#sdk-installation)
   * [Requirements](#requirements)
   * [SDK Example Usage](#sdk-example-usage)
@@ -44,34 +44,30 @@ LambdaDB API: LambdaDB Open API Spec
 <!-- Start SDK Installation [installation] -->
 ## SDK Installation
 
-> [!TIP]
-> To finish publishing your SDK to npm and others you must [run your first generation action](https://www.speakeasy.com/docs/github-setup#step-by-step-guide).
-
-
 The SDK can be installed with either [npm](https://www.npmjs.com/), [pnpm](https://pnpm.io/), [bun](https://bun.sh/) or [yarn](https://classic.yarnpkg.com/en/) package managers.
 
 ### NPM
 
 ```bash
-npm add <UNSET>
+npm add lambdadb
 ```
 
 ### PNPM
 
 ```bash
-pnpm add <UNSET>
+pnpm add lambdadb
 ```
 
 ### Bun
 
 ```bash
-bun add <UNSET>
+bun add lambdadb
 ```
 
 ### Yarn
 
 ```bash
-yarn add <UNSET> zod
+yarn add lambdadb zod
 
 # Note that Yarn does not install peer dependencies automatically. You will need
 # to install zod as shown above.
@@ -96,7 +92,7 @@ Add the following server definition to your `claude_desktop_config.json` file:
 ```json
 {
   "mcpServers": {
-    "LambdaDb": {
+    "LambdaDB": {
       "command": "npx",
       "args": [
         "-y", "--package", "lambdadb",
@@ -119,7 +115,7 @@ Create a `.cursor/mcp.json` file in your project root with the following content
 ```json
 {
   "mcpServers": {
-    "LambdaDb": {
+    "LambdaDB": {
       "command": "npx",
       "args": [
         "-y", "--package", "lambdadb",
@@ -177,14 +173,14 @@ For supported JavaScript runtimes, please consult [RUNTIMES.md](RUNTIMES.md).
 ### Example
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 
@@ -209,14 +205,14 @@ This SDK supports the following security scheme globally:
 
 To authenticate with the API the `projectApiKey` parameter must be set when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 
@@ -295,14 +291,14 @@ Some of the endpoints in this SDK support retries.  If you use the SDK without a
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   }, {
     retries: {
@@ -326,9 +322,9 @@ run();
 
 If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   retryConfig: {
     strategy: "backoff",
     backoff: {
@@ -343,7 +339,7 @@ const lambdaDb = new LambdaDb({
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 
@@ -358,7 +354,7 @@ run();
 <!-- Start Error Handling [errors] -->
 ## Error Handling
 
-[`LambdaDbError`](./src/models/errors/lambdadberror.ts) is the base class for all HTTP error responses. It has the following properties:
+[`LambdaDBError`](./src/models/errors/lambdadberror.ts) is the base class for all HTTP error responses. It has the following properties:
 
 | Property            | Type       | Description                                                                             |
 | ------------------- | ---------- | --------------------------------------------------------------------------------------- |
@@ -371,23 +367,23 @@ run();
 
 ### Example
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 import * as errors from "lambdadb/models/errors";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
   try {
-    const result = await lambdaDb.projects.collections.listcollections({
+    const result = await lambdaDB.projects.collections.listcollections({
       projectName: "<value>",
     });
 
     console.log(result);
   } catch (error) {
     // The base class for HTTP error responses
-    if (error instanceof errors.LambdaDbError) {
+    if (error instanceof errors.LambdaDBError) {
       console.log(error.message);
       console.log(error.statusCode);
       console.log(error.body);
@@ -407,7 +403,7 @@ run();
 
 ### Error Classes
 **Primary errors:**
-* [`LambdaDbError`](./src/models/errors/lambdadberror.ts): The base class for HTTP error responses.
+* [`LambdaDBError`](./src/models/errors/lambdadberror.ts): The base class for HTTP error responses.
   * [`UnauthenticatedError`](docs/models/errors/unauthenticatederror.md): Unauthenticated. Status code `401`.
   * [`TooManyRequestsError`](docs/models/errors/toomanyrequestserror.md): Too many requests. Status code `429`.
   * [`InternalServerError`](docs/models/errors/internalservererror.md): Internal server error. Status code `500`.
@@ -425,7 +421,7 @@ run();
 * [`UnexpectedClientError`](./src/models/errors/httpclienterrors.ts): Unrecognised or unexpected error.
 
 
-**Inherit from [`LambdaDbError`](./src/models/errors/lambdadberror.ts)**:
+**Inherit from [`LambdaDBError`](./src/models/errors/lambdadberror.ts)**:
 * [`BadRequestError`](docs/models/errors/badrequesterror.md): Bad request. Status code `400`. Applicable to 7 of 11 methods.*
 * [`ResourceAlreadyExistsError`](docs/models/errors/resourcealreadyexistserror.md): Resource already exists. Status code `409`. Applicable to 1 of 11 methods.*
 * [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
@@ -442,15 +438,15 @@ run();
 
 The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   serverURL: "https://{baseUrl}",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 
@@ -480,7 +476,7 @@ custom header and a timeout to requests and how to use the `"requestError"` hook
 to log errors:
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 import { HTTPClient } from "lambdadb/lib/http";
 
 const httpClient = new HTTPClient({
@@ -507,7 +503,7 @@ httpClient.addHook("requestError", (error, request) => {
   console.groupEnd();
 });
 
-const sdk = new LambdaDb({ httpClient });
+const sdk = new LambdaDB({ httpClient });
 ```
 <!-- End Custom HTTP Client [http-client] -->
 
@@ -522,9 +518,9 @@ You can pass a logger that matches `console`'s interface as an SDK option.
 > Beware that debug logging will reveal secrets, like API tokens in headers, in log messages printed to a console or files. It's recommended to use this feature only during local development and not in production.
 
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const sdk = new LambdaDb({ debugLogger: console });
+const sdk = new LambdaDB({ debugLogger: console });
 ```
 
 You can also enable a default debug logger by setting an environment variable `LAMBDADB_DEBUG` to true.

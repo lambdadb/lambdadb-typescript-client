@@ -5,7 +5,7 @@
 import { ClientSDK } from "../lib/sdks.js";
 import { Projects } from "./projects.js";
 
-export class LambdaDb extends ClientSDK {
+export class LambdaDB extends ClientSDK {
   private _projects?: Projects;
   get projects(): Projects {
     return (this._projects ??= new Projects(this._options));

@@ -3,7 +3,7 @@ generation:
   devContainers:
     enabled: true
     schemaPath: https://raw.githubusercontent.com/lambdadb/docs/main/api-reference/openapi.json
-  sdkClassName: LambdaDb
+  sdkClassName: LambdaDB
   maintainOpenAPIOrder: true
   usageSnippets:
     optionalPropertyRendering: withExample
@@ -21,16 +21,17 @@ generation:
     oAuth2PasswordEnabled: true
   sdkHooksConfigAccess: true
 typescript:
-  version: 0.0.1
+  version: 0.0.2
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
     peerDependencies: {}
   additionalPackageJSON: {}
   author: Speakeasy
-  baseErrorName: LambdaDbError
+  baseErrorName: LambdaDBError
   clientServerStatusCodesAsErrors: true
-  defaultErrorName: LambdaDbDefaultError
+  constFieldsAlwaysOptional: true
+  defaultErrorName: LambdaDBDefaultError
   enableCustomCodeRegions: false
   enableMCPServer: true
   enableReactQuery: false

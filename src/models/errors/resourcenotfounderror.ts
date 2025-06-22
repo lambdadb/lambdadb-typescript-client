@@ -3,13 +3,13 @@
  */
 
 import * as z from "zod";
-import { LambdaDbError } from "./lambdadberror.js";
+import { LambdaDBError } from "./lambdadberror.js";
 
 export type ResourceNotFoundErrorData = {
   message?: string | undefined;
 };
 
-export class ResourceNotFoundError extends LambdaDbError {
+export class ResourceNotFoundError extends LambdaDBError {
   /** The original data that was passed to this error instance. */
   data$: ResourceNotFoundErrorData;
 

@@ -1,13 +1,13 @@
 <!-- Start SDK Example Usage [usage] -->
 ```typescript
-import { LambdaDb } from "lambdadb";
+import { LambdaDB } from "lambdadb";
 
-const lambdaDb = new LambdaDb({
+const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDb.projects.collections.listcollections({
+  const result = await lambdaDB.projects.collections.listcollections({
     projectName: "<value>",
   });
 

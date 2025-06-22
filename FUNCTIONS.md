@@ -19,17 +19,17 @@ specific category of applications.
 ## Example
 
 ```typescript
-import { LambdaDbCore } from "lambdadb/core.js";
+import { LambdaDBCore } from "lambdadb/core.js";
 import { projectsCollectionsListcollections } from "lambdadb/funcs/projectsCollectionsListcollections.js";
 
-// Use `LambdaDbCore` for best tree-shaking performance.
+// Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
-const lambdaDb = new LambdaDbCore({
+const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await projectsCollectionsListcollections(lambdaDb, {
+  const res = await projectsCollectionsListcollections(lambdaDB, {
     projectName: "<value>",
   });
   if (res.ok) {

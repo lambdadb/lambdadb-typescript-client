@@ -1,4 +1,4 @@
-# LambdaDb SDK
+# LambdaDB SDK
 
 ## Overview
 

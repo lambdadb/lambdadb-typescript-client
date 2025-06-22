@@ -3,13 +3,13 @@
  */
 
 import * as z from "zod";
-import { LambdaDbError } from "./lambdadberror.js";
+import { LambdaDBError } from "./lambdadberror.js";
 
 export type InternalServerErrorData = {
   message?: string | undefined;
 };
 
-export class InternalServerError extends LambdaDbError {
+export class InternalServerError extends LambdaDBError {
   /** The original data that was passed to this error instance. */
   data$: InternalServerErrorData;
 

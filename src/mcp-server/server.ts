@@ -3,7 +3,7 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { LambdaDbCore } from "../core.js";
+import { LambdaDBCore } from "../core.js";
 import { SDKOptions } from "../lib/config.js";
 import type { ConsoleLogger } from "./console-logger.js";
 import { createRegisterPrompt } from "./prompts.js";
@@ -34,11 +34,11 @@ export function createMCPServer(deps: {
   serverIdx?: SDKOptions["serverIdx"] | undefined;
 }) {
   const server = new McpServer({
-    name: "LambdaDb",
-    version: "0.0.1",
+    name: "LambdaDB",
+    version: "0.0.2",
   });
 
-  const client = new LambdaDbCore({
+  const client = new LambdaDBCore({
     projectApiKey: deps.projectApiKey,
     serverURL: deps.serverURL,
     serverIdx: deps.serverIdx,

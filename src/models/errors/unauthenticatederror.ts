@@ -3,13 +3,13 @@
  */
 
 import * as z from "zod";
-import { LambdaDbError } from "./lambdadberror.js";
+import { LambdaDBError } from "./lambdadberror.js";
 
 export type UnauthenticatedErrorData = {
   message?: string | undefined;
 };
 
-export class UnauthenticatedError extends LambdaDbError {
+export class UnauthenticatedError extends LambdaDBError {
   /** The original data that was passed to this error instance. */
   data$: UnauthenticatedErrorData;
 

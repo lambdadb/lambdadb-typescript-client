@@ -3,13 +3,13 @@
  */
 
 import * as z from "zod";
-import { LambdaDbError } from "./lambdadberror.js";
+import { LambdaDBError } from "./lambdadberror.js";
 
 export type ResourceAlreadyExistsErrorData = {
   message?: string | undefined;
 };
 
-export class ResourceAlreadyExistsError extends LambdaDbError {
+export class ResourceAlreadyExistsError extends LambdaDBError {
   /** The original data that was passed to this error instance. */
   data$: ResourceAlreadyExistsErrorData;
 

@@ -10,13 +10,13 @@ import {
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
 import { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
-import { LambdaDbCore } from "../core.js";
+import { LambdaDBCore } from "../core.js";
 import { ConsoleLogger } from "./console-logger.js";
 import { MCPScope } from "./scopes.js";
 import { isAsyncIterable, isBinaryData, valueToBase64 } from "./shared.js";
 
 export type ReadResourceCallback = (
-  client: LambdaDbCore,
+  client: LambdaDBCore,
   uri: URL,
   extra: RequestHandlerExtra,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
@@ -31,7 +31,7 @@ export type ResourceDefinition = {
 };
 
 export type ReadResourceTemplateCallback = (
-  client: LambdaDbCore,
+  client: LambdaDBCore,
   uri: URL,
   vars: Variables,
   extra: RequestHandlerExtra,
@@ -104,7 +104,7 @@ async function stringifySSEToJSON(
 export function createRegisterResource(
   logger: ConsoleLogger,
   server: McpServer,
-  sdk: LambdaDbCore,
+  sdk: LambdaDBCore,
   allowedScopes: Set<MCPScope>,
 ): (resource: ResourceDefinition) => void {
   return (resource: ResourceDefinition): void => {
@@ -139,7 +139,7 @@ export function createRegisterResource(
 export function createRegisterResourceTemplate(
   logger: ConsoleLogger,
   server: McpServer,
-  sdk: LambdaDbCore,
+  sdk: LambdaDBCore,
   allowedScopes: Set<MCPScope>,
 ): (resource: ResourceTemplateDefinition) => void {
   return (resource: ResourceTemplateDefinition): void => {
