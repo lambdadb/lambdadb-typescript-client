@@ -1,6 +1,6 @@
 {
   "name": "@swkim86/lambdadb",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "Speakeasy",
   "license": "Apache-2.0",
   "type": "module",
@@ -23,6 +23,10 @@
     }
   },
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lambdadb/lambdadb-typescript-client.git"
+  },
   "scripts": {
     "lint": "eslint --cache --max-warnings=0 src",
     "build:mcp": "bun src/mcp-server/build.mts",

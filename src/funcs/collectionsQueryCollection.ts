@@ -21,24 +21,23 @@ import * as errors from "../models/errors/index.js";
 import { LambdaDBError } from "../models/errors/lambdadberror.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
-import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Create an collection.
+ * Search a collection with a query and return the most similar documents.
  */
-export function projectsCollectionsCreateCollection(
+export function collectionsQueryCollection(
   client: LambdaDBCore,
-  request: operations.CreateCollectionRequest,
+  request: operations.QueryCollectionRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    models.CollectionResponse,
+    operations.QueryCollectionResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
-    | errors.ResourceAlreadyExistsError
+    | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
     | LambdaDBError
@@ -60,15 +59,15 @@ export function projectsCollectionsCreateCollection(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.CreateCollectionRequest,
+  request: operations.QueryCollectionRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      models.CollectionResponse,
+      operations.QueryCollectionResponse,
       | errors.BadRequestError
       | errors.UnauthenticatedError
-      | errors.ResourceAlreadyExistsError
+      | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
       | errors.InternalServerError
       | LambdaDBError
@@ -85,7 +84,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.CreateCollectionRequest$outboundSchema.parse(value),
+    (value) => operations.QueryCollectionRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -95,13 +94,19 @@ async function $do(
   const body = encodeJSON("body", payload.RequestBody, { explode: true });
 
   const pathParams = {
+    collectionName: encodeSimple("collectionName", payload.collectionName, {
+      explode: false,
+      charEncoding: "percent",
+    }),
     projectName: encodeSimple("projectName", payload.projectName, {
       explode: false,
       charEncoding: "percent",
     }),
   };
 
-  const path = pathToFunc("/projects/{projectName}/collections")(pathParams);
+  const path = pathToFunc(
+    "/projects/{projectName}/collections/{collectionName}/query",
+  )(pathParams);
 
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
@@ -115,7 +120,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "createCollection",
+    operationID: "queryCollection",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -154,7 +159,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["400", "401", "409", "429", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "404", "429", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -168,10 +173,10 @@ async function $do(
   };
 
   const [result] = await M.match<
-    models.CollectionResponse,
+    operations.QueryCollectionResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
-    | errors.ResourceAlreadyExistsError
+    | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
     | LambdaDBError
@@ -183,10 +188,10 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(202, models.CollectionResponse$inboundSchema),
+    M.json(200, operations.QueryCollectionResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
-    M.jsonErr(409, errors.ResourceAlreadyExistsError$inboundSchema),
+    M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),
     M.jsonErr(500, errors.InternalServerError$inboundSchema),
     M.fail("4XX"),

@@ -21,20 +21,21 @@ import * as errors from "../models/errors/index.js";
 import { LambdaDBError } from "../models/errors/lambdadberror.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Upsert documents into an collection. Note that the maximum supported payload size is 6MB.
+ * Configure a collection.
  */
-export function projectsCollectionsDocsUpsertDocs(
+export function collectionsUpdateCollection(
   client: LambdaDBCore,
-  request: operations.UpsertDocsRequest,
+  request: operations.UpdateCollectionRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.UpsertDocsResponse,
+    models.CollectionResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -59,12 +60,12 @@ export function projectsCollectionsDocsUpsertDocs(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.UpsertDocsRequest,
+  request: operations.UpdateCollectionRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.UpsertDocsResponse,
+      models.CollectionResponse,
       | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
@@ -84,7 +85,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.UpsertDocsRequest$outboundSchema.parse(value),
+    (value) => operations.UpdateCollectionRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -105,7 +106,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}/docs/upsert",
+    "/projects/{projectName}/collections/{collectionName}",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -120,7 +121,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "upsertDocs",
+    operationID: "updateCollection",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -144,7 +145,7 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "POST",
+    method: "PATCH",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
@@ -173,7 +174,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.UpsertDocsResponse,
+    models.CollectionResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -188,7 +189,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(202, operations.UpsertDocsResponse$inboundSchema),
+    M.json(200, models.CollectionResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),

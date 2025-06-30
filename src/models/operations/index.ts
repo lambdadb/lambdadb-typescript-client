@@ -12,4 +12,5 @@ export * from "./getcollection.js";
 export * from "./listcollections.js";
 export * from "./querycollection.js";
 export * from "./updatecollection.js";
+export * from "./updatedocs.js";
 export * from "./upsertdocs.js";

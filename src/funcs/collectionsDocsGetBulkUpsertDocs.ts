@@ -21,21 +21,20 @@ import * as errors from "../models/errors/index.js";
 import { LambdaDBError } from "../models/errors/lambdadberror.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
-import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Get metadata of an existing collection.
+ * Request required info to upload documents.
  */
-export function projectsCollectionsGetCollection(
+export function collectionsDocsGetBulkUpsertDocs(
   client: LambdaDBCore,
-  request: operations.GetCollectionRequest,
+  request: operations.GetBulkUpsertDocsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    models.CollectionResponse,
+    operations.GetBulkUpsertDocsResponse,
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -59,12 +58,12 @@ export function projectsCollectionsGetCollection(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.GetCollectionRequest,
+  request: operations.GetBulkUpsertDocsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      models.CollectionResponse,
+      operations.GetBulkUpsertDocsResponse,
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
@@ -83,7 +82,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.GetCollectionRequest$outboundSchema.parse(value),
+    (value) => operations.GetBulkUpsertDocsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -104,7 +103,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}",
+    "/projects/{projectName}/collections/{collectionName}/docs/bulk-upsert",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -118,7 +117,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "getCollection",
+    operationID: "getBulkUpsertDocs",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -171,7 +170,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    models.CollectionResponse,
+    operations.GetBulkUpsertDocsResponse,
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -185,7 +184,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, models.CollectionResponse$inboundSchema),
+    M.json(200, operations.GetBulkUpsertDocsResponse$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),

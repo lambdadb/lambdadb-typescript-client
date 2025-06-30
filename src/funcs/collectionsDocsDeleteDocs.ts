@@ -3,7 +3,7 @@
  */
 
 import { LambdaDBCore } from "../core.js";
-import { encodeSimple } from "../lib/encodings.js";
+import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
@@ -26,15 +26,16 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * List all collections in an existing project.
+ * Delete documents by document IDs or query filter from a collection.
  */
-export function projectsCollectionsListcollections(
+export function collectionsDocsDeleteDocs(
   client: LambdaDBCore,
-  request: operations.ListcollectionsRequest,
+  request: operations.DeleteDocsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.ListcollectionsResponse,
+    operations.DeleteDocsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -58,12 +59,13 @@ export function projectsCollectionsListcollections(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.ListcollectionsRequest,
+  request: operations.DeleteDocsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.ListcollectionsResponse,
+      operations.DeleteDocsResponse,
+      | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
@@ -82,25 +84,32 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.ListcollectionsRequest$outboundSchema.parse(value),
+    (value) => operations.DeleteDocsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
     return [parsed, { status: "invalid" }];
   }
   const payload = parsed.value;
-  const body = null;
+  const body = encodeJSON("body", payload.RequestBody, { explode: true });
 
   const pathParams = {
+    collectionName: encodeSimple("collectionName", payload.collectionName, {
+      explode: false,
+      charEncoding: "percent",
+    }),
     projectName: encodeSimple("projectName", payload.projectName, {
       explode: false,
       charEncoding: "percent",
     }),
   };
 
-  const path = pathToFunc("/projects/{projectName}/collections")(pathParams);
+  const path = pathToFunc(
+    "/projects/{projectName}/collections/{collectionName}/docs/delete",
+  )(pathParams);
 
   const headers = new Headers(compactMap({
+    "Content-Type": "application/json",
     Accept: "application/json",
   }));
 
@@ -111,7 +120,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "listcollections",
+    operationID: "deleteDocs",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -135,7 +144,7 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "GET",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
@@ -150,7 +159,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "404", "429", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "404", "429", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -164,7 +173,8 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.ListcollectionsResponse,
+    operations.DeleteDocsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -178,7 +188,8 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, operations.ListcollectionsResponse$inboundSchema),
+    M.json(202, operations.DeleteDocsResponse$inboundSchema),
+    M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),

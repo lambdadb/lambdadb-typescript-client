@@ -17,7 +17,7 @@ export type Sort = {};
 
 export type QueryCollectionRequestBody = {
   /**
-   * Number of documents to return. Note that the maximum number of documents is 1000.
+   * Number of documents to return. Note that the maximum number of documents is 100.
    */
   size: number;
   /**

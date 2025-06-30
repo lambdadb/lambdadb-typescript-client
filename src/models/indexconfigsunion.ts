@@ -14,6 +14,7 @@ export const Type = {
   Double: "double",
   Datetime: "datetime",
   Boolean: "boolean",
+  SparseVector: "sparseVector",
 } as const;
 export type Type = ClosedEnum<typeof Type>;
 

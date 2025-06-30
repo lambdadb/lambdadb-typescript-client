@@ -3,7 +3,7 @@
  */
 
 import { LambdaDBCore } from "../core.js";
-import { encodeSimple } from "../lib/encodings.js";
+import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
@@ -21,22 +21,24 @@ import * as errors from "../models/errors/index.js";
 import { LambdaDBError } from "../models/errors/lambdadberror.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
+import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Delete an existing collection.
+ * Create a collection.
  */
-export function projectsCollectionsDeleteCollection(
+export function collectionsCreateCollection(
   client: LambdaDBCore,
-  request: operations.DeleteCollectionRequest,
+  request: operations.CreateCollectionRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.DeleteCollectionResponse,
+    models.CollectionResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
-    | errors.ResourceNotFoundError
+    | errors.ResourceAlreadyExistsError
     | errors.TooManyRequestsError
     | errors.InternalServerError
     | LambdaDBError
@@ -58,14 +60,15 @@ export function projectsCollectionsDeleteCollection(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.DeleteCollectionRequest,
+  request: operations.CreateCollectionRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.DeleteCollectionResponse,
+      models.CollectionResponse,
+      | errors.BadRequestError
       | errors.UnauthenticatedError
-      | errors.ResourceNotFoundError
+      | errors.ResourceAlreadyExistsError
       | errors.TooManyRequestsError
       | errors.InternalServerError
       | LambdaDBError
@@ -82,31 +85,26 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.DeleteCollectionRequest$outboundSchema.parse(value),
+    (value) => operations.CreateCollectionRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
     return [parsed, { status: "invalid" }];
   }
   const payload = parsed.value;
-  const body = null;
+  const body = encodeJSON("body", payload.RequestBody, { explode: true });
 
   const pathParams = {
-    collectionName: encodeSimple("collectionName", payload.collectionName, {
-      explode: false,
-      charEncoding: "percent",
-    }),
     projectName: encodeSimple("projectName", payload.projectName, {
       explode: false,
       charEncoding: "percent",
     }),
   };
 
-  const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}",
-  )(pathParams);
+  const path = pathToFunc("/projects/{projectName}/collections")(pathParams);
 
   const headers = new Headers(compactMap({
+    "Content-Type": "application/json",
     Accept: "application/json",
   }));
 
@@ -117,7 +115,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "deleteCollection",
+    operationID: "createCollection",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -141,7 +139,7 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "DELETE",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
@@ -156,7 +154,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "404", "429", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "409", "429", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -170,9 +168,10 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.DeleteCollectionResponse,
+    models.CollectionResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
-    | errors.ResourceNotFoundError
+    | errors.ResourceAlreadyExistsError
     | errors.TooManyRequestsError
     | errors.InternalServerError
     | LambdaDBError
@@ -184,9 +183,10 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(202, operations.DeleteCollectionResponse$inboundSchema),
+    M.json(202, models.CollectionResponse$inboundSchema),
+    M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
-    M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
+    M.jsonErr(409, errors.ResourceAlreadyExistsError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),
     M.jsonErr(500, errors.InternalServerError$inboundSchema),
     M.fail("4XX"),

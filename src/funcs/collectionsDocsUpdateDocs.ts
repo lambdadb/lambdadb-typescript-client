@@ -26,15 +26,15 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Lookup and return documents by document IDs from an collection.
+ * Update documents in a collection. Note that the maximum supported payload size is 6MB.
  */
-export function projectsCollectionsDocsFetchDocs(
+export function collectionsDocsUpdateDocs(
   client: LambdaDBCore,
-  request: operations.FetchDocsRequest,
+  request: operations.UpdateDocsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.FetchDocsResponse,
+    operations.UpdateDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -59,12 +59,12 @@ export function projectsCollectionsDocsFetchDocs(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.FetchDocsRequest,
+  request: operations.UpdateDocsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.FetchDocsResponse,
+      operations.UpdateDocsResponse,
       | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
@@ -84,7 +84,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.FetchDocsRequest$outboundSchema.parse(value),
+    (value) => operations.UpdateDocsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -105,7 +105,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}/docs/fetch",
+    "/projects/{projectName}/collections/{collectionName}/docs/update",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -120,7 +120,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "fetchDocs",
+    operationID: "updateDocs",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -173,7 +173,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.FetchDocsResponse,
+    operations.UpdateDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -188,7 +188,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, operations.FetchDocsResponse$inboundSchema),
+    M.json(202, operations.UpdateDocsResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
