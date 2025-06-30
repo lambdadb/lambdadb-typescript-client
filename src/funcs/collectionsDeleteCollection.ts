@@ -26,15 +26,15 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Request required info to upload documents.
+ * Delete an existing collection.
  */
-export function projectsCollectionsDocsGetBulkUpsertDocs(
+export function collectionsDeleteCollection(
   client: LambdaDBCore,
-  request: operations.GetBulkUpsertDocsRequest,
+  request: operations.DeleteCollectionRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.GetBulkUpsertDocsResponse,
+    operations.DeleteCollectionResponse,
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -58,12 +58,12 @@ export function projectsCollectionsDocsGetBulkUpsertDocs(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.GetBulkUpsertDocsRequest,
+  request: operations.DeleteCollectionRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.GetBulkUpsertDocsResponse,
+      operations.DeleteCollectionResponse,
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
@@ -82,7 +82,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.GetBulkUpsertDocsRequest$outboundSchema.parse(value),
+    (value) => operations.DeleteCollectionRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -103,7 +103,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}/docs/bulk-upsert",
+    "/projects/{projectName}/collections/{collectionName}",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -117,7 +117,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "getBulkUpsertDocs",
+    operationID: "deleteCollection",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -141,7 +141,7 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "GET",
+    method: "DELETE",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
@@ -170,7 +170,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.GetBulkUpsertDocsResponse,
+    operations.DeleteCollectionResponse,
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -184,7 +184,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, operations.GetBulkUpsertDocsResponse$inboundSchema),
+    M.json(202, operations.DeleteCollectionResponse$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),

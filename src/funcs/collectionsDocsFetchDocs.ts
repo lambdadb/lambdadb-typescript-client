@@ -21,21 +21,20 @@ import * as errors from "../models/errors/index.js";
 import { LambdaDBError } from "../models/errors/lambdadberror.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { SDKValidationError } from "../models/errors/sdkvalidationerror.js";
-import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Configure an collection.
+ * Lookup and return documents by document IDs from a collection.
  */
-export function projectsCollectionsUpdateCollection(
+export function collectionsDocsFetchDocs(
   client: LambdaDBCore,
-  request: operations.UpdateCollectionRequest,
+  request: operations.FetchDocsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    models.CollectionResponse,
+    operations.FetchDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -60,12 +59,12 @@ export function projectsCollectionsUpdateCollection(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.UpdateCollectionRequest,
+  request: operations.FetchDocsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      models.CollectionResponse,
+      operations.FetchDocsResponse,
       | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
@@ -85,7 +84,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.UpdateCollectionRequest$outboundSchema.parse(value),
+    (value) => operations.FetchDocsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -106,7 +105,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}",
+    "/projects/{projectName}/collections/{collectionName}/docs/fetch",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -121,7 +120,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "updateCollection",
+    operationID: "fetchDocs",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -145,7 +144,7 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "PATCH",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
@@ -174,7 +173,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    models.CollectionResponse,
+    operations.FetchDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -189,7 +188,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, models.CollectionResponse$inboundSchema),
+    M.json(200, operations.FetchDocsResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),

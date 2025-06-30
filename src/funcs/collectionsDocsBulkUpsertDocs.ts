@@ -26,9 +26,9 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Bulk upsert documents into an collection. Note that the maximum supported object size is 200MB.
+ * Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
  */
-export function projectsCollectionsDocsBulkUpsertDocs(
+export function collectionsDocsBulkUpsertDocs(
   client: LambdaDBCore,
   request: operations.BulkUpsertDocsRequest,
   options?: RequestOptions,

@@ -10,7 +10,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export type FetchDocsRequestBody = {
   /**
-   * A list of document IDs to fetch. Note that the maximum number of document IDs is 1000.
+   * A list of document IDs to fetch. Note that the maximum number of document IDs is 100.
    */
   ids: Array<string>;
   /**

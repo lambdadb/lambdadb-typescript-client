@@ -26,15 +26,15 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Search an collection with a query and return the most similar documents.
+ * Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
  */
-export function projectsCollectionsQueryCollection(
+export function collectionsDocsUpsertDocs(
   client: LambdaDBCore,
-  request: operations.QueryCollectionRequest,
+  request: operations.UpsertDocsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
-    operations.QueryCollectionResponse,
+    operations.UpsertDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -59,12 +59,12 @@ export function projectsCollectionsQueryCollection(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.QueryCollectionRequest,
+  request: operations.UpsertDocsRequest,
   options?: RequestOptions,
 ): Promise<
   [
     Result<
-      operations.QueryCollectionResponse,
+      operations.UpsertDocsResponse,
       | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
@@ -84,7 +84,7 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.QueryCollectionRequest$outboundSchema.parse(value),
+    (value) => operations.UpsertDocsRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
@@ -105,7 +105,7 @@ async function $do(
   };
 
   const path = pathToFunc(
-    "/projects/{projectName}/collections/{collectionName}/query",
+    "/projects/{projectName}/collections/{collectionName}/docs/upsert",
   )(pathParams);
 
   const headers = new Headers(compactMap({
@@ -120,7 +120,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "queryCollection",
+    operationID: "upsertDocs",
     oAuth2Scopes: [],
 
     resolvedSecurity: requestSecurity,
@@ -173,7 +173,7 @@ async function $do(
   };
 
   const [result] = await M.match<
-    operations.QueryCollectionResponse,
+    operations.UpsertDocsResponse,
     | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
@@ -188,7 +188,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(200, operations.QueryCollectionResponse$inboundSchema),
+    M.json(202, operations.UpsertDocsResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),

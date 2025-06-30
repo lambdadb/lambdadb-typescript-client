@@ -11,5 +11,5 @@ let value: Type = "keyword";
 ## Values
 
 ```typescript
-"keyword" | "long" | "double" | "datetime" | "boolean"
+"keyword" | "long" | "double" | "datetime" | "boolean" | "sparseVector"
 ```

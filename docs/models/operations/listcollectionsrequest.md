@@ -1,11 +1,11 @@
-# ListcollectionsRequest
+# ListCollectionsRequest
 
 ## Example Usage
 
 ```typescript
-import { ListcollectionsRequest } from "@swkim86/lambdadb/models/operations";
+import { ListCollectionsRequest } from "@swkim86/lambdadb/models/operations";
 
-let value: ListcollectionsRequest = {
+let value: ListCollectionsRequest = {
   projectName: "<value>",
 };
 ```

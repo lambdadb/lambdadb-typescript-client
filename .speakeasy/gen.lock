@@ -1,12 +1,14 @@
 lockVersion: 2.0.0
 id: 3c09732d-5406-48eb-9d43-96c8f950c3be
 management:
-  docChecksum: 824d1accc5eb1e3b3c4cff80a3f168ec
+  docChecksum: a3eb07084ebc110c3e9ece623fd6b458
   docVersion: 1.1.0
-  speakeasyVersion: 1.568.0
-  generationVersion: 2.632.2
-  releaseVersion: 0.0.4
-  configChecksum: 2cf6880ae6b870b6d906182d34947533
+  speakeasyVersion: 1.571.2
+  generationVersion: 2.640.2
+  releaseVersion: 0.0.5
+  configChecksum: 74213489f7a5eea39b444c3d89a47cbf
+  repoURL: https://github.com/lambdadb/lambdadb-typescript-client.git
+  installationURL: https://github.com/lambdadb/lambdadb-typescript-client
   published: true
 features:
   typescript:
@@ -84,6 +86,10 @@ generatedFiles:
   - docs/models/operations/type.md
   - docs/models/operations/updatecollectionrequest.md
   - docs/models/operations/updatecollectionrequestbody.md
+  - docs/models/operations/updatedocsdoc.md
+  - docs/models/operations/updatedocsrequest.md
+  - docs/models/operations/updatedocsrequestbody.md
+  - docs/models/operations/updatedocsresponse.md
   - docs/models/operations/upsertdocsdoc.md
   - docs/models/operations/upsertdocsrequest.md
   - docs/models/operations/upsertdocsrequestbody.md
@@ -97,22 +103,22 @@ generatedFiles:
   - docs/sdks/collections/README.md
   - docs/sdks/docs/README.md
   - docs/sdks/lambdadb/README.md
-  - docs/sdks/projects/README.md
   - eslint.config.mjs
   - jsr.json
   - package.json
   - src/core.ts
-  - src/funcs/projectsCollectionsCreateCollection.ts
-  - src/funcs/projectsCollectionsDeleteCollection.ts
-  - src/funcs/projectsCollectionsDocsBulkUpsertDocs.ts
-  - src/funcs/projectsCollectionsDocsDeleteDocs.ts
-  - src/funcs/projectsCollectionsDocsFetchDocs.ts
-  - src/funcs/projectsCollectionsDocsGetBulkUpsertDocs.ts
-  - src/funcs/projectsCollectionsDocsUpsertDocs.ts
-  - src/funcs/projectsCollectionsGetCollection.ts
-  - src/funcs/projectsCollectionsListcollections.ts
-  - src/funcs/projectsCollectionsQueryCollection.ts
-  - src/funcs/projectsCollectionsUpdateCollection.ts
+  - src/funcs/collectionsCreateCollection.ts
+  - src/funcs/collectionsDeleteCollection.ts
+  - src/funcs/collectionsDocsBulkUpsertDocs.ts
+  - src/funcs/collectionsDocsDeleteDocs.ts
+  - src/funcs/collectionsDocsFetchDocs.ts
+  - src/funcs/collectionsDocsGetBulkUpsertDocs.ts
+  - src/funcs/collectionsDocsUpdateDocs.ts
+  - src/funcs/collectionsDocsUpsertDocs.ts
+  - src/funcs/collectionsGetCollection.ts
+  - src/funcs/collectionsListCollections.ts
+  - src/funcs/collectionsQueryCollection.ts
+  - src/funcs/collectionsUpdateCollection.ts
   - src/hooks/hooks.ts
   - src/hooks/index.ts
   - src/hooks/types.ts
@@ -146,17 +152,18 @@ generatedFiles:
   - src/mcp-server/server.ts
   - src/mcp-server/shared.ts
   - src/mcp-server/tools.ts
-  - src/mcp-server/tools/projectsCollectionsCreateCollection.ts
-  - src/mcp-server/tools/projectsCollectionsDeleteCollection.ts
-  - src/mcp-server/tools/projectsCollectionsDocsBulkUpsertDocs.ts
-  - src/mcp-server/tools/projectsCollectionsDocsDeleteDocs.ts
-  - src/mcp-server/tools/projectsCollectionsDocsFetchDocs.ts
-  - src/mcp-server/tools/projectsCollectionsDocsGetBulkUpsertDocs.ts
-  - src/mcp-server/tools/projectsCollectionsDocsUpsertDocs.ts
-  - src/mcp-server/tools/projectsCollectionsGetCollection.ts
-  - src/mcp-server/tools/projectsCollectionsListcollections.ts
-  - src/mcp-server/tools/projectsCollectionsQueryCollection.ts
-  - src/mcp-server/tools/projectsCollectionsUpdateCollection.ts
+  - src/mcp-server/tools/collectionsCreateCollection.ts
+  - src/mcp-server/tools/collectionsDeleteCollection.ts
+  - src/mcp-server/tools/collectionsDocsBulkUpsertDocs.ts
+  - src/mcp-server/tools/collectionsDocsDeleteDocs.ts
+  - src/mcp-server/tools/collectionsDocsFetchDocs.ts
+  - src/mcp-server/tools/collectionsDocsGetBulkUpsertDocs.ts
+  - src/mcp-server/tools/collectionsDocsUpdateDocs.ts
+  - src/mcp-server/tools/collectionsDocsUpsertDocs.ts
+  - src/mcp-server/tools/collectionsGetCollection.ts
+  - src/mcp-server/tools/collectionsListCollections.ts
+  - src/mcp-server/tools/collectionsQueryCollection.ts
+  - src/mcp-server/tools/collectionsUpdateCollection.ts
   - src/models/collectionresponse.ts
   - src/models/errors/badrequesterror.ts
   - src/models/errors/httpclienterrors.ts
@@ -183,13 +190,13 @@ generatedFiles:
   - src/models/operations/listcollections.ts
   - src/models/operations/querycollection.ts
   - src/models/operations/updatecollection.ts
+  - src/models/operations/updatedocs.ts
   - src/models/operations/upsertdocs.ts
   - src/models/security.ts
   - src/models/status.ts
   - src/sdk/collections.ts
   - src/sdk/docs.ts
   - src/sdk/index.ts
-  - src/sdk/projects.ts
   - src/sdk/sdk.ts
   - src/types/async.ts
   - src/types/blobs.ts
@@ -509,6 +516,55 @@ examples:
       responses:
         "200":
           application/json: {"total": 2, "took": 10, "docs": [{"collection": "example-collection-name", "doc": {}}, {"collection": "example-collection-name", "doc": {}}]}
+        "400":
+          application/json: {"message": "Invalid request"}
+        "401":
+          application/json: {"message": "Authentication failed"}
+        "404":
+          application/json: {"message": "Resource not found"}
+        "429":
+          application/json: {"message": "Too many requests"}
+        "500":
+          application/json: {"message": "Internal server error"}
+  listCollections:
+    normalCollection:
+      parameters:
+        path:
+          projectName: "<value>"
+      responses:
+        "200":
+          application/json: {"collections": [{"projectName": "example-project-name", "collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["standard"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}, "numDocs": 10000, "collectionStatus": "ACTIVE"}]}
+    clonedCollection:
+      parameters:
+        path:
+          projectName: "<value>"
+      responses:
+        "200":
+          application/json: {"collections": [{"projectName": "example-project-name", "collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["standard"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}, "numDocs": 10000, "collectionStatus": "ACTIVE"}]}
+    example:
+      parameters:
+        path:
+          projectName: "<value>"
+      responses:
+        "401":
+          application/json: {"message": "Authentication failed"}
+        "404":
+          application/json: {"message": "Resource not found"}
+        "429":
+          application/json: {"message": "Too many requests"}
+        "500":
+          application/json: {"message": "Internal server error"}
+  updateDocs:
+    example:
+      parameters:
+        path:
+          projectName: "<value>"
+          collectionName: "<value>"
+      requestBody:
+        application/json: {"docs": [{}, {}]}
+      responses:
+        "202":
+          application/json: {"message": "Update request is accepted"}
         "400":
           application/json: {"message": "Invalid request"}
         "401":
