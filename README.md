@@ -180,9 +180,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }
@@ -212,9 +210,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }
@@ -230,26 +226,24 @@ run();
 <details open>
 <summary>Available methods</summary>
 
+### [collections](docs/sdks/collections/README.md)
 
-### [projects](docs/sdks/projects/README.md)
-
-
-#### [projects.collections](docs/sdks/collections/README.md)
-
-* [listcollections](docs/sdks/collections/README.md#listcollections) - List all collections in an existing project.
-* [createCollection](docs/sdks/collections/README.md#createcollection) - Create an collection.
+* [listCollections](docs/sdks/collections/README.md#listcollections) - List all collections in an existing project.
+* [createCollection](docs/sdks/collections/README.md#createcollection) - Create a collection.
 * [deleteCollection](docs/sdks/collections/README.md#deletecollection) - Delete an existing collection.
 * [getCollection](docs/sdks/collections/README.md#getcollection) - Get metadata of an existing collection.
-* [updateCollection](docs/sdks/collections/README.md#updatecollection) - Configure an collection.
-* [queryCollection](docs/sdks/collections/README.md#querycollection) - Search an collection with a query and return the most similar documents.
+* [updateCollection](docs/sdks/collections/README.md#updatecollection) - Configure a collection.
+* [queryCollection](docs/sdks/collections/README.md#querycollection) - Search a collection with a query and return the most similar documents.
 
-#### [projects.collections.docs](docs/sdks/docs/README.md)
+#### [collections.docs](docs/sdks/docs/README.md)
 
-* [upsertDocs](docs/sdks/docs/README.md#upsertdocs) - Upsert documents into an collection. Note that the maximum supported payload size is 6MB.
+* [upsertDocs](docs/sdks/docs/README.md#upsertdocs) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 * [getBulkUpsertDocs](docs/sdks/docs/README.md#getbulkupsertdocs) - Request required info to upload documents.
-* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents into an collection. Note that the maximum supported object size is 200MB.
-* [deleteDocs](docs/sdks/docs/README.md#deletedocs) - Delete documents by document IDs or query filter from an collection.
-* [fetchDocs](docs/sdks/docs/README.md#fetchdocs) - Lookup and return documents by document IDs from an collection.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+* [updateDocs](docs/sdks/docs/README.md#updatedocs) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
+* [deleteDocs](docs/sdks/docs/README.md#deletedocs) - Delete documents by document IDs or query filter from a collection.
+* [fetchDocs](docs/sdks/docs/README.md#fetchdocs) - Lookup and return documents by document IDs from a collection.
+
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
@@ -269,17 +263,18 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 
 <summary>Available standalone functions</summary>
 
-- [`projectsCollectionsCreateCollection`](docs/sdks/collections/README.md#createcollection) - Create an collection.
-- [`projectsCollectionsDeleteCollection`](docs/sdks/collections/README.md#deletecollection) - Delete an existing collection.
-- [`projectsCollectionsDocsBulkUpsertDocs`](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents into an collection. Note that the maximum supported object size is 200MB.
-- [`projectsCollectionsDocsDeleteDocs`](docs/sdks/docs/README.md#deletedocs) - Delete documents by document IDs or query filter from an collection.
-- [`projectsCollectionsDocsFetchDocs`](docs/sdks/docs/README.md#fetchdocs) - Lookup and return documents by document IDs from an collection.
-- [`projectsCollectionsDocsGetBulkUpsertDocs`](docs/sdks/docs/README.md#getbulkupsertdocs) - Request required info to upload documents.
-- [`projectsCollectionsDocsUpsertDocs`](docs/sdks/docs/README.md#upsertdocs) - Upsert documents into an collection. Note that the maximum supported payload size is 6MB.
-- [`projectsCollectionsGetCollection`](docs/sdks/collections/README.md#getcollection) - Get metadata of an existing collection.
-- [`projectsCollectionsListcollections`](docs/sdks/collections/README.md#listcollections) - List all collections in an existing project.
-- [`projectsCollectionsQueryCollection`](docs/sdks/collections/README.md#querycollection) - Search an collection with a query and return the most similar documents.
-- [`projectsCollectionsUpdateCollection`](docs/sdks/collections/README.md#updatecollection) - Configure an collection.
+- [`collectionsCreateCollection`](docs/sdks/collections/README.md#createcollection) - Create a collection.
+- [`collectionsDeleteCollection`](docs/sdks/collections/README.md#deletecollection) - Delete an existing collection.
+- [`collectionsDocsBulkUpsertDocs`](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+- [`collectionsDocsDeleteDocs`](docs/sdks/docs/README.md#deletedocs) - Delete documents by document IDs or query filter from a collection.
+- [`collectionsDocsFetchDocs`](docs/sdks/docs/README.md#fetchdocs) - Lookup and return documents by document IDs from a collection.
+- [`collectionsDocsGetBulkUpsertDocs`](docs/sdks/docs/README.md#getbulkupsertdocs) - Request required info to upload documents.
+- [`collectionsDocsUpdateDocs`](docs/sdks/docs/README.md#updatedocs) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
+- [`collectionsDocsUpsertDocs`](docs/sdks/docs/README.md#upsertdocs) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
+- [`collectionsGetCollection`](docs/sdks/collections/README.md#getcollection) - Get metadata of an existing collection.
+- [`collectionsListCollections`](docs/sdks/collections/README.md#listcollections) - List all collections in an existing project.
+- [`collectionsQueryCollection`](docs/sdks/collections/README.md#querycollection) - Search a collection with a query and return the most similar documents.
+- [`collectionsUpdateCollection`](docs/sdks/collections/README.md#updatecollection) - Configure a collection.
 
 </details>
 <!-- End Standalone functions [standalone-funcs] -->
@@ -298,9 +293,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  }, {
+  const result = await lambdaDB.collections.listCollections({
     retries: {
       strategy: "backoff",
       backoff: {
@@ -339,9 +332,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }
@@ -376,9 +367,7 @@ const lambdaDB = new LambdaDB({
 
 async function run() {
   try {
-    const result = await lambdaDB.projects.collections.listcollections({
-      projectName: "<value>",
-    });
+    const result = await lambdaDB.collections.listCollections();
 
     console.log(result);
   } catch (error) {
@@ -404,10 +393,10 @@ run();
 ### Error Classes
 **Primary errors:**
 * [`LambdaDBError`](./src/models/errors/lambdadberror.ts): The base class for HTTP error responses.
-  * [`UnauthenticatedError`](docs/models/errors/unauthenticatederror.md): Unauthenticated. Status code `401`.
-  * [`TooManyRequestsError`](docs/models/errors/toomanyrequestserror.md): Too many requests. Status code `429`.
-  * [`InternalServerError`](docs/models/errors/internalservererror.md): Internal server error. Status code `500`.
-  * [`ResourceNotFoundError`](docs/models/errors/resourcenotfounderror.md): Resource not found. Status code `404`. *
+  * [`UnauthenticatedError`](./src/models/errors/unauthenticatederror.ts): Unauthenticated. Status code `401`.
+  * [`TooManyRequestsError`](./src/models/errors/toomanyrequestserror.ts): Too many requests. Status code `429`.
+  * [`InternalServerError`](./src/models/errors/internalservererror.ts): Internal server error. Status code `500`.
+  * [`ResourceNotFoundError`](./src/models/errors/resourcenotfounderror.ts): Resource not found. Status code `404`. *
 
 <details><summary>Less common errors (8)</summary>
 
@@ -422,8 +411,8 @@ run();
 
 
 **Inherit from [`LambdaDBError`](./src/models/errors/lambdadberror.ts)**:
-* [`BadRequestError`](docs/models/errors/badrequesterror.md): Bad request. Status code `400`. Applicable to 7 of 11 methods.*
-* [`ResourceAlreadyExistsError`](docs/models/errors/resourcealreadyexistserror.md): Resource already exists. Status code `409`. Applicable to 1 of 11 methods.*
+* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 8 of 12 methods.*
+* [`ResourceAlreadyExistsError`](./src/models/errors/resourcealreadyexistserror.ts): Resource already exists. Status code `409`. Applicable to 1 of 12 methods.*
 * [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>
@@ -434,6 +423,34 @@ run();
 <!-- Start Server Selection [server] -->
 ## Server Selection
 
+### Server Variables
+
+The default server `https://{baseUrl}` contains variables and is set to `https://api.lambdadb.com/projects/default` by default. To override default values, the following parameters are available when initializing the SDK client instance:
+
+| Variable  | Parameter         | Default                               | Description             |
+| --------- | ----------------- | ------------------------------------- | ----------------------- |
+| `baseUrl` | `baseUrl: string` | `"api.lambdadb.com/projects/default"` | The base URL of the API |
+
+#### Example
+
+```typescript
+import { LambdaDB } from "@swkim86/lambdadb";
+
+const lambdaDB = new LambdaDB({
+  baseUrl: "https://functional-jury.net/",
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+
+async function run() {
+  const result = await lambdaDB.collections.listCollections();
+
+  console.log(result);
+}
+
+run();
+
+```
+
 ### Override Server URL Per-Client
 
 The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
@@ -441,14 +458,12 @@ The default server can be overridden globally by passing a URL to the `serverURL
 import { LambdaDB } from "@swkim86/lambdadb";
 
 const lambdaDB = new LambdaDB({
-  serverURL: "https://{baseUrl}",
+  serverURL: "https://api.lambdadb.com/projects/default",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }

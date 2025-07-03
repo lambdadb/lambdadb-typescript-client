@@ -1,18 +1,18 @@
 # Collections
-(*projects.collections*)
+(*collections*)
 
 ## Overview
 
 ### Available Operations
 
-* [listcollections](#listcollections) - List all collections in an existing project.
-* [createCollection](#createcollection) - Create an collection.
+* [listCollections](#listcollections) - List all collections in an existing project.
+* [createCollection](#createcollection) - Create a collection.
 * [deleteCollection](#deletecollection) - Delete an existing collection.
 * [getCollection](#getcollection) - Get metadata of an existing collection.
-* [updateCollection](#updatecollection) - Configure an collection.
-* [queryCollection](#querycollection) - Search an collection with a query and return the most similar documents.
+* [updateCollection](#updatecollection) - Configure a collection.
+* [queryCollection](#querycollection) - Search a collection with a query and return the most similar documents.
 
-## listcollections
+## listCollections
 
 List all collections in an existing project.
 
@@ -26,9 +26,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }
@@ -42,7 +40,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsListcollections } from "@swkim86/lambdadb/funcs/projectsCollectionsListcollections.js";
+import { collectionsListCollections } from "@swkim86/lambdadb/funcs/collectionsListCollections.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -51,14 +49,12 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsListcollections(lambdaDB, {
-    projectName: "<value>",
-  });
+  const res = await collectionsListCollections(lambdaDB);
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsListcollections failed:", res.error);
+    console.log("collectionsListCollections failed:", res.error);
   }
 }
 
@@ -69,14 +65,13 @@ run();
 
 | Parameter                                                                                                                                                                      | Type                                                                                                                                                                           | Required                                                                                                                                                                       | Description                                                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `request`                                                                                                                                                                      | [operations.ListcollectionsRequest](../../models/operations/listcollectionsrequest.md)                                                                                         | :heavy_check_mark:                                                                                                                                                             | The request object to use for the request.                                                                                                                                     |
 | `options`                                                                                                                                                                      | RequestOptions                                                                                                                                                                 | :heavy_minus_sign:                                                                                                                                                             | Used to set various options for making HTTP requests.                                                                                                                          |
 | `options.fetchOptions`                                                                                                                                                         | [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request#options)                                                                                        | :heavy_minus_sign:                                                                                                                                                             | Options that are passed to the underlying HTTP request. This can be used to inject extra headers for examples. All `Request` options, except `method` and `body`, are allowed. |
 | `options.retries`                                                                                                                                                              | [RetryConfig](../../lib/utils/retryconfig.md)                                                                                                                                  | :heavy_minus_sign:                                                                                                                                                             | Enables retrying HTTP requests under certain failure conditions.                                                                                                               |
 
 ### Response
 
-**Promise\<[operations.ListcollectionsResponse](../../models/operations/listcollectionsresponse.md)\>**
+**Promise\<[operations.ListCollectionsResponse](../../models/operations/listcollectionsresponse.md)\>**
 
 ### Errors
 
@@ -90,7 +85,7 @@ run();
 
 ## createCollection
 
-Create an collection.
+Create a collection.
 
 ### Example Usage
 
@@ -102,22 +97,19 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.createCollection({
-    projectName: "<value>",
-    requestBody: {
-      collectionName: "example-collection-name",
-      indexConfigs: {
-        "example-field1": {
-          type: "text",
-          analyzers: [
-            "english",
-          ],
-        },
-        "example-field2": {
-          type: "vector",
-          dimensions: 128,
-          similarity: "cosine",
-        },
+  const result = await lambdaDB.collections.createCollection({
+    collectionName: "example-collection-name",
+    indexConfigs: {
+      "example-field1": {
+        type: "text",
+        analyzers: [
+          "english",
+        ],
+      },
+      "example-field2": {
+        type: "vector",
+        dimensions: 128,
+        similarity: "cosine",
       },
     },
   });
@@ -134,7 +126,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsCreateCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsCreateCollection.js";
+import { collectionsCreateCollection } from "@swkim86/lambdadb/funcs/collectionsCreateCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -143,22 +135,19 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsCreateCollection(lambdaDB, {
-    projectName: "<value>",
-    requestBody: {
-      collectionName: "example-collection-name",
-      indexConfigs: {
-        "example-field1": {
-          type: "text",
-          analyzers: [
-            "english",
-          ],
-        },
-        "example-field2": {
-          type: "vector",
-          dimensions: 128,
-          similarity: "cosine",
-        },
+  const res = await collectionsCreateCollection(lambdaDB, {
+    collectionName: "example-collection-name",
+    indexConfigs: {
+      "example-field1": {
+        type: "text",
+        analyzers: [
+          "english",
+        ],
+      },
+      "example-field2": {
+        type: "vector",
+        dimensions: 128,
+        similarity: "cosine",
       },
     },
   });
@@ -166,7 +155,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsCreateCollection failed:", res.error);
+    console.log("collectionsCreateCollection failed:", res.error);
   }
 }
 
@@ -184,7 +173,7 @@ run();
 
 ### Response
 
-**Promise\<[models.CollectionResponse](../../models/collectionresponse.md)\>**
+**Promise\<[operations.CreateCollectionResponse](../../models/operations/createcollectionresponse.md)\>**
 
 ### Errors
 
@@ -211,8 +200,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.deleteCollection({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.deleteCollection({
     collectionName: "<value>",
   });
 
@@ -228,7 +216,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDeleteCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsDeleteCollection.js";
+import { collectionsDeleteCollection } from "@swkim86/lambdadb/funcs/collectionsDeleteCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -237,15 +225,14 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDeleteCollection(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDeleteCollection(lambdaDB, {
     collectionName: "<value>",
   });
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDeleteCollection failed:", res.error);
+    console.log("collectionsDeleteCollection failed:", res.error);
   }
 }
 
@@ -263,7 +250,7 @@ run();
 
 ### Response
 
-**Promise\<[operations.DeleteCollectionResponse](../../models/operations/deletecollectionresponse.md)\>**
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
 
 ### Errors
 
@@ -289,8 +276,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.getCollection({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.getCollection({
     collectionName: "<value>",
   });
 
@@ -306,7 +292,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsGetCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsGetCollection.js";
+import { collectionsGetCollection } from "@swkim86/lambdadb/funcs/collectionsGetCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -315,15 +301,14 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsGetCollection(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsGetCollection(lambdaDB, {
     collectionName: "<value>",
   });
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsGetCollection failed:", res.error);
+    console.log("collectionsGetCollection failed:", res.error);
   }
 }
 
@@ -341,7 +326,7 @@ run();
 
 ### Response
 
-**Promise\<[models.CollectionResponse](../../models/collectionresponse.md)\>**
+**Promise\<[operations.GetCollectionResponse](../../models/operations/getcollectionresponse.md)\>**
 
 ### Errors
 
@@ -355,7 +340,7 @@ run();
 
 ## updateCollection
 
-Configure an collection.
+Configure a collection.
 
 ### Example Usage
 
@@ -367,8 +352,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.updateCollection({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.updateCollection({
     collectionName: "<value>",
     requestBody: {
       indexConfigs: {
@@ -402,7 +386,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsUpdateCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsUpdateCollection.js";
+import { collectionsUpdateCollection } from "@swkim86/lambdadb/funcs/collectionsUpdateCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -411,8 +395,7 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsUpdateCollection(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsUpdateCollection(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       indexConfigs: {
@@ -437,7 +420,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsUpdateCollection failed:", res.error);
+    console.log("collectionsUpdateCollection failed:", res.error);
   }
 }
 
@@ -455,7 +438,7 @@ run();
 
 ### Response
 
-**Promise\<[models.CollectionResponse](../../models/collectionresponse.md)\>**
+**Promise\<[operations.UpdateCollectionResponse](../../models/operations/updatecollectionresponse.md)\>**
 
 ### Errors
 
@@ -470,7 +453,7 @@ run();
 
 ## queryCollection
 
-Search an collection with a query and return the most similar documents.
+Search a collection with a query and return the most similar documents.
 
 ### Example Usage
 
@@ -482,12 +465,15 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.queryCollection({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.queryCollection({
     collectionName: "<value>",
     requestBody: {
       size: 2,
-      query: {},
+      query: {
+        "queryString": {
+          "query": "example-field1:example-value",
+        },
+      },
     },
   });
 
@@ -503,7 +489,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsQueryCollection } from "@swkim86/lambdadb/funcs/projectsCollectionsQueryCollection.js";
+import { collectionsQueryCollection } from "@swkim86/lambdadb/funcs/collectionsQueryCollection.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -512,19 +498,22 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsQueryCollection(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsQueryCollection(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       size: 2,
-      query: {},
+      query: {
+        "queryString": {
+          "query": "example-field1:example-value",
+        },
+      },
     },
   });
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsQueryCollection failed:", res.error);
+    console.log("collectionsQueryCollection failed:", res.error);
   }
 }
 

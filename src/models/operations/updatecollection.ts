@@ -15,14 +15,17 @@ export type UpdateCollectionRequestBody = {
 
 export type UpdateCollectionRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
   requestBody: UpdateCollectionRequestBody;
+};
+
+/**
+ * Updated collection
+ */
+export type UpdateCollectionResponse = {
+  collection: models.CollectionResponse;
 };
 
 /** @internal */
@@ -87,7 +90,6 @@ export const UpdateCollectionRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   RequestBody: z.lazy(() => UpdateCollectionRequestBody$inboundSchema),
 }).transform((v) => {
@@ -98,7 +100,6 @@ export const UpdateCollectionRequest$inboundSchema: z.ZodType<
 
 /** @internal */
 export type UpdateCollectionRequest$Outbound = {
-  projectName: string;
   collectionName: string;
   RequestBody: UpdateCollectionRequestBody$Outbound;
 };
@@ -109,7 +110,6 @@ export const UpdateCollectionRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   UpdateCollectionRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   requestBody: z.lazy(() => UpdateCollectionRequestBody$outboundSchema),
 }).transform((v) => {
@@ -146,5 +146,59 @@ export function updateCollectionRequestFromJSON(
     jsonString,
     (x) => UpdateCollectionRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'UpdateCollectionRequest' from JSON`,
+  );
+}
+
+/** @internal */
+export const UpdateCollectionResponse$inboundSchema: z.ZodType<
+  UpdateCollectionResponse,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  collection: models.CollectionResponse$inboundSchema,
+});
+
+/** @internal */
+export type UpdateCollectionResponse$Outbound = {
+  collection: models.CollectionResponse$Outbound;
+};
+
+/** @internal */
+export const UpdateCollectionResponse$outboundSchema: z.ZodType<
+  UpdateCollectionResponse$Outbound,
+  z.ZodTypeDef,
+  UpdateCollectionResponse
+> = z.object({
+  collection: models.CollectionResponse$outboundSchema,
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace UpdateCollectionResponse$ {
+  /** @deprecated use `UpdateCollectionResponse$inboundSchema` instead. */
+  export const inboundSchema = UpdateCollectionResponse$inboundSchema;
+  /** @deprecated use `UpdateCollectionResponse$outboundSchema` instead. */
+  export const outboundSchema = UpdateCollectionResponse$outboundSchema;
+  /** @deprecated use `UpdateCollectionResponse$Outbound` instead. */
+  export type Outbound = UpdateCollectionResponse$Outbound;
+}
+
+export function updateCollectionResponseToJSON(
+  updateCollectionResponse: UpdateCollectionResponse,
+): string {
+  return JSON.stringify(
+    UpdateCollectionResponse$outboundSchema.parse(updateCollectionResponse),
+  );
+}
+
+export function updateCollectionResponseFromJSON(
+  jsonString: string,
+): SafeParseResult<UpdateCollectionResponse, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => UpdateCollectionResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'UpdateCollectionResponse' from JSON`,
   );
 }

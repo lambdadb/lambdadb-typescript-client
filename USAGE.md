@@ -7,9 +7,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.listcollections({
-    projectName: "<value>",
-  });
+  const result = await lambdaDB.collections.listCollections();
 
   console.log(result);
 }

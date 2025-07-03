@@ -3,13 +3,12 @@
  */
 
 import * as z from "zod";
-import { remap as remap$ } from "../../lib/primitives.js";
 import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
-export type CreateCollectionRequestBody = {
+export type CreateCollectionRequest = {
   /**
    * Collection name must be unique within a project and the supported maximum length is 52.
    */
@@ -21,17 +20,16 @@ export type CreateCollectionRequestBody = {
   sourceProjectApiKey?: string | undefined;
 };
 
-export type CreateCollectionRequest = {
-  /**
-   * Project name.
-   */
-  projectName: string;
-  requestBody: CreateCollectionRequestBody;
+/**
+ * Created collection
+ */
+export type CreateCollectionResponse = {
+  collection: models.CollectionResponse;
 };
 
 /** @internal */
-export const CreateCollectionRequestBody$inboundSchema: z.ZodType<
-  CreateCollectionRequestBody,
+export const CreateCollectionRequest$inboundSchema: z.ZodType<
+  CreateCollectionRequest,
   z.ZodTypeDef,
   unknown
 > = z.object({
@@ -44,7 +42,7 @@ export const CreateCollectionRequestBody$inboundSchema: z.ZodType<
 });
 
 /** @internal */
-export type CreateCollectionRequestBody$Outbound = {
+export type CreateCollectionRequest$Outbound = {
   collectionName: string;
   indexConfigs?: { [k: string]: models.IndexConfigsUnion$Outbound } | undefined;
   sourceProjectName?: string | undefined;
@@ -54,10 +52,10 @@ export type CreateCollectionRequestBody$Outbound = {
 };
 
 /** @internal */
-export const CreateCollectionRequestBody$outboundSchema: z.ZodType<
-  CreateCollectionRequestBody$Outbound,
+export const CreateCollectionRequest$outboundSchema: z.ZodType<
+  CreateCollectionRequest$Outbound,
   z.ZodTypeDef,
-  CreateCollectionRequestBody
+  CreateCollectionRequest
 > = z.object({
   collectionName: z.string(),
   indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).optional(),
@@ -65,73 +63,6 @@ export const CreateCollectionRequestBody$outboundSchema: z.ZodType<
   sourceCollectionName: z.string().optional(),
   sourceDatetime: z.string().optional(),
   sourceProjectApiKey: z.string().optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace CreateCollectionRequestBody$ {
-  /** @deprecated use `CreateCollectionRequestBody$inboundSchema` instead. */
-  export const inboundSchema = CreateCollectionRequestBody$inboundSchema;
-  /** @deprecated use `CreateCollectionRequestBody$outboundSchema` instead. */
-  export const outboundSchema = CreateCollectionRequestBody$outboundSchema;
-  /** @deprecated use `CreateCollectionRequestBody$Outbound` instead. */
-  export type Outbound = CreateCollectionRequestBody$Outbound;
-}
-
-export function createCollectionRequestBodyToJSON(
-  createCollectionRequestBody: CreateCollectionRequestBody,
-): string {
-  return JSON.stringify(
-    CreateCollectionRequestBody$outboundSchema.parse(
-      createCollectionRequestBody,
-    ),
-  );
-}
-
-export function createCollectionRequestBodyFromJSON(
-  jsonString: string,
-): SafeParseResult<CreateCollectionRequestBody, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => CreateCollectionRequestBody$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'CreateCollectionRequestBody' from JSON`,
-  );
-}
-
-/** @internal */
-export const CreateCollectionRequest$inboundSchema: z.ZodType<
-  CreateCollectionRequest,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  projectName: z.string(),
-  RequestBody: z.lazy(() => CreateCollectionRequestBody$inboundSchema),
-}).transform((v) => {
-  return remap$(v, {
-    "RequestBody": "requestBody",
-  });
-});
-
-/** @internal */
-export type CreateCollectionRequest$Outbound = {
-  projectName: string;
-  RequestBody: CreateCollectionRequestBody$Outbound;
-};
-
-/** @internal */
-export const CreateCollectionRequest$outboundSchema: z.ZodType<
-  CreateCollectionRequest$Outbound,
-  z.ZodTypeDef,
-  CreateCollectionRequest
-> = z.object({
-  projectName: z.string(),
-  requestBody: z.lazy(() => CreateCollectionRequestBody$outboundSchema),
-}).transform((v) => {
-  return remap$(v, {
-    requestBody: "RequestBody",
-  });
 });
 
 /**
@@ -162,5 +93,59 @@ export function createCollectionRequestFromJSON(
     jsonString,
     (x) => CreateCollectionRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'CreateCollectionRequest' from JSON`,
+  );
+}
+
+/** @internal */
+export const CreateCollectionResponse$inboundSchema: z.ZodType<
+  CreateCollectionResponse,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  collection: models.CollectionResponse$inboundSchema,
+});
+
+/** @internal */
+export type CreateCollectionResponse$Outbound = {
+  collection: models.CollectionResponse$Outbound;
+};
+
+/** @internal */
+export const CreateCollectionResponse$outboundSchema: z.ZodType<
+  CreateCollectionResponse$Outbound,
+  z.ZodTypeDef,
+  CreateCollectionResponse
+> = z.object({
+  collection: models.CollectionResponse$outboundSchema,
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace CreateCollectionResponse$ {
+  /** @deprecated use `CreateCollectionResponse$inboundSchema` instead. */
+  export const inboundSchema = CreateCollectionResponse$inboundSchema;
+  /** @deprecated use `CreateCollectionResponse$outboundSchema` instead. */
+  export const outboundSchema = CreateCollectionResponse$outboundSchema;
+  /** @deprecated use `CreateCollectionResponse$Outbound` instead. */
+  export type Outbound = CreateCollectionResponse$Outbound;
+}
+
+export function createCollectionResponseToJSON(
+  createCollectionResponse: CreateCollectionResponse,
+): string {
+  return JSON.stringify(
+    CreateCollectionResponse$outboundSchema.parse(createCollectionResponse),
+  );
+}
+
+export function createCollectionResponseFromJSON(
+  jsonString: string,
+): SafeParseResult<CreateCollectionResponse, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => CreateCollectionResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'CreateCollectionResponse' from JSON`,
   );
 }

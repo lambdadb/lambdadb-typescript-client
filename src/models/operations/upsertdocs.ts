@@ -8,20 +8,14 @@ import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
-export type UpsertDocsDoc = {};
-
 export type UpsertDocsRequestBody = {
   /**
    * A list of documents to upsert.
    */
-  docs: Array<UpsertDocsDoc>;
+  docs: Array<{ [k: string]: any }>;
 };
 
 export type UpsertDocsRequest = {
-  /**
-   * Project name.
-   */
-  projectName: string;
   /**
    * Collection name.
    */
@@ -29,69 +23,18 @@ export type UpsertDocsRequest = {
   requestBody: UpsertDocsRequestBody;
 };
 
-/**
- * Upsert request accepted.
- */
-export type UpsertDocsResponse = {
-  message?: string | undefined;
-};
-
-/** @internal */
-export const UpsertDocsDoc$inboundSchema: z.ZodType<
-  UpsertDocsDoc,
-  z.ZodTypeDef,
-  unknown
-> = z.object({});
-
-/** @internal */
-export type UpsertDocsDoc$Outbound = {};
-
-/** @internal */
-export const UpsertDocsDoc$outboundSchema: z.ZodType<
-  UpsertDocsDoc$Outbound,
-  z.ZodTypeDef,
-  UpsertDocsDoc
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace UpsertDocsDoc$ {
-  /** @deprecated use `UpsertDocsDoc$inboundSchema` instead. */
-  export const inboundSchema = UpsertDocsDoc$inboundSchema;
-  /** @deprecated use `UpsertDocsDoc$outboundSchema` instead. */
-  export const outboundSchema = UpsertDocsDoc$outboundSchema;
-  /** @deprecated use `UpsertDocsDoc$Outbound` instead. */
-  export type Outbound = UpsertDocsDoc$Outbound;
-}
-
-export function upsertDocsDocToJSON(upsertDocsDoc: UpsertDocsDoc): string {
-  return JSON.stringify(UpsertDocsDoc$outboundSchema.parse(upsertDocsDoc));
-}
-
-export function upsertDocsDocFromJSON(
-  jsonString: string,
-): SafeParseResult<UpsertDocsDoc, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => UpsertDocsDoc$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'UpsertDocsDoc' from JSON`,
-  );
-}
-
 /** @internal */
 export const UpsertDocsRequestBody$inboundSchema: z.ZodType<
   UpsertDocsRequestBody,
   z.ZodTypeDef,
   unknown
 > = z.object({
-  docs: z.array(z.lazy(() => UpsertDocsDoc$inboundSchema)),
+  docs: z.array(z.record(z.any())),
 });
 
 /** @internal */
 export type UpsertDocsRequestBody$Outbound = {
-  docs: Array<UpsertDocsDoc$Outbound>;
+  docs: Array<{ [k: string]: any }>;
 };
 
 /** @internal */
@@ -100,7 +43,7 @@ export const UpsertDocsRequestBody$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   UpsertDocsRequestBody
 > = z.object({
-  docs: z.array(z.lazy(() => UpsertDocsDoc$outboundSchema)),
+  docs: z.array(z.record(z.any())),
 });
 
 /**
@@ -140,7 +83,6 @@ export const UpsertDocsRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   RequestBody: z.lazy(() => UpsertDocsRequestBody$inboundSchema),
 }).transform((v) => {
@@ -151,7 +93,6 @@ export const UpsertDocsRequest$inboundSchema: z.ZodType<
 
 /** @internal */
 export type UpsertDocsRequest$Outbound = {
-  projectName: string;
   collectionName: string;
   RequestBody: UpsertDocsRequestBody$Outbound;
 };
@@ -162,7 +103,6 @@ export const UpsertDocsRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   UpsertDocsRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   requestBody: z.lazy(() => UpsertDocsRequestBody$outboundSchema),
 }).transform((v) => {
@@ -199,59 +139,5 @@ export function upsertDocsRequestFromJSON(
     jsonString,
     (x) => UpsertDocsRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'UpsertDocsRequest' from JSON`,
-  );
-}
-
-/** @internal */
-export const UpsertDocsResponse$inboundSchema: z.ZodType<
-  UpsertDocsResponse,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  message: z.string().optional(),
-});
-
-/** @internal */
-export type UpsertDocsResponse$Outbound = {
-  message?: string | undefined;
-};
-
-/** @internal */
-export const UpsertDocsResponse$outboundSchema: z.ZodType<
-  UpsertDocsResponse$Outbound,
-  z.ZodTypeDef,
-  UpsertDocsResponse
-> = z.object({
-  message: z.string().optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace UpsertDocsResponse$ {
-  /** @deprecated use `UpsertDocsResponse$inboundSchema` instead. */
-  export const inboundSchema = UpsertDocsResponse$inboundSchema;
-  /** @deprecated use `UpsertDocsResponse$outboundSchema` instead. */
-  export const outboundSchema = UpsertDocsResponse$outboundSchema;
-  /** @deprecated use `UpsertDocsResponse$Outbound` instead. */
-  export type Outbound = UpsertDocsResponse$Outbound;
-}
-
-export function upsertDocsResponseToJSON(
-  upsertDocsResponse: UpsertDocsResponse,
-): string {
-  return JSON.stringify(
-    UpsertDocsResponse$outboundSchema.parse(upsertDocsResponse),
-  );
-}
-
-export function upsertDocsResponseFromJSON(
-  jsonString: string,
-): SafeParseResult<UpsertDocsResponse, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => UpsertDocsResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'UpsertDocsResponse' from JSON`,
   );
 }

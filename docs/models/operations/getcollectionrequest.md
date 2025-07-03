@@ -6,7 +6,6 @@
 import { GetCollectionRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: GetCollectionRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
 };
 ```
@@ -15,5 +14,4 @@ let value: GetCollectionRequest = {
 
 | Field              | Type               | Required           | Description        |
 | ------------------ | ------------------ | ------------------ | ------------------ |
-| `projectName`      | *string*           | :heavy_check_mark: | Project name.      |
 | `collectionName`   | *string*           | :heavy_check_mark: | Collection name.   |

@@ -8,124 +8,63 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
-export type ListcollectionsRequest = {
-  /**
-   * Project name.
-   */
-  projectName: string;
-};
-
 /**
  * A list of collections matched with a projectName.
  */
-export type ListcollectionsResponse = {
-  collections?: Array<models.CollectionResponse> | undefined;
+export type ListCollectionsResponse = {
+  collections: Array<models.CollectionResponse>;
 };
 
 /** @internal */
-export const ListcollectionsRequest$inboundSchema: z.ZodType<
-  ListcollectionsRequest,
+export const ListCollectionsResponse$inboundSchema: z.ZodType<
+  ListCollectionsResponse,
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
+  collections: z.array(models.CollectionResponse$inboundSchema),
 });
 
 /** @internal */
-export type ListcollectionsRequest$Outbound = {
-  projectName: string;
+export type ListCollectionsResponse$Outbound = {
+  collections: Array<models.CollectionResponse$Outbound>;
 };
 
 /** @internal */
-export const ListcollectionsRequest$outboundSchema: z.ZodType<
-  ListcollectionsRequest$Outbound,
+export const ListCollectionsResponse$outboundSchema: z.ZodType<
+  ListCollectionsResponse$Outbound,
   z.ZodTypeDef,
-  ListcollectionsRequest
+  ListCollectionsResponse
 > = z.object({
-  projectName: z.string(),
+  collections: z.array(models.CollectionResponse$outboundSchema),
 });
 
 /**
  * @internal
  * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
  */
-export namespace ListcollectionsRequest$ {
-  /** @deprecated use `ListcollectionsRequest$inboundSchema` instead. */
-  export const inboundSchema = ListcollectionsRequest$inboundSchema;
-  /** @deprecated use `ListcollectionsRequest$outboundSchema` instead. */
-  export const outboundSchema = ListcollectionsRequest$outboundSchema;
-  /** @deprecated use `ListcollectionsRequest$Outbound` instead. */
-  export type Outbound = ListcollectionsRequest$Outbound;
+export namespace ListCollectionsResponse$ {
+  /** @deprecated use `ListCollectionsResponse$inboundSchema` instead. */
+  export const inboundSchema = ListCollectionsResponse$inboundSchema;
+  /** @deprecated use `ListCollectionsResponse$outboundSchema` instead. */
+  export const outboundSchema = ListCollectionsResponse$outboundSchema;
+  /** @deprecated use `ListCollectionsResponse$Outbound` instead. */
+  export type Outbound = ListCollectionsResponse$Outbound;
 }
 
-export function listcollectionsRequestToJSON(
-  listcollectionsRequest: ListcollectionsRequest,
+export function listCollectionsResponseToJSON(
+  listCollectionsResponse: ListCollectionsResponse,
 ): string {
   return JSON.stringify(
-    ListcollectionsRequest$outboundSchema.parse(listcollectionsRequest),
+    ListCollectionsResponse$outboundSchema.parse(listCollectionsResponse),
   );
 }
 
-export function listcollectionsRequestFromJSON(
+export function listCollectionsResponseFromJSON(
   jsonString: string,
-): SafeParseResult<ListcollectionsRequest, SDKValidationError> {
+): SafeParseResult<ListCollectionsResponse, SDKValidationError> {
   return safeParse(
     jsonString,
-    (x) => ListcollectionsRequest$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'ListcollectionsRequest' from JSON`,
-  );
-}
-
-/** @internal */
-export const ListcollectionsResponse$inboundSchema: z.ZodType<
-  ListcollectionsResponse,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  collections: z.array(models.CollectionResponse$inboundSchema).optional(),
-});
-
-/** @internal */
-export type ListcollectionsResponse$Outbound = {
-  collections?: Array<models.CollectionResponse$Outbound> | undefined;
-};
-
-/** @internal */
-export const ListcollectionsResponse$outboundSchema: z.ZodType<
-  ListcollectionsResponse$Outbound,
-  z.ZodTypeDef,
-  ListcollectionsResponse
-> = z.object({
-  collections: z.array(models.CollectionResponse$outboundSchema).optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace ListcollectionsResponse$ {
-  /** @deprecated use `ListcollectionsResponse$inboundSchema` instead. */
-  export const inboundSchema = ListcollectionsResponse$inboundSchema;
-  /** @deprecated use `ListcollectionsResponse$outboundSchema` instead. */
-  export const outboundSchema = ListcollectionsResponse$outboundSchema;
-  /** @deprecated use `ListcollectionsResponse$Outbound` instead. */
-  export type Outbound = ListcollectionsResponse$Outbound;
-}
-
-export function listcollectionsResponseToJSON(
-  listcollectionsResponse: ListcollectionsResponse,
-): string {
-  return JSON.stringify(
-    ListcollectionsResponse$outboundSchema.parse(listcollectionsResponse),
-  );
-}
-
-export function listcollectionsResponseFromJSON(
-  jsonString: string,
-): SafeParseResult<ListcollectionsResponse, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => ListcollectionsResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'ListcollectionsResponse' from JSON`,
+    (x) => ListCollectionsResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'ListCollectionsResponse' from JSON`,
   );
 }

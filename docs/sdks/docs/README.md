@@ -1,19 +1,20 @@
 # Docs
-(*projects.collections.docs*)
+(*collections.docs*)
 
 ## Overview
 
 ### Available Operations
 
-* [upsertDocs](#upsertdocs) - Upsert documents into an collection. Note that the maximum supported payload size is 6MB.
+* [upsertDocs](#upsertdocs) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 * [getBulkUpsertDocs](#getbulkupsertdocs) - Request required info to upload documents.
-* [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents into an collection. Note that the maximum supported object size is 200MB.
-* [deleteDocs](#deletedocs) - Delete documents by document IDs or query filter from an collection.
-* [fetchDocs](#fetchdocs) - Lookup and return documents by document IDs from an collection.
+* [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+* [updateDocs](#updatedocs) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
+* [deleteDocs](#deletedocs) - Delete documents by document IDs or query filter from a collection.
+* [fetchDocs](#fetchdocs) - Lookup and return documents by document IDs from a collection.
 
 ## upsertDocs
 
-Upsert documents into an collection. Note that the maximum supported payload size is 6MB.
+Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 
 ### Example Usage
 
@@ -25,13 +26,30 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.docs.upsertDocs({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.docs.upsertDocs({
     collectionName: "<value>",
     requestBody: {
       docs: [
-        {},
-        {},
+        {
+          "example-doc1": {
+            "example-field1": "example-value1",
+            "example-field2": [
+              0.1,
+              0.2,
+              0.3,
+            ],
+          },
+        },
+        {
+          "example-doc2": {
+            "example-field1": "example-value2",
+            "example-field2": [
+              0.4,
+              0.5,
+              0.6,
+            ],
+          },
+        },
       ],
     },
   });
@@ -48,7 +66,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDocsUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsUpsertDocs.js";
+import { collectionsDocsUpsertDocs } from "@swkim86/lambdadb/funcs/collectionsDocsUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -57,13 +75,30 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsUpsertDocs(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDocsUpsertDocs(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       docs: [
-        {},
-        {},
+        {
+          "example-doc1": {
+            "example-field1": "example-value1",
+            "example-field2": [
+              0.1,
+              0.2,
+              0.3,
+            ],
+          },
+        },
+        {
+          "example-doc2": {
+            "example-field1": "example-value2",
+            "example-field2": [
+              0.4,
+              0.5,
+              0.6,
+            ],
+          },
+        },
       ],
     },
   });
@@ -71,7 +106,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDocsUpsertDocs failed:", res.error);
+    console.log("collectionsDocsUpsertDocs failed:", res.error);
   }
 }
 
@@ -89,7 +124,7 @@ run();
 
 ### Response
 
-**Promise\<[operations.UpsertDocsResponse](../../models/operations/upsertdocsresponse.md)\>**
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
 
 ### Errors
 
@@ -116,8 +151,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.docs.getBulkUpsertDocs({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.docs.getBulkUpsertDocs({
     collectionName: "<value>",
   });
 
@@ -133,7 +167,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDocsGetBulkUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsGetBulkUpsertDocs.js";
+import { collectionsDocsGetBulkUpsertDocs } from "@swkim86/lambdadb/funcs/collectionsDocsGetBulkUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -142,15 +176,14 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsGetBulkUpsertDocs(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDocsGetBulkUpsertDocs(lambdaDB, {
     collectionName: "<value>",
   });
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDocsGetBulkUpsertDocs failed:", res.error);
+    console.log("collectionsDocsGetBulkUpsertDocs failed:", res.error);
   }
 }
 
@@ -182,7 +215,7 @@ run();
 
 ## bulkUpsertDocs
 
-Bulk upsert documents into an collection. Note that the maximum supported object size is 200MB.
+Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
 
 ### Example Usage
 
@@ -194,8 +227,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.docs.bulkUpsertDocs({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.docs.bulkUpsertDocs({
     collectionName: "<value>",
     requestBody: {
       objectKey: "example-object-key",
@@ -214,7 +246,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDocsBulkUpsertDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsBulkUpsertDocs.js";
+import { collectionsDocsBulkUpsertDocs } from "@swkim86/lambdadb/funcs/collectionsDocsBulkUpsertDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -223,8 +255,7 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsBulkUpsertDocs(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDocsBulkUpsertDocs(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       objectKey: "example-object-key",
@@ -234,7 +265,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDocsBulkUpsertDocs failed:", res.error);
+    console.log("collectionsDocsBulkUpsertDocs failed:", res.error);
   }
 }
 
@@ -252,7 +283,136 @@ run();
 
 ### Response
 
-**Promise\<[operations.BulkUpsertDocsResponse](../../models/operations/bulkupsertdocsresponse.md)\>**
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
+
+### Errors
+
+| Error Type                   | Status Code                  | Content Type                 |
+| ---------------------------- | ---------------------------- | ---------------------------- |
+| errors.BadRequestError       | 400                          | application/json             |
+| errors.UnauthenticatedError  | 401                          | application/json             |
+| errors.ResourceNotFoundError | 404                          | application/json             |
+| errors.TooManyRequestsError  | 429                          | application/json             |
+| errors.InternalServerError   | 500                          | application/json             |
+| errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
+
+## updateDocs
+
+Update documents in a collection. Note that the maximum supported payload size is 6MB.
+
+### Example Usage
+
+```typescript
+import { LambdaDB } from "@swkim86/lambdadb";
+
+const lambdaDB = new LambdaDB({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+
+async function run() {
+  const result = await lambdaDB.collections.docs.updateDocs({
+    collectionName: "<value>",
+    requestBody: {
+      docs: [
+        {
+          "example-doc1": {
+            "id": "example-id1",
+            "example-field1": "example-value1",
+            "example-field2": [
+              0.1,
+              0.2,
+              0.3,
+            ],
+          },
+        },
+        {
+          "example-doc2": {
+            "id": "example-id2",
+            "example-field1": "example-value2",
+            "example-field2": [
+              0.4,
+              0.5,
+              0.6,
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  console.log(result);
+}
+
+run();
+```
+
+### Standalone function
+
+The standalone function version of this method:
+
+```typescript
+import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
+import { collectionsDocsUpdateDocs } from "@swkim86/lambdadb/funcs/collectionsDocsUpdateDocs.js";
+
+// Use `LambdaDBCore` for best tree-shaking performance.
+// You can create one instance of it to use across an application.
+const lambdaDB = new LambdaDBCore({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+
+async function run() {
+  const res = await collectionsDocsUpdateDocs(lambdaDB, {
+    collectionName: "<value>",
+    requestBody: {
+      docs: [
+        {
+          "example-doc1": {
+            "id": "example-id1",
+            "example-field1": "example-value1",
+            "example-field2": [
+              0.1,
+              0.2,
+              0.3,
+            ],
+          },
+        },
+        {
+          "example-doc2": {
+            "id": "example-id2",
+            "example-field1": "example-value2",
+            "example-field2": [
+              0.4,
+              0.5,
+              0.6,
+            ],
+          },
+        },
+      ],
+    },
+  });
+  if (res.ok) {
+    const { value: result } = res;
+    console.log(result);
+  } else {
+    console.log("collectionsDocsUpdateDocs failed:", res.error);
+  }
+}
+
+run();
+```
+
+### Parameters
+
+| Parameter                                                                                                                                                                      | Type                                                                                                                                                                           | Required                                                                                                                                                                       | Description                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `request`                                                                                                                                                                      | [operations.UpdateDocsRequest](../../models/operations/updatedocsrequest.md)                                                                                                   | :heavy_check_mark:                                                                                                                                                             | The request object to use for the request.                                                                                                                                     |
+| `options`                                                                                                                                                                      | RequestOptions                                                                                                                                                                 | :heavy_minus_sign:                                                                                                                                                             | Used to set various options for making HTTP requests.                                                                                                                          |
+| `options.fetchOptions`                                                                                                                                                         | [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request#options)                                                                                        | :heavy_minus_sign:                                                                                                                                                             | Options that are passed to the underlying HTTP request. This can be used to inject extra headers for examples. All `Request` options, except `method` and `body`, are allowed. |
+| `options.retries`                                                                                                                                                              | [RetryConfig](../../lib/utils/retryconfig.md)                                                                                                                                  | :heavy_minus_sign:                                                                                                                                                             | Enables retrying HTTP requests under certain failure conditions.                                                                                                               |
+
+### Response
+
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
 
 ### Errors
 
@@ -267,7 +427,7 @@ run();
 
 ## deleteDocs
 
-Delete documents by document IDs or query filter from an collection.
+Delete documents by document IDs or query filter from a collection.
 
 ### Example Usage
 
@@ -279,8 +439,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.docs.deleteDocs({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.docs.deleteDocs({
     collectionName: "<value>",
     requestBody: {
       ids: [
@@ -302,7 +461,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDocsDeleteDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsDeleteDocs.js";
+import { collectionsDocsDeleteDocs } from "@swkim86/lambdadb/funcs/collectionsDocsDeleteDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -311,8 +470,7 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsDeleteDocs(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDocsDeleteDocs(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       ids: [
@@ -325,7 +483,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDocsDeleteDocs failed:", res.error);
+    console.log("collectionsDocsDeleteDocs failed:", res.error);
   }
 }
 
@@ -343,7 +501,7 @@ run();
 
 ### Response
 
-**Promise\<[operations.DeleteDocsResponse](../../models/operations/deletedocsresponse.md)\>**
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
 
 ### Errors
 
@@ -358,7 +516,7 @@ run();
 
 ## fetchDocs
 
-Lookup and return documents by document IDs from an collection.
+Lookup and return documents by document IDs from a collection.
 
 ### Example Usage
 
@@ -370,8 +528,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.projects.collections.docs.fetchDocs({
-    projectName: "<value>",
+  const result = await lambdaDB.collections.docs.fetchDocs({
     collectionName: "<value>",
     requestBody: {
       ids: [
@@ -393,7 +550,7 @@ The standalone function version of this method:
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsDocsFetchDocs } from "@swkim86/lambdadb/funcs/projectsCollectionsDocsFetchDocs.js";
+import { collectionsDocsFetchDocs } from "@swkim86/lambdadb/funcs/collectionsDocsFetchDocs.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -402,8 +559,7 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsDocsFetchDocs(lambdaDB, {
-    projectName: "<value>",
+  const res = await collectionsDocsFetchDocs(lambdaDB, {
     collectionName: "<value>",
     requestBody: {
       ids: [
@@ -416,7 +572,7 @@ async function run() {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsDocsFetchDocs failed:", res.error);
+    console.log("collectionsDocsFetchDocs failed:", res.error);
   }
 }
 

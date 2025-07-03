@@ -10,7 +10,7 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export type FetchDocsRequestBody = {
   /**
-   * A list of document IDs to fetch. Note that the maximum number of document IDs is 1000.
+   * A list of document IDs to fetch. Note that the maximum number of document IDs is 100.
    */
   ids: Array<string>;
   /**
@@ -25,21 +25,15 @@ export type FetchDocsRequestBody = {
 
 export type FetchDocsRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
   requestBody: FetchDocsRequestBody;
 };
 
-export type FetchDocsDocDoc = {};
-
 export type FetchDocsDoc = {
-  collection?: string | undefined;
-  doc?: FetchDocsDocDoc | undefined;
+  collection: string;
+  doc: { [k: string]: any };
 };
 
 /**
@@ -49,12 +43,12 @@ export type FetchDocsResponse = {
   /**
    * Total number of documents returned.
    */
-  total?: number | undefined;
+  total: number;
   /**
    * Elapsed time in milliseconds.
    */
-  took?: number | undefined;
-  docs?: Array<FetchDocsDoc> | undefined;
+  took: number;
+  docs: Array<FetchDocsDoc>;
 };
 
 /** @internal */
@@ -123,7 +117,6 @@ export const FetchDocsRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   RequestBody: z.lazy(() => FetchDocsRequestBody$inboundSchema),
 }).transform((v) => {
@@ -134,7 +127,6 @@ export const FetchDocsRequest$inboundSchema: z.ZodType<
 
 /** @internal */
 export type FetchDocsRequest$Outbound = {
-  projectName: string;
   collectionName: string;
   RequestBody: FetchDocsRequestBody$Outbound;
 };
@@ -145,7 +137,6 @@ export const FetchDocsRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   FetchDocsRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   requestBody: z.lazy(() => FetchDocsRequestBody$outboundSchema),
 }).transform((v) => {
@@ -186,65 +177,19 @@ export function fetchDocsRequestFromJSON(
 }
 
 /** @internal */
-export const FetchDocsDocDoc$inboundSchema: z.ZodType<
-  FetchDocsDocDoc,
-  z.ZodTypeDef,
-  unknown
-> = z.object({});
-
-/** @internal */
-export type FetchDocsDocDoc$Outbound = {};
-
-/** @internal */
-export const FetchDocsDocDoc$outboundSchema: z.ZodType<
-  FetchDocsDocDoc$Outbound,
-  z.ZodTypeDef,
-  FetchDocsDocDoc
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace FetchDocsDocDoc$ {
-  /** @deprecated use `FetchDocsDocDoc$inboundSchema` instead. */
-  export const inboundSchema = FetchDocsDocDoc$inboundSchema;
-  /** @deprecated use `FetchDocsDocDoc$outboundSchema` instead. */
-  export const outboundSchema = FetchDocsDocDoc$outboundSchema;
-  /** @deprecated use `FetchDocsDocDoc$Outbound` instead. */
-  export type Outbound = FetchDocsDocDoc$Outbound;
-}
-
-export function fetchDocsDocDocToJSON(
-  fetchDocsDocDoc: FetchDocsDocDoc,
-): string {
-  return JSON.stringify(FetchDocsDocDoc$outboundSchema.parse(fetchDocsDocDoc));
-}
-
-export function fetchDocsDocDocFromJSON(
-  jsonString: string,
-): SafeParseResult<FetchDocsDocDoc, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => FetchDocsDocDoc$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'FetchDocsDocDoc' from JSON`,
-  );
-}
-
-/** @internal */
 export const FetchDocsDoc$inboundSchema: z.ZodType<
   FetchDocsDoc,
   z.ZodTypeDef,
   unknown
 > = z.object({
-  collection: z.string().optional(),
-  doc: z.lazy(() => FetchDocsDocDoc$inboundSchema).optional(),
+  collection: z.string(),
+  doc: z.record(z.any()),
 });
 
 /** @internal */
 export type FetchDocsDoc$Outbound = {
-  collection?: string | undefined;
-  doc?: FetchDocsDocDoc$Outbound | undefined;
+  collection: string;
+  doc: { [k: string]: any };
 };
 
 /** @internal */
@@ -253,8 +198,8 @@ export const FetchDocsDoc$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   FetchDocsDoc
 > = z.object({
-  collection: z.string().optional(),
-  doc: z.lazy(() => FetchDocsDocDoc$outboundSchema).optional(),
+  collection: z.string(),
+  doc: z.record(z.any()),
 });
 
 /**
@@ -290,16 +235,16 @@ export const FetchDocsResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  total: z.number().int().optional(),
-  took: z.number().int().optional(),
-  docs: z.array(z.lazy(() => FetchDocsDoc$inboundSchema)).optional(),
+  total: z.number().int(),
+  took: z.number().int(),
+  docs: z.array(z.lazy(() => FetchDocsDoc$inboundSchema)),
 });
 
 /** @internal */
 export type FetchDocsResponse$Outbound = {
-  total?: number | undefined;
-  took?: number | undefined;
-  docs?: Array<FetchDocsDoc$Outbound> | undefined;
+  total: number;
+  took: number;
+  docs: Array<FetchDocsDoc$Outbound>;
 };
 
 /** @internal */
@@ -308,9 +253,9 @@ export const FetchDocsResponse$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   FetchDocsResponse
 > = z.object({
-  total: z.number().int().optional(),
-  took: z.number().int().optional(),
-  docs: z.array(z.lazy(() => FetchDocsDoc$outboundSchema)).optional(),
+  total: z.number().int(),
+  took: z.number().int(),
+  docs: z.array(z.lazy(() => FetchDocsDoc$outboundSchema)),
 });
 
 /**

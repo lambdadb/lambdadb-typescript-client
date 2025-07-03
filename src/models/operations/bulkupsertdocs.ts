@@ -17,21 +17,10 @@ export type BulkUpsertDocsRequestBody = {
 
 export type BulkUpsertDocsRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
   requestBody: BulkUpsertDocsRequestBody;
-};
-
-/**
- * Bulk upsert request accepted.
- */
-export type BulkUpsertDocsResponse = {
-  message?: string | undefined;
 };
 
 /** @internal */
@@ -94,7 +83,6 @@ export const BulkUpsertDocsRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   RequestBody: z.lazy(() => BulkUpsertDocsRequestBody$inboundSchema),
 }).transform((v) => {
@@ -105,7 +93,6 @@ export const BulkUpsertDocsRequest$inboundSchema: z.ZodType<
 
 /** @internal */
 export type BulkUpsertDocsRequest$Outbound = {
-  projectName: string;
   collectionName: string;
   RequestBody: BulkUpsertDocsRequestBody$Outbound;
 };
@@ -116,7 +103,6 @@ export const BulkUpsertDocsRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   BulkUpsertDocsRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   requestBody: z.lazy(() => BulkUpsertDocsRequestBody$outboundSchema),
 }).transform((v) => {
@@ -153,59 +139,5 @@ export function bulkUpsertDocsRequestFromJSON(
     jsonString,
     (x) => BulkUpsertDocsRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'BulkUpsertDocsRequest' from JSON`,
-  );
-}
-
-/** @internal */
-export const BulkUpsertDocsResponse$inboundSchema: z.ZodType<
-  BulkUpsertDocsResponse,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  message: z.string().optional(),
-});
-
-/** @internal */
-export type BulkUpsertDocsResponse$Outbound = {
-  message?: string | undefined;
-};
-
-/** @internal */
-export const BulkUpsertDocsResponse$outboundSchema: z.ZodType<
-  BulkUpsertDocsResponse$Outbound,
-  z.ZodTypeDef,
-  BulkUpsertDocsResponse
-> = z.object({
-  message: z.string().optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace BulkUpsertDocsResponse$ {
-  /** @deprecated use `BulkUpsertDocsResponse$inboundSchema` instead. */
-  export const inboundSchema = BulkUpsertDocsResponse$inboundSchema;
-  /** @deprecated use `BulkUpsertDocsResponse$outboundSchema` instead. */
-  export const outboundSchema = BulkUpsertDocsResponse$outboundSchema;
-  /** @deprecated use `BulkUpsertDocsResponse$Outbound` instead. */
-  export type Outbound = BulkUpsertDocsResponse$Outbound;
-}
-
-export function bulkUpsertDocsResponseToJSON(
-  bulkUpsertDocsResponse: BulkUpsertDocsResponse,
-): string {
-  return JSON.stringify(
-    BulkUpsertDocsResponse$outboundSchema.parse(bulkUpsertDocsResponse),
-  );
-}
-
-export function bulkUpsertDocsResponseFromJSON(
-  jsonString: string,
-): SafeParseResult<BulkUpsertDocsResponse, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => BulkUpsertDocsResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'BulkUpsertDocsResponse' from JSON`,
   );
 }

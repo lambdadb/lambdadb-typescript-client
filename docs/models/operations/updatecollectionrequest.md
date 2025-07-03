@@ -6,7 +6,6 @@
 import { UpdateCollectionRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: UpdateCollectionRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
 };
 ```
@@ -15,6 +14,5 @@ let value: UpdateCollectionRequest = {
 
 | Field                                                                                            | Type                                                                                             | Required                                                                                         | Description                                                                                      |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `projectName`                                                                                    | *string*                                                                                         | :heavy_check_mark:                                                                               | Project name.                                                                                    |
 | `collectionName`                                                                                 | *string*                                                                                         | :heavy_check_mark:                                                                               | Collection name.                                                                                 |
 | `requestBody`                                                                                    | [operations.UpdateCollectionRequestBody](../../models/operations/updatecollectionrequestbody.md) | :heavy_check_mark:                                                                               | N/A                                                                                              |

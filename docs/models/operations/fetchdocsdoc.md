@@ -5,12 +5,18 @@
 ```typescript
 import { FetchDocsDoc } from "@swkim86/lambdadb/models/operations";
 
-let value: FetchDocsDoc = {};
+let value: FetchDocsDoc = {
+  collection: "<value>",
+  doc: {
+    "key": "<value>",
+    "key1": "<value>",
+  },
+};
 ```
 
 ## Fields
 
-| Field                                                                    | Type                                                                     | Required                                                                 | Description                                                              |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `collection`                                                             | *string*                                                                 | :heavy_minus_sign:                                                       | N/A                                                                      |
-| `doc`                                                                    | [operations.FetchDocsDocDoc](../../models/operations/fetchdocsdocdoc.md) | :heavy_minus_sign:                                                       | N/A                                                                      |
+| Field                 | Type                  | Required              | Description           |
+| --------------------- | --------------------- | --------------------- | --------------------- |
+| `collection`          | *string*              | :heavy_check_mark:    | N/A                   |
+| `doc`                 | Record<string, *any*> | :heavy_check_mark:    | N/A                   |

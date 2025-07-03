@@ -10,10 +10,6 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export type GetBulkUpsertDocsRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
@@ -48,7 +44,7 @@ export type GetBulkUpsertDocsResponse = {
   /**
    * Presigned URL.
    */
-  url?: string | undefined;
+  url: string;
   /**
    * Content type that must be specified when uploading documents.
    */
@@ -60,7 +56,7 @@ export type GetBulkUpsertDocsResponse = {
   /**
    * Object key that must be specified when uploading documents.
    */
-  objectKey?: string | undefined;
+  objectKey: string;
   /**
    * Object size limit in bytes.
    */
@@ -73,13 +69,11 @@ export const GetBulkUpsertDocsRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
 /** @internal */
 export type GetBulkUpsertDocsRequest$Outbound = {
-  projectName: string;
   collectionName: string;
 };
 
@@ -89,7 +83,6 @@ export const GetBulkUpsertDocsRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   GetBulkUpsertDocsRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
@@ -169,19 +162,19 @@ export const GetBulkUpsertDocsResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  url: z.string().optional(),
+  url: z.string(),
   type: Type$inboundSchema.default("application/json"),
   httpMethod: HttpMethod$inboundSchema.default("PUT"),
-  objectKey: z.string().optional(),
+  objectKey: z.string(),
   sizeLimitBytes: z.number().int().default(209715200),
 });
 
 /** @internal */
 export type GetBulkUpsertDocsResponse$Outbound = {
-  url?: string | undefined;
+  url: string;
   type: string;
   httpMethod: string;
-  objectKey?: string | undefined;
+  objectKey: string;
   sizeLimitBytes: number;
 };
 
@@ -191,10 +184,10 @@ export const GetBulkUpsertDocsResponse$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   GetBulkUpsertDocsResponse
 > = z.object({
-  url: z.string().optional(),
+  url: z.string(),
   type: Type$outboundSchema.default("application/json"),
   httpMethod: HttpMethod$outboundSchema.default("PUT"),
-  objectKey: z.string().optional(),
+  objectKey: z.string(),
   sizeLimitBytes: z.number().int().default(209715200),
 });
 

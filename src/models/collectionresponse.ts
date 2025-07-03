@@ -22,16 +22,16 @@ export type CollectionResponse = {
   /**
    * Project name.
    */
-  projectName?: string | undefined;
+  projectName: string;
   /**
    * Collection name.
    */
-  collectionName?: string | undefined;
-  indexConfigs?: { [k: string]: IndexConfigsUnion } | undefined;
+  collectionName: string;
+  indexConfigs: { [k: string]: IndexConfigsUnion };
   /**
    * Total number of documents.
    */
-  numDocs?: number | undefined;
+  numDocs: number;
   /**
    * Source project name.
    */
@@ -47,7 +47,7 @@ export type CollectionResponse = {
   /**
    * Status
    */
-  collectionStatus?: Status | undefined;
+  collectionStatus: Status;
 };
 
 /** @internal */
@@ -56,26 +56,26 @@ export const CollectionResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string().optional(),
-  collectionName: z.string().optional(),
-  indexConfigs: z.record(IndexConfigsUnion$inboundSchema).optional(),
-  numDocs: z.number().int().optional(),
+  projectName: z.string(),
+  collectionName: z.string(),
+  indexConfigs: z.record(IndexConfigsUnion$inboundSchema),
+  numDocs: z.number().int(),
   sourceProjectName: z.string().optional(),
   sourceCollectionName: z.string().optional(),
   sourceCollectionVersionId: z.string().optional(),
-  collectionStatus: Status$inboundSchema.optional(),
+  collectionStatus: Status$inboundSchema,
 });
 
 /** @internal */
 export type CollectionResponse$Outbound = {
-  projectName?: string | undefined;
-  collectionName?: string | undefined;
-  indexConfigs?: { [k: string]: IndexConfigsUnion$Outbound } | undefined;
-  numDocs?: number | undefined;
+  projectName: string;
+  collectionName: string;
+  indexConfigs: { [k: string]: IndexConfigsUnion$Outbound };
+  numDocs: number;
   sourceProjectName?: string | undefined;
   sourceCollectionName?: string | undefined;
   sourceCollectionVersionId?: string | undefined;
-  collectionStatus?: string | undefined;
+  collectionStatus: string;
 };
 
 /** @internal */
@@ -84,14 +84,14 @@ export const CollectionResponse$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   CollectionResponse
 > = z.object({
-  projectName: z.string().optional(),
-  collectionName: z.string().optional(),
-  indexConfigs: z.record(IndexConfigsUnion$outboundSchema).optional(),
-  numDocs: z.number().int().optional(),
+  projectName: z.string(),
+  collectionName: z.string(),
+  indexConfigs: z.record(IndexConfigsUnion$outboundSchema),
+  numDocs: z.number().int(),
   sourceProjectName: z.string().optional(),
   sourceCollectionName: z.string().optional(),
   sourceCollectionVersionId: z.string().optional(),
-  collectionStatus: Status$outboundSchema.optional(),
+  collectionStatus: Status$outboundSchema,
 });
 
 /**

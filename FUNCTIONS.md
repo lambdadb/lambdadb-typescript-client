@@ -20,7 +20,7 @@ specific category of applications.
 
 ```typescript
 import { LambdaDBCore } from "@swkim86/lambdadb/core.js";
-import { projectsCollectionsListcollections } from "@swkim86/lambdadb/funcs/projectsCollectionsListcollections.js";
+import { collectionsListCollections } from "@swkim86/lambdadb/funcs/collectionsListCollections.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -29,14 +29,12 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await projectsCollectionsListcollections(lambdaDB, {
-    projectName: "<value>",
-  });
+  const res = await collectionsListCollections(lambdaDB);
   if (res.ok) {
     const { value: result } = res;
     console.log(result);
   } else {
-    console.log("projectsCollectionsListcollections failed:", res.error);
+    console.log("collectionsListCollections failed:", res.error);
   }
 }
 

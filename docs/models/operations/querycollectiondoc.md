@@ -5,13 +5,17 @@
 ```typescript
 import { QueryCollectionDoc } from "@swkim86/lambdadb/models/operations";
 
-let value: QueryCollectionDoc = {};
+let value: QueryCollectionDoc = {
+  collection: "<value>",
+  score: 4431.76,
+  doc: {},
+};
 ```
 
 ## Fields
 
-| Field                                                                                | Type                                                                                 | Required                                                                             | Description                                                                          |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `collection`                                                                         | *string*                                                                             | :heavy_minus_sign:                                                                   | Collection name.                                                                     |
-| `score`                                                                              | *number*                                                                             | :heavy_minus_sign:                                                                   | Document similarity score.                                                           |
-| `doc`                                                                                | [operations.QueryCollectionDocDoc](../../models/operations/querycollectiondocdoc.md) | :heavy_minus_sign:                                                                   | N/A                                                                                  |
+| Field                      | Type                       | Required                   | Description                |
+| -------------------------- | -------------------------- | -------------------------- | -------------------------- |
+| `collection`               | *string*                   | :heavy_check_mark:         | Collection name.           |
+| `score`                    | *number*                   | :heavy_check_mark:         | Document similarity score. |
+| `doc`                      | Record<string, *any*>      | :heavy_check_mark:         | N/A                        |

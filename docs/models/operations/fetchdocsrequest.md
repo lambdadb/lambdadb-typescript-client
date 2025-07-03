@@ -6,7 +6,6 @@
 import { FetchDocsRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: FetchDocsRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
 };
 ```
@@ -15,6 +14,5 @@ let value: FetchDocsRequest = {
 
 | Field                                                                              | Type                                                                               | Required                                                                           | Description                                                                        |
 | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `projectName`                                                                      | *string*                                                                           | :heavy_check_mark:                                                                 | Project name.                                                                      |
 | `collectionName`                                                                   | *string*                                                                           | :heavy_check_mark:                                                                 | Collection name.                                                                   |
 | `requestBody`                                                                      | [operations.FetchDocsRequestBody](../../models/operations/fetchdocsrequestbody.md) | :heavy_check_mark:                                                                 | N/A                                                                                |
