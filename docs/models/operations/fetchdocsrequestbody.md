@@ -1,0 +1,23 @@
+# FetchDocsRequestBody
+
+## Example Usage
+
+```typescript
+import { FetchDocsRequestBody } from "lambdadb/models/operations";
+
+let value: FetchDocsRequestBody = {
+  ids: [
+    "<value 1>",
+    "<value 2>",
+    "<value 3>",
+  ],
+};
+```
+
+## Fields
+
+| Field                                                                                                                                                                                                                       | Type                                                                                                                                                                                                                        | Required                                                                                                                                                                                                                    | Description                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ids`                                                                                                                                                                                                                       | *string*[]                                                                                                                                                                                                                  | :heavy_check_mark:                                                                                                                                                                                                          | A list of document IDs to fetch. Note that the maximum number of document IDs is 100.                                                                                                                                       |
+| `consistentRead`                                                                                                                                                                                                            | *boolean*                                                                                                                                                                                                                   | :heavy_minus_sign:                                                                                                                                                                                                          | If your application requires a strongly consistent read, set consistentRead to true. Although a strongly consistent read might take more time than an eventually consistent read, it always returns the last updated value. |
+| `includeVectors`                                                                                                                                                                                                            | *boolean*                                                                                                                                                                                                                   | :heavy_minus_sign:                                                                                                                                                                                                          | If your application need to include vector values in the response, set includeVectors to true.                                                                                                                              |

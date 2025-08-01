@@ -1,0 +1,21 @@
+workflowVersion: 1.0.0
+speakeasyVersion: latest
+sources:
+    LambdaDB-OAS:
+        inputs:
+            - location: https://raw.githubusercontent.com/lambdadb/docs/main/api-reference/openapi.json
+        overlays:
+            - location: .speakeasy/speakeasy-modifications-overlay.yaml
+        output: .speakeasy/out.openapi.yaml
+        registry:
+            location: registry.speakeasyapi.dev/functional-systems/typescript/lambda-db-oas
+targets:
+    lambda-db:
+        target: typescript
+        source: LambdaDB-OAS
+        codeSamples:
+            registry:
+                location: registry.speakeasyapi.dev/functional-systems/typescript/lambda-db-oas-code-samples
+            labelOverride:
+                fixedValue: Typescript (SDK)
+            blocking: false
