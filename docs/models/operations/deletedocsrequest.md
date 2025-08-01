@@ -6,15 +6,14 @@
 import { DeleteDocsRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: DeleteDocsRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
+  requestBody: {},
 };
 ```
 
 ## Fields
 
-| Field                              | Type                               | Required                           | Description                        |
-| ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
-| `projectName`                      | *string*                           | :heavy_check_mark:                 | Project name.                      |
-| `collectionName`                   | *string*                           | :heavy_check_mark:                 | Collection name.                   |
-| `requestBody`                      | *operations.DeleteDocsRequestBody* | :heavy_check_mark:                 | N/A                                |
+| Field                                                                                | Type                                                                                 | Required                                                                             | Description                                                                          |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `collectionName`                                                                     | *string*                                                                             | :heavy_check_mark:                                                                   | Collection name.                                                                     |
+| `requestBody`                                                                        | [operations.DeleteDocsRequestBody](../../models/operations/deletedocsrequestbody.md) | :heavy_check_mark:                                                                   | N/A                                                                                  |

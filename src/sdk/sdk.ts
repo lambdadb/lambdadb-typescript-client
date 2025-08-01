@@ -3,11 +3,11 @@
  */
 
 import { ClientSDK } from "../lib/sdks.js";
-import { Projects } from "./projects.js";
+import { Collections } from "./collections.js";
 
 export class LambdaDB extends ClientSDK {
-  private _projects?: Projects;
-  get projects(): Projects {
-    return (this._projects ??= new Projects(this._options));
+  private _collections?: Collections;
+  get collections(): Collections {
+    return (this._collections ??= new Collections(this._options));
   }
 }

@@ -8,22 +8,15 @@ import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
-/**
- * Query object.
- */
-export type Query = {};
-
-export type Sort = {};
-
 export type QueryCollectionRequestBody = {
   /**
-   * Number of documents to return. Note that the maximum number of documents is 1000.
+   * Number of documents to return. Note that the maximum number of documents is 100.
    */
-  size: number;
+  size?: number | undefined;
   /**
    * Query object.
    */
-  query?: Query | undefined;
+  query: { [k: string]: any };
   /**
    * If your application requires a strongly consistent read, set consistentRead to true. Although a strongly consistent read might take more time than an eventually consistent read, it always returns the last updated value.
    */
@@ -35,7 +28,7 @@ export type QueryCollectionRequestBody = {
   /**
    * List of field name, sort direction pairs.
    */
-  sort?: Array<Sort> | undefined;
+  sort?: Array<{ [k: string]: any }> | undefined;
   /**
    * List of field name to include in results
    */
@@ -44,28 +37,22 @@ export type QueryCollectionRequestBody = {
 
 export type QueryCollectionRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
   requestBody: QueryCollectionRequestBody;
 };
 
-export type QueryCollectionDocDoc = {};
-
 export type QueryCollectionDoc = {
   /**
    * Collection name.
    */
-  collection?: string | undefined;
+  collection: string;
   /**
    * Document similarity score.
    */
   score?: number | undefined;
-  doc?: QueryCollectionDocDoc | undefined;
+  doc: { [k: string]: any };
 };
 
 /**
@@ -75,7 +62,7 @@ export type QueryCollectionResponse = {
   /**
    * Elapsed time in milliseconds.
    */
-  took?: number | undefined;
+  took: number;
   /**
    * Maximum score.
    */
@@ -83,91 +70,12 @@ export type QueryCollectionResponse = {
   /**
    * Total number of documents returned.
    */
-  total?: number | undefined;
+  total: number;
   /**
    * List of documents.
    */
-  docs?: Array<QueryCollectionDoc> | undefined;
+  docs: Array<QueryCollectionDoc>;
 };
-
-/** @internal */
-export const Query$inboundSchema: z.ZodType<Query, z.ZodTypeDef, unknown> = z
-  .object({});
-
-/** @internal */
-export type Query$Outbound = {};
-
-/** @internal */
-export const Query$outboundSchema: z.ZodType<
-  Query$Outbound,
-  z.ZodTypeDef,
-  Query
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace Query$ {
-  /** @deprecated use `Query$inboundSchema` instead. */
-  export const inboundSchema = Query$inboundSchema;
-  /** @deprecated use `Query$outboundSchema` instead. */
-  export const outboundSchema = Query$outboundSchema;
-  /** @deprecated use `Query$Outbound` instead. */
-  export type Outbound = Query$Outbound;
-}
-
-export function queryToJSON(query: Query): string {
-  return JSON.stringify(Query$outboundSchema.parse(query));
-}
-
-export function queryFromJSON(
-  jsonString: string,
-): SafeParseResult<Query, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => Query$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'Query' from JSON`,
-  );
-}
-
-/** @internal */
-export const Sort$inboundSchema: z.ZodType<Sort, z.ZodTypeDef, unknown> = z
-  .object({});
-
-/** @internal */
-export type Sort$Outbound = {};
-
-/** @internal */
-export const Sort$outboundSchema: z.ZodType<Sort$Outbound, z.ZodTypeDef, Sort> =
-  z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace Sort$ {
-  /** @deprecated use `Sort$inboundSchema` instead. */
-  export const inboundSchema = Sort$inboundSchema;
-  /** @deprecated use `Sort$outboundSchema` instead. */
-  export const outboundSchema = Sort$outboundSchema;
-  /** @deprecated use `Sort$Outbound` instead. */
-  export type Outbound = Sort$Outbound;
-}
-
-export function sortToJSON(sort: Sort): string {
-  return JSON.stringify(Sort$outboundSchema.parse(sort));
-}
-
-export function sortFromJSON(
-  jsonString: string,
-): SafeParseResult<Sort, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => Sort$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'Sort' from JSON`,
-  );
-}
 
 /** @internal */
 export const QueryCollectionRequestBody$inboundSchema: z.ZodType<
@@ -175,21 +83,21 @@ export const QueryCollectionRequestBody$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  size: z.number().int(),
-  query: z.lazy(() => Query$inboundSchema).optional(),
+  size: z.number().int().optional(),
+  query: z.record(z.any()),
   consistentRead: z.boolean().default(false),
   includeVectors: z.boolean().default(false),
-  sort: z.array(z.lazy(() => Sort$inboundSchema)).optional(),
+  sort: z.array(z.record(z.any())).optional(),
   fields: z.array(z.string()).optional(),
 });
 
 /** @internal */
 export type QueryCollectionRequestBody$Outbound = {
-  size: number;
-  query?: Query$Outbound | undefined;
+  size?: number | undefined;
+  query: { [k: string]: any };
   consistentRead: boolean;
   includeVectors: boolean;
-  sort?: Array<Sort$Outbound> | undefined;
+  sort?: Array<{ [k: string]: any }> | undefined;
   fields?: Array<string> | undefined;
 };
 
@@ -199,11 +107,11 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   QueryCollectionRequestBody
 > = z.object({
-  size: z.number().int(),
-  query: z.lazy(() => Query$outboundSchema).optional(),
+  size: z.number().int().optional(),
+  query: z.record(z.any()),
   consistentRead: z.boolean().default(false),
   includeVectors: z.boolean().default(false),
-  sort: z.array(z.lazy(() => Sort$outboundSchema)).optional(),
+  sort: z.array(z.record(z.any())).optional(),
   fields: z.array(z.string()).optional(),
 });
 
@@ -244,7 +152,6 @@ export const QueryCollectionRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   RequestBody: z.lazy(() => QueryCollectionRequestBody$inboundSchema),
 }).transform((v) => {
@@ -255,7 +162,6 @@ export const QueryCollectionRequest$inboundSchema: z.ZodType<
 
 /** @internal */
 export type QueryCollectionRequest$Outbound = {
-  projectName: string;
   collectionName: string;
   RequestBody: QueryCollectionRequestBody$Outbound;
 };
@@ -266,7 +172,6 @@ export const QueryCollectionRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   QueryCollectionRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
   requestBody: z.lazy(() => QueryCollectionRequestBody$outboundSchema),
 }).transform((v) => {
@@ -307,69 +212,21 @@ export function queryCollectionRequestFromJSON(
 }
 
 /** @internal */
-export const QueryCollectionDocDoc$inboundSchema: z.ZodType<
-  QueryCollectionDocDoc,
-  z.ZodTypeDef,
-  unknown
-> = z.object({});
-
-/** @internal */
-export type QueryCollectionDocDoc$Outbound = {};
-
-/** @internal */
-export const QueryCollectionDocDoc$outboundSchema: z.ZodType<
-  QueryCollectionDocDoc$Outbound,
-  z.ZodTypeDef,
-  QueryCollectionDocDoc
-> = z.object({});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace QueryCollectionDocDoc$ {
-  /** @deprecated use `QueryCollectionDocDoc$inboundSchema` instead. */
-  export const inboundSchema = QueryCollectionDocDoc$inboundSchema;
-  /** @deprecated use `QueryCollectionDocDoc$outboundSchema` instead. */
-  export const outboundSchema = QueryCollectionDocDoc$outboundSchema;
-  /** @deprecated use `QueryCollectionDocDoc$Outbound` instead. */
-  export type Outbound = QueryCollectionDocDoc$Outbound;
-}
-
-export function queryCollectionDocDocToJSON(
-  queryCollectionDocDoc: QueryCollectionDocDoc,
-): string {
-  return JSON.stringify(
-    QueryCollectionDocDoc$outboundSchema.parse(queryCollectionDocDoc),
-  );
-}
-
-export function queryCollectionDocDocFromJSON(
-  jsonString: string,
-): SafeParseResult<QueryCollectionDocDoc, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => QueryCollectionDocDoc$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'QueryCollectionDocDoc' from JSON`,
-  );
-}
-
-/** @internal */
 export const QueryCollectionDoc$inboundSchema: z.ZodType<
   QueryCollectionDoc,
   z.ZodTypeDef,
   unknown
 > = z.object({
-  collection: z.string().optional(),
+  collection: z.string(),
   score: z.number().optional(),
-  doc: z.lazy(() => QueryCollectionDocDoc$inboundSchema).optional(),
+  doc: z.record(z.any()),
 });
 
 /** @internal */
 export type QueryCollectionDoc$Outbound = {
-  collection?: string | undefined;
+  collection: string;
   score?: number | undefined;
-  doc?: QueryCollectionDocDoc$Outbound | undefined;
+  doc: { [k: string]: any };
 };
 
 /** @internal */
@@ -378,9 +235,9 @@ export const QueryCollectionDoc$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   QueryCollectionDoc
 > = z.object({
-  collection: z.string().optional(),
+  collection: z.string(),
   score: z.number().optional(),
-  doc: z.lazy(() => QueryCollectionDocDoc$outboundSchema).optional(),
+  doc: z.record(z.any()),
 });
 
 /**
@@ -420,18 +277,18 @@ export const QueryCollectionResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  took: z.number().int().optional(),
+  took: z.number().int(),
   maxScore: z.number().optional(),
-  total: z.number().int().optional(),
-  docs: z.array(z.lazy(() => QueryCollectionDoc$inboundSchema)).optional(),
+  total: z.number().int(),
+  docs: z.array(z.lazy(() => QueryCollectionDoc$inboundSchema)),
 });
 
 /** @internal */
 export type QueryCollectionResponse$Outbound = {
-  took?: number | undefined;
+  took: number;
   maxScore?: number | undefined;
-  total?: number | undefined;
-  docs?: Array<QueryCollectionDoc$Outbound> | undefined;
+  total: number;
+  docs: Array<QueryCollectionDoc$Outbound>;
 };
 
 /** @internal */
@@ -440,10 +297,10 @@ export const QueryCollectionResponse$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   QueryCollectionResponse
 > = z.object({
-  took: z.number().int().optional(),
+  took: z.number().int(),
   maxScore: z.number().optional(),
-  total: z.number().int().optional(),
-  docs: z.array(z.lazy(() => QueryCollectionDoc$outboundSchema)).optional(),
+  total: z.number().int(),
+  docs: z.array(z.lazy(() => QueryCollectionDoc$outboundSchema)),
 });
 
 /**

@@ -14,7 +14,7 @@ export const ServerList = [
   /**
    * LambdaDB API endpoints
    */
-  "https://{baseUrl}",
+  "https://{projectHost}",
 ] as const;
 
 export type SDKOptions = {
@@ -25,6 +25,10 @@ export type SDKOptions = {
    * Allows overriding the default server used by the SDK
    */
   serverIdx?: number | undefined;
+  /**
+   * Sets the projectHost variable for url substitution
+   */
+  projectHost?: string | undefined;
   /**
    * Allows overriding the default server URL used by the SDK
    */
@@ -44,7 +48,12 @@ export type SDKOptions = {
 export function serverURLFromOptions(options: SDKOptions): URL | null {
   let serverURL = options.serverURL;
 
-  const params: Params = {};
+  const serverParams: Params[] = [
+    {
+      "projectHost": options.projectHost ?? "api.lambdadb.com/projects/default",
+    },
+  ];
+  let params: Params = {};
 
   if (!serverURL) {
     const serverIdx = options.serverIdx ?? 0;
@@ -52,6 +61,7 @@ export function serverURLFromOptions(options: SDKOptions): URL | null {
       throw new Error(`Invalid server index ${serverIdx}`);
     }
     serverURL = ServerList[serverIdx] || "";
+    params = serverParams[serverIdx] || {};
   }
 
   const u = pathToFunc(serverURL)(params);
@@ -60,8 +70,8 @@ export function serverURLFromOptions(options: SDKOptions): URL | null {
 
 export const SDK_METADATA = {
   language: "typescript",
-  openapiDocVersion: "1.1.0",
-  sdkVersion: "0.0.4",
-  genVersion: "2.632.2",
-  userAgent: "speakeasy-sdk/typescript 0.0.4 2.632.2 1.1.0 @swkim86/lambdadb",
+  openapiDocVersion: "1.1.1",
+  sdkVersion: "0.1.0",
+  genVersion: "2.670.1",
+  userAgent: "speakeasy-sdk/typescript 0.1.0 2.670.1 1.1.1 @swkim86/lambdadb",
 } as const;

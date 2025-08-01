@@ -6,7 +6,6 @@ import { buildCommand } from "@stricli/core";
 import { numberParser } from "@stricli/core";
 import * as z from "zod";
 import { consoleLoggerLevels } from "../../console-logger.js";
-import { mcpScopes } from "../../scopes.js";
 
 export const startCommand = buildCommand({
   loader: async () => {
@@ -37,18 +36,6 @@ export const startCommand = buildCommand({
           return z.string().parse(value);
         },
       },
-      ...(mcpScopes.length
-        ? {
-          scope: {
-            kind: "enum",
-            brief:
-              "Mount tools/resources that match given scope (repeatable flag)",
-            values: mcpScopes,
-            variadic: true,
-            optional: true,
-          },
-        }
-        : {}),
       "project-api-key": {
         kind: "parsed",
         brief: "Sets the projectApiKey auth field for the API",
@@ -68,6 +55,12 @@ export const startCommand = buildCommand({
         brief: "Selects a predefined server used by the SDK",
         optional: true,
         parse: numberParser,
+      },
+      "project-host": {
+        kind: "parsed",
+        brief: "Sets the projectHost variable for url substitution",
+        optional: true,
+        parse: (value) => value,
       },
       "log-level": {
         kind: "enum",

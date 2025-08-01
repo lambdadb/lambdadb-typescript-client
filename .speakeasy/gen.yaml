@@ -17,11 +17,15 @@ generation:
     securityFeb2025: true
     sharedErrorComponentsApr2025: true
   auth:
-    oAuth2ClientCredentialsEnabled: true
-    oAuth2PasswordEnabled: true
+    oAuth2ClientCredentialsEnabled: false
+    oAuth2PasswordEnabled: false
   sdkHooksConfigAccess: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+    skipResponseBodyAssertions: false
 typescript:
-  version: 0.0.4
+  version: 0.1.0
   additionalDependencies:
     dependencies: {}
     devDependencies: {}
@@ -40,6 +44,7 @@ typescript:
   envVarPrefix: LAMBDADB
   flattenGlobalSecurity: true
   flatteningOrder: parameters-first
+  generateExamples: true
   imports:
     option: openapi
     paths:

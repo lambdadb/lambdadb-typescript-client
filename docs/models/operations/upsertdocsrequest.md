@@ -6,8 +6,10 @@
 import { UpsertDocsRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: UpsertDocsRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
+  requestBody: {
+    docs: [],
+  },
 };
 ```
 
@@ -15,6 +17,5 @@ let value: UpsertDocsRequest = {
 
 | Field                                                                                | Type                                                                                 | Required                                                                             | Description                                                                          |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `projectName`                                                                        | *string*                                                                             | :heavy_check_mark:                                                                   | Project name.                                                                        |
 | `collectionName`                                                                     | *string*                                                                             | :heavy_check_mark:                                                                   | Collection name.                                                                     |
 | `requestBody`                                                                        | [operations.UpsertDocsRequestBody](../../models/operations/upsertdocsrequestbody.md) | :heavy_check_mark:                                                                   | N/A                                                                                  |

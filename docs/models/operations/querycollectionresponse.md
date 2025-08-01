@@ -7,14 +7,27 @@ Documents selected by query.
 ```typescript
 import { QueryCollectionResponse } from "@swkim86/lambdadb/models/operations";
 
-let value: QueryCollectionResponse = {};
+let value: QueryCollectionResponse = {
+  took: 533458,
+  total: 322568,
+  docs: [
+    {
+      collection: "<value>",
+      doc: {
+        "key": "<value>",
+        "key1": "<value>",
+        "key2": "<value>",
+      },
+    },
+  ],
+};
 ```
 
 ## Fields
 
 | Field                                                                            | Type                                                                             | Required                                                                         | Description                                                                      |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `took`                                                                           | *number*                                                                         | :heavy_minus_sign:                                                               | Elapsed time in milliseconds.                                                    |
+| `took`                                                                           | *number*                                                                         | :heavy_check_mark:                                                               | Elapsed time in milliseconds.                                                    |
 | `maxScore`                                                                       | *number*                                                                         | :heavy_minus_sign:                                                               | Maximum score.                                                                   |
-| `total`                                                                          | *number*                                                                         | :heavy_minus_sign:                                                               | Total number of documents returned.                                              |
-| `docs`                                                                           | [operations.QueryCollectionDoc](../../models/operations/querycollectiondoc.md)[] | :heavy_minus_sign:                                                               | List of documents.                                                               |
+| `total`                                                                          | *number*                                                                         | :heavy_check_mark:                                                               | Total number of documents returned.                                              |
+| `docs`                                                                           | [operations.QueryCollectionDoc](../../models/operations/querycollectiondoc.md)[] | :heavy_check_mark:                                                               | List of documents.                                                               |

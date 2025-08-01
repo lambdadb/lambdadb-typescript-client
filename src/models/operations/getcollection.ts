@@ -6,16 +6,20 @@ import * as z from "zod";
 import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
+import * as models from "../index.js";
 
 export type GetCollectionRequest = {
-  /**
-   * Project name.
-   */
-  projectName: string;
   /**
    * Collection name.
    */
   collectionName: string;
+};
+
+/**
+ * Describe collection success.
+ */
+export type GetCollectionResponse = {
+  collection: models.CollectionResponse;
 };
 
 /** @internal */
@@ -24,13 +28,11 @@ export const GetCollectionRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
 /** @internal */
 export type GetCollectionRequest$Outbound = {
-  projectName: string;
   collectionName: string;
 };
 
@@ -40,7 +42,6 @@ export const GetCollectionRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   GetCollectionRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
@@ -72,5 +73,59 @@ export function getCollectionRequestFromJSON(
     jsonString,
     (x) => GetCollectionRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'GetCollectionRequest' from JSON`,
+  );
+}
+
+/** @internal */
+export const GetCollectionResponse$inboundSchema: z.ZodType<
+  GetCollectionResponse,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  collection: models.CollectionResponse$inboundSchema,
+});
+
+/** @internal */
+export type GetCollectionResponse$Outbound = {
+  collection: models.CollectionResponse$Outbound;
+};
+
+/** @internal */
+export const GetCollectionResponse$outboundSchema: z.ZodType<
+  GetCollectionResponse$Outbound,
+  z.ZodTypeDef,
+  GetCollectionResponse
+> = z.object({
+  collection: models.CollectionResponse$outboundSchema,
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace GetCollectionResponse$ {
+  /** @deprecated use `GetCollectionResponse$inboundSchema` instead. */
+  export const inboundSchema = GetCollectionResponse$inboundSchema;
+  /** @deprecated use `GetCollectionResponse$outboundSchema` instead. */
+  export const outboundSchema = GetCollectionResponse$outboundSchema;
+  /** @deprecated use `GetCollectionResponse$Outbound` instead. */
+  export type Outbound = GetCollectionResponse$Outbound;
+}
+
+export function getCollectionResponseToJSON(
+  getCollectionResponse: GetCollectionResponse,
+): string {
+  return JSON.stringify(
+    GetCollectionResponse$outboundSchema.parse(getCollectionResponse),
+  );
+}
+
+export function getCollectionResponseFromJSON(
+  jsonString: string,
+): SafeParseResult<GetCollectionResponse, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => GetCollectionResponse$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'GetCollectionResponse' from JSON`,
   );
 }

@@ -1,21 +1,16 @@
 # DeleteDocsRequestBody
 
-
-## Supported Types
-
-### `operations.RequestBody1`
+## Example Usage
 
 ```typescript
-const value: operations.RequestBody1 = {
-  ids: [],
-};
+import { DeleteDocsRequestBody } from "@swkim86/lambdadb/models/operations";
+
+let value: DeleteDocsRequestBody = {};
 ```
 
-### `operations.RequestBody2`
+## Fields
 
-```typescript
-const value: operations.RequestBody2 = {
-  filter: {},
-};
-```
-
+| Field                   | Type                    | Required                | Description             |
+| ----------------------- | ----------------------- | ----------------------- | ----------------------- |
+| `ids`                   | *string*[]              | :heavy_minus_sign:      | A list of document IDs. |
+| `filter`                | Record<string, *any*>   | :heavy_minus_sign:      | Query filter.           |

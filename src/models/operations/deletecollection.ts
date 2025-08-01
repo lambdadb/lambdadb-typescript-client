@@ -9,20 +9,9 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
 export type DeleteCollectionRequest = {
   /**
-   * Project name.
-   */
-  projectName: string;
-  /**
    * Collection name.
    */
   collectionName: string;
-};
-
-/**
- * Collection delete request accepted.
- */
-export type DeleteCollectionResponse = {
-  message?: string | undefined;
 };
 
 /** @internal */
@@ -31,13 +20,11 @@ export const DeleteCollectionRequest$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
 /** @internal */
 export type DeleteCollectionRequest$Outbound = {
-  projectName: string;
   collectionName: string;
 };
 
@@ -47,7 +34,6 @@ export const DeleteCollectionRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   DeleteCollectionRequest
 > = z.object({
-  projectName: z.string(),
   collectionName: z.string(),
 });
 
@@ -79,59 +65,5 @@ export function deleteCollectionRequestFromJSON(
     jsonString,
     (x) => DeleteCollectionRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'DeleteCollectionRequest' from JSON`,
-  );
-}
-
-/** @internal */
-export const DeleteCollectionResponse$inboundSchema: z.ZodType<
-  DeleteCollectionResponse,
-  z.ZodTypeDef,
-  unknown
-> = z.object({
-  message: z.string().optional(),
-});
-
-/** @internal */
-export type DeleteCollectionResponse$Outbound = {
-  message?: string | undefined;
-};
-
-/** @internal */
-export const DeleteCollectionResponse$outboundSchema: z.ZodType<
-  DeleteCollectionResponse$Outbound,
-  z.ZodTypeDef,
-  DeleteCollectionResponse
-> = z.object({
-  message: z.string().optional(),
-});
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace DeleteCollectionResponse$ {
-  /** @deprecated use `DeleteCollectionResponse$inboundSchema` instead. */
-  export const inboundSchema = DeleteCollectionResponse$inboundSchema;
-  /** @deprecated use `DeleteCollectionResponse$outboundSchema` instead. */
-  export const outboundSchema = DeleteCollectionResponse$outboundSchema;
-  /** @deprecated use `DeleteCollectionResponse$Outbound` instead. */
-  export type Outbound = DeleteCollectionResponse$Outbound;
-}
-
-export function deleteCollectionResponseToJSON(
-  deleteCollectionResponse: DeleteCollectionResponse,
-): string {
-  return JSON.stringify(
-    DeleteCollectionResponse$outboundSchema.parse(deleteCollectionResponse),
-  );
-}
-
-export function deleteCollectionResponseFromJSON(
-  jsonString: string,
-): SafeParseResult<DeleteCollectionResponse, SDKValidationError> {
-  return safeParse(
-    jsonString,
-    (x) => DeleteCollectionResponse$inboundSchema.parse(JSON.parse(x)),
-    `Failed to parse 'DeleteCollectionResponse' from JSON`,
   );
 }

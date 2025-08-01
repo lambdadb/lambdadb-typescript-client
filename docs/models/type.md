@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { Type } from "@swkim86/lambdadb";
+import { Type } from "@swkim86/lambdadb/models";
 
 let value: Type = "keyword";
 ```
@@ -11,5 +11,5 @@ let value: Type = "keyword";
 ## Values
 
 ```typescript
-"keyword" | "long" | "double" | "datetime" | "boolean"
+"keyword" | "long" | "double" | "datetime" | "boolean" | "sparseVector"
 ```

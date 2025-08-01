@@ -6,7 +6,6 @@
 import { DeleteCollectionRequest } from "@swkim86/lambdadb/models/operations";
 
 let value: DeleteCollectionRequest = {
-  projectName: "<value>",
   collectionName: "<value>",
 };
 ```
@@ -15,5 +14,4 @@ let value: DeleteCollectionRequest = {
 
 | Field              | Type               | Required           | Description        |
 | ------------------ | ------------------ | ------------------ | ------------------ |
-| `projectName`      | *string*           | :heavy_check_mark: | Project name.      |
 | `collectionName`   | *string*           | :heavy_check_mark: | Collection name.   |

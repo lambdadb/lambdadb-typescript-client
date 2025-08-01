@@ -13,17 +13,18 @@ import {
 } from "./resources.js";
 import { MCPScope } from "./scopes.js";
 import { createRegisterTool } from "./tools.js";
-import { tool$projectsCollectionsCreateCollection } from "./tools/projectsCollectionsCreateCollection.js";
-import { tool$projectsCollectionsDeleteCollection } from "./tools/projectsCollectionsDeleteCollection.js";
-import { tool$projectsCollectionsDocsBulkUpsertDocs } from "./tools/projectsCollectionsDocsBulkUpsertDocs.js";
-import { tool$projectsCollectionsDocsDeleteDocs } from "./tools/projectsCollectionsDocsDeleteDocs.js";
-import { tool$projectsCollectionsDocsFetchDocs } from "./tools/projectsCollectionsDocsFetchDocs.js";
-import { tool$projectsCollectionsDocsGetBulkUpsertDocs } from "./tools/projectsCollectionsDocsGetBulkUpsertDocs.js";
-import { tool$projectsCollectionsDocsUpsertDocs } from "./tools/projectsCollectionsDocsUpsertDocs.js";
-import { tool$projectsCollectionsGetCollection } from "./tools/projectsCollectionsGetCollection.js";
-import { tool$projectsCollectionsListcollections } from "./tools/projectsCollectionsListcollections.js";
-import { tool$projectsCollectionsQueryCollection } from "./tools/projectsCollectionsQueryCollection.js";
-import { tool$projectsCollectionsUpdateCollection } from "./tools/projectsCollectionsUpdateCollection.js";
+import { tool$collectionsCreateCollection } from "./tools/collectionsCreateCollection.js";
+import { tool$collectionsDeleteCollection } from "./tools/collectionsDeleteCollection.js";
+import { tool$collectionsDocsBulkUpsertDocs } from "./tools/collectionsDocsBulkUpsertDocs.js";
+import { tool$collectionsDocsDeleteDocs } from "./tools/collectionsDocsDeleteDocs.js";
+import { tool$collectionsDocsFetchDocs } from "./tools/collectionsDocsFetchDocs.js";
+import { tool$collectionsDocsGetBulkUpsertDocs } from "./tools/collectionsDocsGetBulkUpsertDocs.js";
+import { tool$collectionsDocsUpdateDocs } from "./tools/collectionsDocsUpdateDocs.js";
+import { tool$collectionsDocsUpsertDocs } from "./tools/collectionsDocsUpsertDocs.js";
+import { tool$collectionsGetCollection } from "./tools/collectionsGetCollection.js";
+import { tool$collectionsListCollections } from "./tools/collectionsListCollections.js";
+import { tool$collectionsQueryCollection } from "./tools/collectionsQueryCollection.js";
+import { tool$collectionsUpdateCollection } from "./tools/collectionsUpdateCollection.js";
 
 export function createMCPServer(deps: {
   logger: ConsoleLogger;
@@ -32,16 +33,18 @@ export function createMCPServer(deps: {
   serverURL?: string | undefined;
   projectApiKey?: SDKOptions["projectApiKey"] | undefined;
   serverIdx?: SDKOptions["serverIdx"] | undefined;
+  projectHost?: SDKOptions["projectHost"] | undefined;
 }) {
   const server = new McpServer({
     name: "LambdaDB",
-    version: "0.0.4",
+    version: "0.1.0",
   });
 
   const client = new LambdaDBCore({
     projectApiKey: deps.projectApiKey,
     serverURL: deps.serverURL,
     serverIdx: deps.serverIdx,
+    projectHost: deps.projectHost,
   });
 
   const scopes = new Set(deps.scopes);
@@ -65,17 +68,18 @@ export function createMCPServer(deps: {
   const register = { tool, resource, resourceTemplate, prompt };
   void register; // suppress unused warnings
 
-  tool(tool$projectsCollectionsListcollections);
-  tool(tool$projectsCollectionsCreateCollection);
-  tool(tool$projectsCollectionsDeleteCollection);
-  tool(tool$projectsCollectionsGetCollection);
-  tool(tool$projectsCollectionsUpdateCollection);
-  tool(tool$projectsCollectionsQueryCollection);
-  tool(tool$projectsCollectionsDocsUpsertDocs);
-  tool(tool$projectsCollectionsDocsGetBulkUpsertDocs);
-  tool(tool$projectsCollectionsDocsBulkUpsertDocs);
-  tool(tool$projectsCollectionsDocsDeleteDocs);
-  tool(tool$projectsCollectionsDocsFetchDocs);
+  tool(tool$collectionsListCollections);
+  tool(tool$collectionsCreateCollection);
+  tool(tool$collectionsDeleteCollection);
+  tool(tool$collectionsGetCollection);
+  tool(tool$collectionsUpdateCollection);
+  tool(tool$collectionsQueryCollection);
+  tool(tool$collectionsDocsUpsertDocs);
+  tool(tool$collectionsDocsGetBulkUpsertDocs);
+  tool(tool$collectionsDocsBulkUpsertDocs);
+  tool(tool$collectionsDocsUpdateDocs);
+  tool(tool$collectionsDocsDeleteDocs);
+  tool(tool$collectionsDocsFetchDocs);
 
   return server;
 }

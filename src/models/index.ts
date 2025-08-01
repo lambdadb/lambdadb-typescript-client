@@ -4,5 +4,6 @@
 
 export * from "./collectionresponse.js";
 export * from "./indexconfigsunion.js";
+export * from "./messageresponse.js";
 export * from "./security.js";
 export * from "./status.js";
