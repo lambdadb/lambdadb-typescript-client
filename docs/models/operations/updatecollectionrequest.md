@@ -11,7 +11,7 @@ let value: UpdateCollectionRequest = {
     indexConfigs: {
       "key": {
         type: "vector",
-        dimensions: 26262,
+        dimensions: 851919,
         similarity: "cosine",
       },
     },

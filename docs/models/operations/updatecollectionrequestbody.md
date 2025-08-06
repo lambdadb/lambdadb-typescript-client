@@ -8,9 +8,7 @@ import { UpdateCollectionRequestBody } from "lambdadb/models/operations";
 let value: UpdateCollectionRequestBody = {
   indexConfigs: {
     "key": {
-      type: "vector",
-      dimensions: 26262,
-      similarity: "cosine",
+      type: "keyword",
     },
   },
 };

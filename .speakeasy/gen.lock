@@ -1,17 +1,20 @@
 lockVersion: 2.0.0
 id: 6c0398ae-1e45-47b2-a468-fa4ee9593b40
 management:
-  docChecksum: bfdc0979d9130012fdb790ad2e0fb544
+  docChecksum: f345509e309db197668ce98ae6b79abf
   docVersion: 1.1.1
-  speakeasyVersion: 1.595.1
-  generationVersion: 2.670.3
-  releaseVersion: 0.1.2
-  configChecksum: 9f81b36490e5c706999e36c3ebb42250
+  speakeasyVersion: 1.598.0
+  generationVersion: 2.674.1
+  releaseVersion: 0.1.3
+  configChecksum: 92427e883ba3dd32080c175aaa2746df
+  repoURL: https://github.com/lambdadb/lambdadb-typescript-client.git
+  installationURL: https://github.com/lambdadb/lambdadb-typescript-client
+  published: true
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.12
-    core: 3.21.18
+    core: 3.21.19
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
     enumUnions: 0.1.0
@@ -46,6 +49,7 @@ generatedFiles:
   - docs/models/errors/toomanyrequestserror.md
   - docs/models/errors/unauthenticatederror.md
   - docs/models/indexconfigs.md
+  - docs/models/indexconfigsobject.md
   - docs/models/indexconfigstext.md
   - docs/models/indexconfigsunion.md
   - docs/models/indexconfigsvector.md
@@ -83,6 +87,7 @@ generatedFiles:
   - docs/models/similarity.md
   - docs/models/status.md
   - docs/models/type.md
+  - docs/models/typeobject.md
   - docs/models/typetext.md
   - docs/models/typevector.md
   - docs/sdks/collections/README.md

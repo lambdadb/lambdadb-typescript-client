@@ -8,6 +8,16 @@ import { ClosedEnum } from "../types/enums.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./errors/sdkvalidationerror.js";
 
+export const TypeObject = {
+  Object: "object",
+} as const;
+export type TypeObject = ClosedEnum<typeof TypeObject>;
+
+export type IndexConfigsObject = {
+  type: TypeObject;
+  objectIndexConfigs: { [k: string]: any };
+};
+
 export const Type = {
   Keyword: "keyword",
   Long: "long",
@@ -17,6 +27,13 @@ export const Type = {
   SparseVector: "sparseVector",
 } as const;
 export type Type = ClosedEnum<typeof Type>;
+
+/**
+ * Types that do not need additional parameters.
+ */
+export type IndexConfigs = {
+  type: Type;
+};
 
 export const TypeVector = {
   Vector: "vector",
@@ -28,7 +45,7 @@ export type TypeVector = ClosedEnum<typeof TypeVector>;
  */
 export const Similarity = {
   Cosine: "cosine",
-  L2Norm: "l2_norm",
+  Euclidean: "euclidean",
   DotProduct: "dot_product",
   MaxInnerProduct: "max_inner_product",
 } as const;
@@ -36,6 +53,18 @@ export const Similarity = {
  * Vector similarity metric.
  */
 export type Similarity = ClosedEnum<typeof Similarity>;
+
+export type IndexConfigsVector = {
+  type: TypeVector;
+  /**
+   * Vector dimensions.
+   */
+  dimensions: number;
+  /**
+   * Vector similarity metric.
+   */
+  similarity?: Similarity | undefined;
+};
 
 export const TypeText = {
   Text: "text",
@@ -49,6 +78,96 @@ export const Analyzer = {
   English: "english",
 } as const;
 export type Analyzer = ClosedEnum<typeof Analyzer>;
+
+export type IndexConfigsText = {
+  type: TypeText;
+  /**
+   * Analyzers.
+   */
+  analyzers?: Array<Analyzer> | undefined;
+};
+
+export type IndexConfigsUnion =
+  | IndexConfigsVector
+  | IndexConfigsObject
+  | IndexConfigsText
+  | IndexConfigs;
+
+/** @internal */
+export const TypeObject$inboundSchema: z.ZodNativeEnum<typeof TypeObject> = z
+  .nativeEnum(TypeObject);
+
+/** @internal */
+export const TypeObject$outboundSchema: z.ZodNativeEnum<typeof TypeObject> =
+  TypeObject$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace TypeObject$ {
+  /** @deprecated use `TypeObject$inboundSchema` instead. */
+  export const inboundSchema = TypeObject$inboundSchema;
+  /** @deprecated use `TypeObject$outboundSchema` instead. */
+  export const outboundSchema = TypeObject$outboundSchema;
+}
+
+/** @internal */
+export const IndexConfigsObject$inboundSchema: z.ZodType<
+  IndexConfigsObject,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  type: TypeObject$inboundSchema,
+  objectIndexConfigs: z.record(z.any()),
+});
+
+/** @internal */
+export type IndexConfigsObject$Outbound = {
+  type: string;
+  objectIndexConfigs: { [k: string]: any };
+};
+
+/** @internal */
+export const IndexConfigsObject$outboundSchema: z.ZodType<
+  IndexConfigsObject$Outbound,
+  z.ZodTypeDef,
+  IndexConfigsObject
+> = z.object({
+  type: TypeObject$outboundSchema,
+  objectIndexConfigs: z.record(z.any()),
+});
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace IndexConfigsObject$ {
+  /** @deprecated use `IndexConfigsObject$inboundSchema` instead. */
+  export const inboundSchema = IndexConfigsObject$inboundSchema;
+  /** @deprecated use `IndexConfigsObject$outboundSchema` instead. */
+  export const outboundSchema = IndexConfigsObject$outboundSchema;
+  /** @deprecated use `IndexConfigsObject$Outbound` instead. */
+  export type Outbound = IndexConfigsObject$Outbound;
+}
+
+export function indexConfigsObjectToJSON(
+  indexConfigsObject: IndexConfigsObject,
+): string {
+  return JSON.stringify(
+    IndexConfigsObject$outboundSchema.parse(indexConfigsObject),
+  );
+}
+
+export function indexConfigsObjectFromJSON(
+  jsonString: string,
+): SafeParseResult<IndexConfigsObject, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => IndexConfigsObject$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'IndexConfigsObject' from JSON`,
+  );
+}
 
 /** @internal */
 export const Type$inboundSchema: z.ZodNativeEnum<typeof Type> = z.nativeEnum(
@@ -69,114 +188,6 @@ export namespace Type$ {
   /** @deprecated use `Type$outboundSchema` instead. */
   export const outboundSchema = Type$outboundSchema;
 }
-
-/** @internal */
-export const TypeVector$inboundSchema: z.ZodNativeEnum<typeof TypeVector> = z
-  .nativeEnum(TypeVector);
-
-/** @internal */
-export const TypeVector$outboundSchema: z.ZodNativeEnum<typeof TypeVector> =
-  TypeVector$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace TypeVector$ {
-  /** @deprecated use `TypeVector$inboundSchema` instead. */
-  export const inboundSchema = TypeVector$inboundSchema;
-  /** @deprecated use `TypeVector$outboundSchema` instead. */
-  export const outboundSchema = TypeVector$outboundSchema;
-}
-
-/** @internal */
-export const Similarity$inboundSchema: z.ZodNativeEnum<typeof Similarity> = z
-  .nativeEnum(Similarity);
-
-/** @internal */
-export const Similarity$outboundSchema: z.ZodNativeEnum<typeof Similarity> =
-  Similarity$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace Similarity$ {
-  /** @deprecated use `Similarity$inboundSchema` instead. */
-  export const inboundSchema = Similarity$inboundSchema;
-  /** @deprecated use `Similarity$outboundSchema` instead. */
-  export const outboundSchema = Similarity$outboundSchema;
-}
-
-/** @internal */
-export const TypeText$inboundSchema: z.ZodNativeEnum<typeof TypeText> = z
-  .nativeEnum(TypeText);
-
-/** @internal */
-export const TypeText$outboundSchema: z.ZodNativeEnum<typeof TypeText> =
-  TypeText$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace TypeText$ {
-  /** @deprecated use `TypeText$inboundSchema` instead. */
-  export const inboundSchema = TypeText$inboundSchema;
-  /** @deprecated use `TypeText$outboundSchema` instead. */
-  export const outboundSchema = TypeText$outboundSchema;
-}
-
-/** @internal */
-export const Analyzer$inboundSchema: z.ZodNativeEnum<typeof Analyzer> = z
-  .nativeEnum(Analyzer);
-
-/** @internal */
-export const Analyzer$outboundSchema: z.ZodNativeEnum<typeof Analyzer> =
-  Analyzer$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace Analyzer$ {
-  /** @deprecated use `Analyzer$inboundSchema` instead. */
-  export const inboundSchema = Analyzer$inboundSchema;
-  /** @deprecated use `Analyzer$outboundSchema` instead. */
-  export const outboundSchema = Analyzer$outboundSchema;
-}
-
-/**
- * Types that do not need additional parameters.
- */
-export type IndexConfigs = {
-  type: Type;
-};
-
-export type IndexConfigsVector = {
-  type: TypeVector;
-  /**
-   * Vector dimensions.
-   */
-  dimensions: number;
-  /**
-   * Vector similarity metric.
-   */
-  similarity?: Similarity | undefined;
-};
-
-export type IndexConfigsText = {
-  type: TypeText;
-  /**
-   * Analyzers.
-   */
-  analyzers?: Array<Analyzer> | undefined;
-};
-
-export type IndexConfigsUnion =
-  | IndexConfigsVector
-  | IndexConfigsText
-  | IndexConfigs;
 
 /** @internal */
 export const IndexConfigs$inboundSchema: z.ZodType<
@@ -226,6 +237,44 @@ export function indexConfigsFromJSON(
     (x) => IndexConfigs$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'IndexConfigs' from JSON`,
   );
+}
+
+/** @internal */
+export const TypeVector$inboundSchema: z.ZodNativeEnum<typeof TypeVector> = z
+  .nativeEnum(TypeVector);
+
+/** @internal */
+export const TypeVector$outboundSchema: z.ZodNativeEnum<typeof TypeVector> =
+  TypeVector$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace TypeVector$ {
+  /** @deprecated use `TypeVector$inboundSchema` instead. */
+  export const inboundSchema = TypeVector$inboundSchema;
+  /** @deprecated use `TypeVector$outboundSchema` instead. */
+  export const outboundSchema = TypeVector$outboundSchema;
+}
+
+/** @internal */
+export const Similarity$inboundSchema: z.ZodNativeEnum<typeof Similarity> = z
+  .nativeEnum(Similarity);
+
+/** @internal */
+export const Similarity$outboundSchema: z.ZodNativeEnum<typeof Similarity> =
+  Similarity$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Similarity$ {
+  /** @deprecated use `Similarity$inboundSchema` instead. */
+  export const inboundSchema = Similarity$inboundSchema;
+  /** @deprecated use `Similarity$outboundSchema` instead. */
+  export const outboundSchema = Similarity$outboundSchema;
 }
 
 /** @internal */
@@ -286,6 +335,44 @@ export function indexConfigsVectorFromJSON(
     (x) => IndexConfigsVector$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'IndexConfigsVector' from JSON`,
   );
+}
+
+/** @internal */
+export const TypeText$inboundSchema: z.ZodNativeEnum<typeof TypeText> = z
+  .nativeEnum(TypeText);
+
+/** @internal */
+export const TypeText$outboundSchema: z.ZodNativeEnum<typeof TypeText> =
+  TypeText$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace TypeText$ {
+  /** @deprecated use `TypeText$inboundSchema` instead. */
+  export const inboundSchema = TypeText$inboundSchema;
+  /** @deprecated use `TypeText$outboundSchema` instead. */
+  export const outboundSchema = TypeText$outboundSchema;
+}
+
+/** @internal */
+export const Analyzer$inboundSchema: z.ZodNativeEnum<typeof Analyzer> = z
+  .nativeEnum(Analyzer);
+
+/** @internal */
+export const Analyzer$outboundSchema: z.ZodNativeEnum<typeof Analyzer> =
+  Analyzer$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Analyzer$ {
+  /** @deprecated use `Analyzer$inboundSchema` instead. */
+  export const inboundSchema = Analyzer$inboundSchema;
+  /** @deprecated use `Analyzer$outboundSchema` instead. */
+  export const outboundSchema = Analyzer$outboundSchema;
 }
 
 /** @internal */
@@ -352,6 +439,7 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
   unknown
 > = z.union([
   z.lazy(() => IndexConfigsVector$inboundSchema),
+  z.lazy(() => IndexConfigsObject$inboundSchema),
   z.lazy(() => IndexConfigsText$inboundSchema),
   z.lazy(() => IndexConfigs$inboundSchema),
 ]);
@@ -359,6 +447,7 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
 /** @internal */
 export type IndexConfigsUnion$Outbound =
   | IndexConfigsVector$Outbound
+  | IndexConfigsObject$Outbound
   | IndexConfigsText$Outbound
   | IndexConfigs$Outbound;
 
@@ -369,6 +458,7 @@ export const IndexConfigsUnion$outboundSchema: z.ZodType<
   IndexConfigsUnion
 > = z.union([
   z.lazy(() => IndexConfigsVector$outboundSchema),
+  z.lazy(() => IndexConfigsObject$outboundSchema),
   z.lazy(() => IndexConfigsText$outboundSchema),
   z.lazy(() => IndexConfigs$outboundSchema),
 ]);

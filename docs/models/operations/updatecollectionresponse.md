@@ -13,7 +13,8 @@ let value: UpdateCollectionResponse = {
     collectionName: "<value>",
     indexConfigs: {
       "key": {
-        type: "long",
+        type: "object",
+        objectIndexConfigs: {},
       },
     },
     numDocs: 249788,

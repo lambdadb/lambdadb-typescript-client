@@ -7,11 +7,11 @@ Vector similarity metric.
 ```typescript
 import { Similarity } from "lambdadb/models";
 
-let value: Similarity = "l2_norm";
+let value: Similarity = "euclidean";
 ```
 
 ## Values
 
 ```typescript
-"cosine" | "l2_norm" | "dot_product" | "max_inner_product"
+"cosine" | "euclidean" | "dot_product" | "max_inner_product"
 ```

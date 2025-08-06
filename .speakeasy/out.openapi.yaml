@@ -77,7 +77,7 @@ components:
                 description: "Vector similarity metric."
                 enum:
                   - "cosine"
-                  - "l2_norm"
+                  - "euclidean"
                   - "dot_product"
                   - "max_inner_product"
                 default: "cosine"
@@ -99,6 +99,18 @@ components:
             additionalProperties: false
             required:
               - "type"
+          - properties:
+              "type":
+                type: "string"
+                enum:
+                  - "object"
+              "objectIndexConfigs":
+                type: "object"
+                additionalProperties: true
+            additionalProperties: false
+            required:
+              - "type"
+              - "objectIndexConfigs"
     "CollectionResponse":
       title: "CollectionResponse"
       type: "object"
