@@ -21,7 +21,7 @@ targets:
         sourceRevisionDigest: sha256:17405efbb54958fe15d5256f418b636f071cf314922fc7009e49b2e733617709
         sourceBlobDigest: sha256:0815431f62a32ac1ddd5b664a1bb82467c11a64e50188be1f1bb237cc614e284
         codeSamplesNamespace: lambda-db-oas-code-samples
-        codeSamplesRevisionDigest: sha256:f7b5e44a0d0b76da35b7d7ac0bcf6df847b1f40214df621f90ad80b776459216
+        codeSamplesRevisionDigest: sha256:02b75ddf5681d3d4c1b93c3e25c90e659b3189f4c0b04c34412cab0a7e679cfe
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest
