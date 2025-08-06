@@ -20,7 +20,7 @@ List all collections in an existing project.
 
 <!-- UsageSnippet language="typescript" operationID="listCollections" method="get" path="/collections" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -40,8 +40,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsList } from "lambdadb/funcs/collectionsList.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsList } from "@functional-systems/lambdadb/funcs/collectionsList.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -92,7 +92,7 @@ Create a collection.
 
 <!-- UsageSnippet language="typescript" operationID="createCollection" method="post" path="/collections" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -127,8 +127,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsCreate } from "lambdadb/funcs/collectionsCreate.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsCreate } from "@functional-systems/lambdadb/funcs/collectionsCreate.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -196,7 +196,7 @@ Delete an existing collection.
 
 <!-- UsageSnippet language="typescript" operationID="deleteCollection" method="delete" path="/collections/{collectionName}" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -218,8 +218,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDelete } from "lambdadb/funcs/collectionsDelete.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDelete } from "@functional-systems/lambdadb/funcs/collectionsDelete.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -273,7 +273,7 @@ Get metadata of an existing collection.
 
 <!-- UsageSnippet language="typescript" operationID="getCollection" method="get" path="/collections/{collectionName}" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -295,8 +295,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsGet } from "lambdadb/funcs/collectionsGet.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsGet } from "@functional-systems/lambdadb/funcs/collectionsGet.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -350,7 +350,7 @@ Configure a collection.
 
 <!-- UsageSnippet language="typescript" operationID="updateCollection" method="patch" path="/collections/{collectionName}" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -390,8 +390,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsUpdate } from "lambdadb/funcs/collectionsUpdate.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsUpdate } from "@functional-systems/lambdadb/funcs/collectionsUpdate.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -464,7 +464,7 @@ Search a collection with a query and return the most similar documents.
 
 <!-- UsageSnippet language="typescript" operationID="queryCollection" method="post" path="/collections/{collectionName}/query" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -494,8 +494,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsQuery } from "lambdadb/funcs/collectionsQuery.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsQuery } from "@functional-systems/lambdadb/funcs/collectionsQuery.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.

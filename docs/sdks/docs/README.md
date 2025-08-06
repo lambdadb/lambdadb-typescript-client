@@ -20,7 +20,7 @@ Upsert documents into a collection. Note that the maximum supported payload size
 
 <!-- UsageSnippet language="typescript" operationID="upsertDocs" method="post" path="/collections/{collectionName}/docs/upsert" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -62,8 +62,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsUpsert } from "lambdadb/funcs/collectionsDocsUpsert.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsUpsert } from "@functional-systems/lambdadb/funcs/collectionsDocsUpsert.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -138,7 +138,7 @@ Request required info to upload documents.
 
 <!-- UsageSnippet language="typescript" operationID="getBulkUpsertDocs" method="get" path="/collections/{collectionName}/docs/bulk-upsert" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -160,8 +160,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsGetBulkUpsert } from "lambdadb/funcs/collectionsDocsGetBulkUpsert.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsGetBulkUpsert } from "@functional-systems/lambdadb/funcs/collectionsDocsGetBulkUpsert.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -215,7 +215,7 @@ Bulk upsert documents into a collection. Note that the maximum supported object 
 
 <!-- UsageSnippet language="typescript" operationID="bulkUpsertDocs" method="post" path="/collections/{collectionName}/docs/bulk-upsert" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -240,8 +240,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsBulkUpsert } from "lambdadb/funcs/collectionsDocsBulkUpsert.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsBulkUpsert } from "@functional-systems/lambdadb/funcs/collectionsDocsBulkUpsert.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -299,7 +299,7 @@ Update documents in a collection. Note that the maximum supported payload size i
 
 <!-- UsageSnippet language="typescript" operationID="updateDocs" method="post" path="/collections/{collectionName}/docs/update" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -343,8 +343,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsUpdate } from "lambdadb/funcs/collectionsDocsUpdate.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsUpdate } from "@functional-systems/lambdadb/funcs/collectionsDocsUpdate.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -421,7 +421,7 @@ Delete documents by document IDs or query filter from a collection.
 
 <!-- UsageSnippet language="typescript" operationID="deleteDocs" method="post" path="/collections/{collectionName}/docs/delete" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -449,8 +449,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsDelete } from "lambdadb/funcs/collectionsDocsDelete.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsDelete } from "@functional-systems/lambdadb/funcs/collectionsDocsDelete.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.
@@ -511,7 +511,7 @@ Lookup and return documents by document IDs from a collection.
 
 <!-- UsageSnippet language="typescript" operationID="fetchDocs" method="post" path="/collections/{collectionName}/docs/fetch" -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -539,8 +539,8 @@ run();
 The standalone function version of this method:
 
 ```typescript
-import { LambdaDBCore } from "lambdadb/core.js";
-import { collectionsDocsFetch } from "lambdadb/funcs/collectionsDocsFetch.js";
+import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
+import { collectionsDocsFetch } from "@functional-systems/lambdadb/funcs/collectionsDocsFetch.js";
 
 // Use `LambdaDBCore` for best tree-shaking performance.
 // You can create one instance of it to use across an application.

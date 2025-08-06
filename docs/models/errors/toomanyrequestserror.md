@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { TooManyRequestsError } from "lambdadb/models/errors";
+import { TooManyRequestsError } from "@functional-systems/lambdadb/models/errors";
 
 // No examples available for this model
 ```

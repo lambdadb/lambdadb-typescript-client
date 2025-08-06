@@ -28,3 +28,14 @@ const value: models.IndexConfigs = {
 };
 ```
 
+### `models.IndexConfigsObject`
+
+```typescript
+const value: models.IndexConfigsObject = {
+  type: "object",
+  objectIndexConfigs: {
+    "key": "<value>",
+  },
+};
+```
+

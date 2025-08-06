@@ -8,6 +8,13 @@ import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
+export type GetBulkUpsertDocsRequest = {
+  /**
+   * Collection name.
+   */
+  collectionName: string;
+};
+
 /**
  * Content type that must be specified when uploading documents.
  */
@@ -29,52 +36,6 @@ export const HttpMethod = {
  * HTTP method that must be specified when uploading documents.
  */
 export type HttpMethod = ClosedEnum<typeof HttpMethod>;
-
-/** @internal */
-export const Type$inboundSchema: z.ZodNativeEnum<typeof Type> = z.nativeEnum(
-  Type,
-);
-
-/** @internal */
-export const Type$outboundSchema: z.ZodNativeEnum<typeof Type> =
-  Type$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace Type$ {
-  /** @deprecated use `Type$inboundSchema` instead. */
-  export const inboundSchema = Type$inboundSchema;
-  /** @deprecated use `Type$outboundSchema` instead. */
-  export const outboundSchema = Type$outboundSchema;
-}
-
-/** @internal */
-export const HttpMethod$inboundSchema: z.ZodNativeEnum<typeof HttpMethod> = z
-  .nativeEnum(HttpMethod);
-
-/** @internal */
-export const HttpMethod$outboundSchema: z.ZodNativeEnum<typeof HttpMethod> =
-  HttpMethod$inboundSchema;
-
-/**
- * @internal
- * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
- */
-export namespace HttpMethod$ {
-  /** @deprecated use `HttpMethod$inboundSchema` instead. */
-  export const inboundSchema = HttpMethod$inboundSchema;
-  /** @deprecated use `HttpMethod$outboundSchema` instead. */
-  export const outboundSchema = HttpMethod$outboundSchema;
-}
-
-export type GetBulkUpsertDocsRequest = {
-  /**
-   * Collection name.
-   */
-  collectionName: string;
-};
 
 /**
  * Required info to upload documents.
@@ -154,6 +115,45 @@ export function getBulkUpsertDocsRequestFromJSON(
     (x) => GetBulkUpsertDocsRequest$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'GetBulkUpsertDocsRequest' from JSON`,
   );
+}
+
+/** @internal */
+export const Type$inboundSchema: z.ZodNativeEnum<typeof Type> = z.nativeEnum(
+  Type,
+);
+
+/** @internal */
+export const Type$outboundSchema: z.ZodNativeEnum<typeof Type> =
+  Type$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace Type$ {
+  /** @deprecated use `Type$inboundSchema` instead. */
+  export const inboundSchema = Type$inboundSchema;
+  /** @deprecated use `Type$outboundSchema` instead. */
+  export const outboundSchema = Type$outboundSchema;
+}
+
+/** @internal */
+export const HttpMethod$inboundSchema: z.ZodNativeEnum<typeof HttpMethod> = z
+  .nativeEnum(HttpMethod);
+
+/** @internal */
+export const HttpMethod$outboundSchema: z.ZodNativeEnum<typeof HttpMethod> =
+  HttpMethod$inboundSchema;
+
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace HttpMethod$ {
+  /** @deprecated use `HttpMethod$inboundSchema` instead. */
+  export const inboundSchema = HttpMethod$inboundSchema;
+  /** @deprecated use `HttpMethod$outboundSchema` instead. */
+  export const outboundSchema = HttpMethod$outboundSchema;
 }
 
 /** @internal */

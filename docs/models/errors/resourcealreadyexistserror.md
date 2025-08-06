@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { ResourceAlreadyExistsError } from "lambdadb/models/errors";
+import { ResourceAlreadyExistsError } from "@functional-systems/lambdadb/models/errors";
 
 // No examples available for this model
 ```

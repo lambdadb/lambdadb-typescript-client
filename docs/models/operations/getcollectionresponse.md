@@ -5,7 +5,7 @@ Describe collection success.
 ## Example Usage
 
 ```typescript
-import { GetCollectionResponse } from "lambdadb/models/operations";
+import { GetCollectionResponse } from "@functional-systems/lambdadb/models/operations";
 
 let value: GetCollectionResponse = {
   collection: {
@@ -13,7 +13,8 @@ let value: GetCollectionResponse = {
     collectionName: "<value>",
     indexConfigs: {
       "key": {
-        type: "long",
+        type: "object",
+        objectIndexConfigs: {},
       },
     },
     numDocs: 249788,

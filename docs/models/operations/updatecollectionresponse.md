@@ -5,7 +5,7 @@ Updated collection
 ## Example Usage
 
 ```typescript
-import { UpdateCollectionResponse } from "lambdadb/models/operations";
+import { UpdateCollectionResponse } from "@functional-systems/lambdadb/models/operations";
 
 let value: UpdateCollectionResponse = {
   collection: {
@@ -13,7 +13,8 @@ let value: UpdateCollectionResponse = {
     collectionName: "<value>",
     indexConfigs: {
       "key": {
-        type: "long",
+        type: "object",
+        objectIndexConfigs: {},
       },
     },
     numDocs: 249788,

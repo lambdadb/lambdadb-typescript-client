@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { IndexConfigsText } from "lambdadb/models";
+import { IndexConfigsText } from "@functional-systems/lambdadb/models";
 
 let value: IndexConfigsText = {
   type: "text",

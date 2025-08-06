@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { GetBulkUpsertDocsRequest } from "lambdadb/models/operations";
+import { GetBulkUpsertDocsRequest } from "@functional-systems/lambdadb/models/operations";
 
 let value: GetBulkUpsertDocsRequest = {
   collectionName: "<value>",

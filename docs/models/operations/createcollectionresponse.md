@@ -5,7 +5,7 @@ Created collection
 ## Example Usage
 
 ```typescript
-import { CreateCollectionResponse } from "lambdadb/models/operations";
+import { CreateCollectionResponse } from "@functional-systems/lambdadb/models/operations";
 
 let value: CreateCollectionResponse = {
   collection: {
@@ -13,7 +13,8 @@ let value: CreateCollectionResponse = {
     collectionName: "<value>",
     indexConfigs: {
       "key": {
-        type: "long",
+        type: "object",
+        objectIndexConfigs: {},
       },
     },
     numDocs: 249788,

@@ -1,6 +1,6 @@
-# lambdadb Examples
+# @functional-systems/lambdadb Examples
 
-This directory contains example scripts demonstrating how to use the lambdadb SDK.
+This directory contains example scripts demonstrating how to use the @functional-systems/lambdadb SDK.
 
 ## Prerequisites
 

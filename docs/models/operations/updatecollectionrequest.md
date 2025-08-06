@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { UpdateCollectionRequest } from "lambdadb/models/operations";
+import { UpdateCollectionRequest } from "@functional-systems/lambdadb/models/operations";
 
 let value: UpdateCollectionRequest = {
   collectionName: "<value>",
@@ -11,7 +11,7 @@ let value: UpdateCollectionRequest = {
     indexConfigs: {
       "key": {
         type: "vector",
-        dimensions: 26262,
+        dimensions: 851919,
         similarity: "cosine",
       },
     },

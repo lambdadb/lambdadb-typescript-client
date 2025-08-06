@@ -1,6 +1,6 @@
 <!-- Start SDK Example Usage [usage] -->
 ```typescript
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",

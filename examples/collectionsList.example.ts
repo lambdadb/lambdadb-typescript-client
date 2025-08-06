@@ -5,13 +5,13 @@
 import dotenv from "dotenv";
 dotenv.config();
 /**
- * Example usage of the lambdadb SDK
+ * Example usage of the @functional-systems/lambdadb SDK
  *
  * To run this example from the examples directory:
  * npm run build && npx tsx collectionsList.ts
  */
 
-import { LambdaDB } from "lambdadb";
+import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",

@@ -5,7 +5,7 @@ Status
 ## Example Usage
 
 ```typescript
-import { Status } from "lambdadb/models";
+import { Status } from "@functional-systems/lambdadb/models";
 
 let value: Status = "ACTIVE";
 ```

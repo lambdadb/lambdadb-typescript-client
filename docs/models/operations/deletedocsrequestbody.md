@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { DeleteDocsRequestBody } from "lambdadb/models/operations";
+import { DeleteDocsRequestBody } from "@functional-systems/lambdadb/models/operations";
 
 let value: DeleteDocsRequestBody = {};
 ```

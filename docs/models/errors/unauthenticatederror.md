@@ -3,7 +3,7 @@
 ## Example Usage
 
 ```typescript
-import { UnauthenticatedError } from "lambdadb/models/errors";
+import { UnauthenticatedError } from "@functional-systems/lambdadb/models/errors";
 
 // No examples available for this model
 ```
