@@ -3,21 +3,23 @@ id: 6c0398ae-1e45-47b2-a468-fa4ee9593b40
 management:
   docChecksum: f345509e309db197668ce98ae6b79abf
   docVersion: 1.1.1
-  speakeasyVersion: 1.598.0
-  generationVersion: 2.674.1
-  releaseVersion: 0.1.4
-  configChecksum: 757bab5f9f7a0ccc13c86d6e5c6965b9
+  speakeasyVersion: 1.600.2
+  generationVersion: 2.677.3
+  releaseVersion: 0.1.5
+  configChecksum: cd0a3c91afdeb17885cec448cebc1cf8
+  repoURL: https://github.com/lambdadb/lambdadb-typescript-client.git
+  installationURL: https://github.com/lambdadb/lambdadb-typescript-client
   published: true
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.12
-    core: 3.21.19
+    core: 3.21.20
     defaultEnabledRetries: 0.1.0
     devContainers: 2.90.0
     enumUnions: 0.1.0
     envVarSecurityUsage: 0.1.2
-    examples: 2.82.1
+    examples: 2.82.2
     globalSecurity: 2.82.13
     globalSecurityCallbacks: 0.1.0
     globalSecurityFlattening: 0.1.0
