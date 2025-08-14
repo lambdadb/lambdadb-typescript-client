@@ -8,7 +8,7 @@ dotenv.config();
  * Example usage of the @functional-systems/lambdadb SDK
  *
  * To run this example from the examples directory:
- * npm run build && npx tsx collectionsList.ts
+ * npm run build && npx tsx collectionsList.example.ts
  */
 
 import { LambdaDB } from "@functional-systems/lambdadb";
