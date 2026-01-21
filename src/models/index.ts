@@ -3,7 +3,10 @@
  */
 
 export * from "./collectionresponse.js";
+export * from "./fieldsselectorunion.js";
 export * from "./indexconfigsunion.js";
 export * from "./messageresponse.js";
+export * from "./partitionconfig.js";
+export * from "./partitionfilter.js";
 export * from "./security.js";
 export * from "./status.js";

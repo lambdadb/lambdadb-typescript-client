@@ -13,10 +13,10 @@ let value: GetCollectionResponse = {
     collectionName: "<value>",
     indexConfigs: {
       "key": {
-        type: "object",
-        objectIndexConfigs: {},
+        type: "sparseVector",
       },
     },
+    numPartitions: 191337,
     numDocs: 249788,
     collectionStatus: "ACTIVE",
   },

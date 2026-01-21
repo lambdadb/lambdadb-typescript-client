@@ -1,11 +1,11 @@
-# Type
+# TypeEnum
 
 ## Example Usage
 
 ```typescript
-import { Type } from "@functional-systems/lambdadb/models";
+import { TypeEnum } from "@functional-systems/lambdadb/models";
 
-let value: Type = "keyword";
+let value: TypeEnum = "sparseVector";
 ```
 
 ## Values

@@ -6,6 +6,7 @@ import { collectionsDocsBulkUpsert } from "../funcs/collectionsDocsBulkUpsert.js
 import { collectionsDocsDelete } from "../funcs/collectionsDocsDelete.js";
 import { collectionsDocsFetch } from "../funcs/collectionsDocsFetch.js";
 import { collectionsDocsGetBulkUpsert } from "../funcs/collectionsDocsGetBulkUpsert.js";
+import { collectionsDocsListDocs } from "../funcs/collectionsDocsListDocs.js";
 import { collectionsDocsUpdate } from "../funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "../funcs/collectionsDocsUpsert.js";
 import { ClientSDK, RequestOptions } from "../lib/sdks.js";
@@ -14,6 +15,20 @@ import * as operations from "../models/operations/index.js";
 import { unwrapAsync } from "../types/fp.js";
 
 export class Docs extends ClientSDK {
+  /**
+   * List documents in a collection.
+   */
+  async listDocs(
+    request: operations.ListDocsRequest,
+    options?: RequestOptions,
+  ): Promise<operations.ListDocsResponse> {
+    return unwrapAsync(collectionsDocsListDocs(
+      this,
+      request,
+      options,
+    ));
+  }
+
   /**
    * Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
    */

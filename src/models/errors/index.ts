@@ -6,6 +6,7 @@ export * from "./badrequesterror.js";
 export * from "./httpclienterrors.js";
 export * from "./internalservererror.js";
 export * from "./lambdadbdefaulterror.js";
+export * from "./lambdadberror.js";
 export * from "./resourcealreadyexistserror.js";
 export * from "./resourcenotfounderror.js";
 export * from "./responsevalidationerror.js";

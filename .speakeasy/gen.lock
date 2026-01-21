@@ -1,187 +1,672 @@
 lockVersion: 2.0.0
 id: 6c0398ae-1e45-47b2-a468-fa4ee9593b40
 management:
-  docChecksum: f345509e309db197668ce98ae6b79abf
+  docChecksum: 9f5fcef9820b664069285e4cca927cd9
   docVersion: 1.1.1
-  speakeasyVersion: 1.603.2
-  generationVersion: 2.681.8
-  releaseVersion: 0.1.5
-  configChecksum: 347e216a0fae770fbbf6d10701b3a071
+  speakeasyVersion: 1.691.0
+  generationVersion: 2.797.1
+  releaseVersion: 0.2.0
+  configChecksum: 564b7f02da9ea4289f9eb8b6a2555541
   published: true
+persistentEdits:
+  generation_id: c16bed3f-79f3-47c3-bc33-caa58ec82daf
+  pristine_commit_hash: 78fcc5afbf3b39516f1a57d7dcc54825f0bbc45f
+  pristine_tree_hash: 0ebe3e81153923a85fd41f677219c564b332b62a
 features:
   typescript:
     additionalDependencies: 0.1.0
     constsAndDefaults: 0.1.12
-    core: 3.21.20
+    core: 3.26.22
     defaultEnabledRetries: 0.1.0
-    devContainers: 2.90.0
+    devContainers: 2.90.1
     enumUnions: 0.1.0
     envVarSecurityUsage: 0.1.2
-    examples: 2.82.3
-    globalSecurity: 2.82.13
+    examples: 2.82.4
+    globalSecurity: 2.82.14
     globalSecurityCallbacks: 0.1.0
     globalSecurityFlattening: 0.1.0
-    globalServerURLs: 2.82.5
+    globalServerURLs: 2.83.0
     methodArguments: 0.1.2
     nameOverrides: 2.81.2
     responseFormat: 0.2.3
     retries: 2.83.0
-    sdkHooks: 0.3.0
-    unions: 2.85.11
-generatedFiles:
-  - .devcontainer/README.md
-  - .devcontainer/devcontainer.json
-  - .devcontainer/setup.sh
-  - .gitattributes
-  - .npmignore
-  - FUNCTIONS.md
-  - RUNTIMES.md
-  - USAGE.md
-  - docs/lib/utils/retryconfig.md
-  - docs/models/analyzer.md
-  - docs/models/collectionresponse.md
-  - docs/models/errors/badrequesterror.md
-  - docs/models/errors/internalservererror.md
-  - docs/models/errors/resourcealreadyexistserror.md
-  - docs/models/errors/resourcenotfounderror.md
-  - docs/models/errors/toomanyrequestserror.md
-  - docs/models/errors/unauthenticatederror.md
-  - docs/models/indexconfigs.md
-  - docs/models/indexconfigsobject.md
-  - docs/models/indexconfigstext.md
-  - docs/models/indexconfigsunion.md
-  - docs/models/indexconfigsvector.md
-  - docs/models/messageresponse.md
-  - docs/models/operations/bulkupsertdocsrequest.md
-  - docs/models/operations/bulkupsertdocsrequestbody.md
-  - docs/models/operations/createcollectionrequest.md
-  - docs/models/operations/createcollectionresponse.md
-  - docs/models/operations/deletecollectionrequest.md
-  - docs/models/operations/deletedocsrequest.md
-  - docs/models/operations/deletedocsrequestbody.md
-  - docs/models/operations/fetchdocsdoc.md
-  - docs/models/operations/fetchdocsrequest.md
-  - docs/models/operations/fetchdocsrequestbody.md
-  - docs/models/operations/fetchdocsresponse.md
-  - docs/models/operations/getbulkupsertdocsrequest.md
-  - docs/models/operations/getbulkupsertdocsresponse.md
-  - docs/models/operations/getcollectionrequest.md
-  - docs/models/operations/getcollectionresponse.md
-  - docs/models/operations/httpmethod.md
-  - docs/models/operations/listcollectionsresponse.md
-  - docs/models/operations/querycollectiondoc.md
-  - docs/models/operations/querycollectionrequest.md
-  - docs/models/operations/querycollectionrequestbody.md
-  - docs/models/operations/querycollectionresponse.md
-  - docs/models/operations/type.md
-  - docs/models/operations/updatecollectionrequest.md
-  - docs/models/operations/updatecollectionrequestbody.md
-  - docs/models/operations/updatecollectionresponse.md
-  - docs/models/operations/updatedocsrequest.md
-  - docs/models/operations/updatedocsrequestbody.md
-  - docs/models/operations/upsertdocsrequest.md
-  - docs/models/operations/upsertdocsrequestbody.md
-  - docs/models/security.md
-  - docs/models/similarity.md
-  - docs/models/status.md
-  - docs/models/type.md
-  - docs/models/typeobject.md
-  - docs/models/typetext.md
-  - docs/models/typevector.md
-  - docs/sdks/collections/README.md
-  - docs/sdks/docs/README.md
-  - docs/sdks/lambdadb/README.md
-  - eslint.config.mjs
-  - examples/.env.template
-  - examples/README.md
-  - examples/collectionsList.example.ts
-  - examples/package.json
-  - jsr.json
-  - package.json
-  - src/core.ts
-  - src/funcs/collectionsCreate.ts
-  - src/funcs/collectionsDelete.ts
-  - src/funcs/collectionsDocsBulkUpsert.ts
-  - src/funcs/collectionsDocsDelete.ts
-  - src/funcs/collectionsDocsFetch.ts
-  - src/funcs/collectionsDocsGetBulkUpsert.ts
-  - src/funcs/collectionsDocsUpdate.ts
-  - src/funcs/collectionsDocsUpsert.ts
-  - src/funcs/collectionsGet.ts
-  - src/funcs/collectionsList.ts
-  - src/funcs/collectionsQuery.ts
-  - src/funcs/collectionsUpdate.ts
-  - src/hooks/hooks.ts
-  - src/hooks/index.ts
-  - src/hooks/types.ts
-  - src/index.ts
-  - src/lib/base64.ts
-  - src/lib/config.ts
-  - src/lib/dlv.ts
-  - src/lib/encodings.ts
-  - src/lib/env.ts
-  - src/lib/files.ts
-  - src/lib/http.ts
-  - src/lib/is-plain-object.ts
-  - src/lib/logger.ts
-  - src/lib/matchers.ts
-  - src/lib/primitives.ts
-  - src/lib/retries.ts
-  - src/lib/schemas.ts
-  - src/lib/sdks.ts
-  - src/lib/security.ts
-  - src/lib/url.ts
-  - src/models/collectionresponse.ts
-  - src/models/errors/badrequesterror.ts
-  - src/models/errors/httpclienterrors.ts
-  - src/models/errors/index.ts
-  - src/models/errors/internalservererror.ts
-  - src/models/errors/lambdadbdefaulterror.ts
-  - src/models/errors/lambdadberror.ts
-  - src/models/errors/resourcealreadyexistserror.ts
-  - src/models/errors/resourcenotfounderror.ts
-  - src/models/errors/responsevalidationerror.ts
-  - src/models/errors/sdkvalidationerror.ts
-  - src/models/errors/toomanyrequestserror.ts
-  - src/models/errors/unauthenticatederror.ts
-  - src/models/index.ts
-  - src/models/indexconfigsunion.ts
-  - src/models/messageresponse.ts
-  - src/models/operations/bulkupsertdocs.ts
-  - src/models/operations/createcollection.ts
-  - src/models/operations/deletecollection.ts
-  - src/models/operations/deletedocs.ts
-  - src/models/operations/fetchdocs.ts
-  - src/models/operations/getbulkupsertdocs.ts
-  - src/models/operations/getcollection.ts
-  - src/models/operations/index.ts
-  - src/models/operations/listcollections.ts
-  - src/models/operations/querycollection.ts
-  - src/models/operations/updatecollection.ts
-  - src/models/operations/updatedocs.ts
-  - src/models/operations/upsertdocs.ts
-  - src/models/security.ts
-  - src/models/status.ts
-  - src/sdk/collections.ts
-  - src/sdk/docs.ts
-  - src/sdk/index.ts
-  - src/sdk/sdk.ts
-  - src/types/async.ts
-  - src/types/blobs.ts
-  - src/types/constdatetime.ts
-  - src/types/enums.ts
-  - src/types/fp.ts
-  - src/types/index.ts
-  - src/types/operations.ts
-  - src/types/rfcdate.ts
-  - src/types/streams.ts
-  - tsconfig.json
+    sdkHooks: 0.4.0
+    unions: 2.86.3
+trackedFiles:
+  .devcontainer/README.md:
+    id: b170c0f184ac
+    last_write_checksum: sha1:b6564d2a7c8ae764fff6d1b4666dcd787210a000
+    pristine_git_object: cdef18c30e383534a868742e1b9148f2670606f9
+  .devcontainer/devcontainer.json:
+    id: b34062a34eb1
+    last_write_checksum: sha1:d0b15193202c961e7d1875864ddb15f9d17c84dd
+    pristine_git_object: 4d560dd5f40afaf10d96eb75b1f02cd48bbd640c
+  .devcontainer/setup.sh:
+    id: 5f1dfbfeb8eb
+    last_write_checksum: sha1:0b369342ed20a1767b2a65e3be158846ec426e13
+    pristine_git_object: b5f3a7b98e0c915bc64c521685e81d91fe0a8095
+  .gitattributes:
+    id: 24139dae6567
+    last_write_checksum: sha1:26d16d8297b104945139da8c25bd38feeaad3e25
+    pristine_git_object: 113eead5093c17d43a46159132885318f281a68a
+  .npmignore:
+    id: aa70c1f807c3
+    last_write_checksum: sha1:3d5eb92f81539175db1ff0280e0aefbdd701f200
+    pristine_git_object: cf98a6bf092538eb10ff0edc915102682ce9a6e6
+  FUNCTIONS.md:
+    id: 21b9df02aaeb
+    last_write_checksum: sha1:a53664e0e11dd6b436ac13b28541822618953c18
+    pristine_git_object: b23e5165aa186adde3875b9d150d1b27f318a6b0
+  RUNTIMES.md:
+    id: 620c490847b6
+    last_write_checksum: sha1:e45b854f02c357cbcfdb8c3663000e8339e16505
+    pristine_git_object: 27731c3b5ace66bedc454ed5acbe15075aacd3dc
+  USAGE.md:
+    id: 3aed33ce6e6f
+    last_write_checksum: sha1:9c7f51156eba747e681f4e5bc8b01fe8c72baa66
+    pristine_git_object: 35caeb2c0d0c2660587c6e12c30e13441a1e5d75
+  docs/lib/utils/retryconfig.md:
+    id: 0ce9707cb848
+    last_write_checksum: sha1:bc4454e196fcd219f5a78da690375a884f5ed07b
+    pristine_git_object: 08f95f4552349360b2c0b01802aa71ec3a55d2c2
+  docs/models/analyzer.md:
+    id: 078003f53c83
+    last_write_checksum: sha1:842c5ffd966339bcc4f8057942e566cd2c2fb170
+    pristine_git_object: 0a86cce6ebaf78e234911ad3445e466ff7d27c96
+  docs/models/collectionresponse.md:
+    id: cdae14177636
+    last_write_checksum: sha1:7f367f4bac9a0cb89cb1a85d6c0310f12451bbff
+    pristine_git_object: bb5754e3e6aed6e25fc2842d2b5fe640a73ed7f8
+  docs/models/datatype.md:
+    id: abf42346352f
+    last_write_checksum: sha1:a5d40b52121a31dcbc38a5ac722684e9ddab4c0f
+    pristine_git_object: 27e97c35ed1265e489eab96226c1a0b71ddc9ccd
+  docs/models/errors/badrequesterror.md:
+    id: e455aebb4452
+    last_write_checksum: sha1:90778828a8df635a9eb0c5f35150e6092a716d65
+    pristine_git_object: e25bb83a8ba9240609bdb1d51c6f28e48dfd090e
+  docs/models/errors/internalservererror.md:
+    id: 7fac1ae84198
+    last_write_checksum: sha1:d95d9e0abbe2a9a2ac7083282fb7d5bbd8d6810d
+    pristine_git_object: 393657357e87094f01d29719c276f5bfef1bfb69
+  docs/models/errors/resourcealreadyexistserror.md:
+    id: 46928b642443
+    last_write_checksum: sha1:ca615e155c621470591d8e4e033da5a7662c44c6
+    pristine_git_object: d060651287eda3854ed9d8d0f50ec55f432480f0
+  docs/models/errors/resourcenotfounderror.md:
+    id: 1d1dda2a3775
+    last_write_checksum: sha1:27321a49bfbb31a126a66eb14768df0f44cdab01
+    pristine_git_object: d50cb8616e9d31c5cea2c411a789242e74dd185e
+  docs/models/errors/toomanyrequestserror.md:
+    id: be575070a09d
+    last_write_checksum: sha1:26f6376cde952b54ac3fa0f24a853a0ac724fb3c
+    pristine_git_object: 69bc7249fa3f4b7859d9cddde4f7992e5f690e1b
+  docs/models/errors/unauthenticatederror.md:
+    id: e104e466d9f9
+    last_write_checksum: sha1:af28d6720d562df6aa27fbac106cf01289bfb536
+    pristine_git_object: f5b47d538ac1976174fba1ff580fd5b555fa562a
+  docs/models/fieldsselector1.md:
+    id: 4b2754e51ecc
+    last_write_checksum: sha1:a212bde79cde724271cb5c84f4fe8d601fda66e1
+    pristine_git_object: 835627709fee696277978ee45127d9ad75ae160a
+  docs/models/fieldsselector2.md:
+    id: 2907e1951df8
+    last_write_checksum: sha1:a0513d5acaa8c56ed5da1335e58b06bdf5bea37a
+    pristine_git_object: 0ad0918f2e113b6f0e2c8ed9b980b9434f427542
+  docs/models/fieldsselectorunion.md:
+    id: a8295402748a
+    last_write_checksum: sha1:340a468e897c8e380bdc73a10ff4178d297cb856
+    pristine_git_object: e8de413a9ab78ca6a1f78d2760607961ae3c76d9
+  docs/models/indexconfigs.md:
+    id: bdc5969633a4
+    last_write_checksum: sha1:b8f42ce938710b774f39d7a04ee234494afbdfb3
+    pristine_git_object: 1f2e2338c1f2f41dc0aaf4407f4be1518526a5f3
+  docs/models/indexconfigsobject.md:
+    id: 15987552c683
+    last_write_checksum: sha1:8e310bbe6c0a6a136d40ac735e2f5f6abc4cca20
+    pristine_git_object: ea6eafb076db3134529564bd5456826f25cc36d7
+  docs/models/indexconfigstext.md:
+    id: 0a19d6247397
+    last_write_checksum: sha1:4cefbddf5245ca0412b607eb152fe8333c8d044f
+    pristine_git_object: 180dde8649fa0606381e264002fce137459baf9e
+  docs/models/indexconfigsunion.md:
+    id: 9ba9aafd16fd
+    last_write_checksum: sha1:576a72d6f5d420e4cf89bc17e5c4e84fb55ba708
+    pristine_git_object: f002c3fb901ec3dca09c5e365ede22597d26c812
+  docs/models/indexconfigsvector.md:
+    id: 3a0582288c62
+    last_write_checksum: sha1:e750b9a80cb90736cd1fe2e6b864bea457223293
+    pristine_git_object: 3e540f318bc62b10cc74d728ebc1eaf8d8ec326d
+  docs/models/messageresponse.md:
+    id: 3dd409ff05ba
+    last_write_checksum: sha1:ae2e1fa8fb9f24ef7c862281ee7e3c491b1f088d
+    pristine_git_object: fe925e1f24a3af6540926d877063db7e846f8bad
+  docs/models/operations/bulkupsertdocsrequest.md:
+    id: 84ab4476a3e7
+    last_write_checksum: sha1:150f528789507401826ccdd1a34c316442fa4648
+    pristine_git_object: 3deaf300f6ef11d054279cc5d4def3698b529d3a
+  docs/models/operations/bulkupsertdocsrequestbody.md:
+    id: e3ecd835a29c
+    last_write_checksum: sha1:de2fa484c3592afeafb480d0bf1bf1f2badc627a
+    pristine_git_object: 64704ababe9f353e89f0867a8e05e0b04bee1dc5
+  docs/models/operations/createcollectionrequest.md:
+    id: 72692092210d
+    last_write_checksum: sha1:12d13cbacc6f1bc794887bfa28c46f3edb43229b
+    pristine_git_object: 56d56373baf91af4b688d3692a6d9aa2c8a9b36e
+  docs/models/operations/createcollectionresponse.md:
+    id: bc72aa07eb9e
+    last_write_checksum: sha1:1bbefdb1c7a3ff13d1aa8598bf6db9dbcdafb67e
+    pristine_git_object: 64a22d196e08a1793a68d4bd1135ac797f0f5507
+  docs/models/operations/deletecollectionrequest.md:
+    id: c43ac0f890fd
+    last_write_checksum: sha1:34d04d165105219ed2e0eb862446b4e4459a2396
+    pristine_git_object: c1b0d078c1191c554fdd69c902062c6a9eec4b36
+  docs/models/operations/deletedocsrequest.md:
+    id: ca3473be8abb
+    last_write_checksum: sha1:deedee48ed9f621057b18abb68d16ddf59eb2230
+    pristine_git_object: 7122e5651402c489dd71b6acc254777d1a4423a9
+  docs/models/operations/deletedocsrequestbody.md:
+    id: 004ae1720184
+    last_write_checksum: sha1:8f42444de35f8f14386154e94e302b835e639162
+    pristine_git_object: 98ac4f533dde455d51699957b02a6007b0fa1063
+  docs/models/operations/fetchdocsdoc.md:
+    id: 2d7c6cc60b6e
+    last_write_checksum: sha1:3d1dcac0eabf616abd8bc2f4d070c850bc70d9d4
+    pristine_git_object: ea701ad33b407665f4c57b0b32b047f8e5d61455
+  docs/models/operations/fetchdocsrequest.md:
+    id: 05dbeb3974c0
+    last_write_checksum: sha1:1cb592b28459fe7345d2fd75700ddfc6f2662a09
+    pristine_git_object: 29861aefbbae1c30d33e3ed6f21ac46083007ef5
+  docs/models/operations/fetchdocsrequestbody.md:
+    id: 89fc3c407f11
+    last_write_checksum: sha1:1cd58f968bd98af43783baf853d2fbdb5c3169b7
+    pristine_git_object: 25eeac85ca56dc8cdd370d46ab3f386439219c96
+  docs/models/operations/fetchdocsresponse.md:
+    id: f395584d5988
+    last_write_checksum: sha1:948934ab4c767cbcc943ad7e084222d1a43e5d79
+    pristine_git_object: 05d6cfc5736dd02274b597d117e29ce38035644b
+  docs/models/operations/getbulkupsertdocsrequest.md:
+    id: 87b34833252a
+    last_write_checksum: sha1:7cba59ecfb23086df1e41bad051ce85d6ad6ecb7
+    pristine_git_object: cb554a06d8597af195b1b3df88a6daa287249739
+  docs/models/operations/getbulkupsertdocsresponse.md:
+    id: 5d8b32d8cf2d
+    last_write_checksum: sha1:59bd69c3cbb202c4ac2a39d470642d7c4acc6389
+    pristine_git_object: 7a25945cceb5625d81c26e97e252734111b56ca0
+  docs/models/operations/getcollectionrequest.md:
+    id: b4df0384ce7f
+    last_write_checksum: sha1:4a71186e14d73d125249c73c57f351c324d2e47d
+    pristine_git_object: e2e893aa12fb38c361a003bfcffaebec68d50ef1
+  docs/models/operations/getcollectionresponse.md:
+    id: 62007304603c
+    last_write_checksum: sha1:9fe4b1a700c6e0c93276e9185a512d57066bf518
+    pristine_git_object: 8162c6020fbb8d027a4ff8570947e6923012469f
+  docs/models/operations/httpmethod.md:
+    id: ded3a14ee9ef
+    last_write_checksum: sha1:d846345858c42a275bbd771388f0033ac276cdd1
+    pristine_git_object: 271da5623dc102a908160fccd328ab9517661ee1
+  docs/models/operations/listcollectionsresponse.md:
+    id: b417782541fc
+    last_write_checksum: sha1:082a861d0cba3adadf645fc0a0c10b8a2487a3d6
+    pristine_git_object: 997e8232dcdf3c843619fa207003a0e47484bf38
+  docs/models/operations/listdocsrequest.md:
+    id: 072d793ec33c
+    last_write_checksum: sha1:7fcb3518dfcf40e596bab7408a094f103c9c97b5
+    pristine_git_object: d09a271a936c8cdba59178052edbc205ac5609f8
+  docs/models/operations/listdocsresponse.md:
+    id: c621a08ec715
+    last_write_checksum: sha1:70305efb38aab1be5c1cba9d30fa368e97411a59
+    pristine_git_object: ec5eebecfef86c9d414197d8a86585743f8ae449
+  docs/models/operations/querycollectiondoc.md:
+    id: f2cc469dde88
+    last_write_checksum: sha1:e05d4567c6cf0c2993cc94c01e462444e0353f01
+    pristine_git_object: 3c5448952825f5bbbc31e1f33d118fb20a4d0cf3
+  docs/models/operations/querycollectionrequest.md:
+    id: cd94ea291576
+    last_write_checksum: sha1:d2afd069b2f0d0b59aeb4aa8b3e7ccfc605cb60b
+    pristine_git_object: 5756e9630eba28d358369136a3c006ca9046e36d
+  docs/models/operations/querycollectionrequestbody.md:
+    id: 5d250768348c
+    last_write_checksum: sha1:b4e7f18fd0620e013a7fd6f329cd061d43fe36a9
+    pristine_git_object: c486986c5d0f70d760f97e88896a2d5536c2db2c
+  docs/models/operations/querycollectionresponse.md:
+    id: 99b0ead136d5
+    last_write_checksum: sha1:7a11b7690cd5652028efb29ad5f2dc108a2416ac
+    pristine_git_object: 5eca2716e63260d4f50f4d5352b27f016a6c1edc
+  docs/models/operations/type.md:
+    id: 8e39682ca85e
+    last_write_checksum: sha1:8f64633485c4198cc794fc714b58a84076d807f2
+    pristine_git_object: 281c09cfbb945d2db6461015ecccb046b6c4765e
+  docs/models/operations/updatecollectionrequest.md:
+    id: ca86f70d208a
+    last_write_checksum: sha1:8fa55ea3f393fa3ecc506efe0bf659119365f69c
+    pristine_git_object: daa38b856f3fc9731799be99745b14a96a307c71
+  docs/models/operations/updatecollectionrequestbody.md:
+    id: 063817341bef
+    last_write_checksum: sha1:ad2ed1a916a26be4e3107f1c6686de88090511e0
+    pristine_git_object: 7f859176531a22ee3fa952214af769c52b54e774
+  docs/models/operations/updatecollectionresponse.md:
+    id: 843e0a0aa60b
+    last_write_checksum: sha1:5aec4e1a2209583e5482a376653271e1234dc48f
+    pristine_git_object: 48f522f41fd160fd2a47bc62775f67449303232a
+  docs/models/operations/updatedocsrequest.md:
+    id: 4773af8ec1e2
+    last_write_checksum: sha1:ef2bc787ff8567b8c77ce70742e1c3989e59564e
+    pristine_git_object: f1f8ecdfcc19740d705b277ff9ecd8d835172303
+  docs/models/operations/updatedocsrequestbody.md:
+    id: f7ad9a72e7ad
+    last_write_checksum: sha1:b57873186b68f7b0f049291b6a882aa9d8fd638d
+    pristine_git_object: a1f63d000ad3971589bfe2a2a02001b4295feb7a
+  docs/models/operations/upsertdocsrequest.md:
+    id: 149fc1a17402
+    last_write_checksum: sha1:5db80a4921ea1f8e0783a6799fbb695c12d7c3e7
+    pristine_git_object: abc07c35c4dffd7ea47d295e9303b9aad8976f40
+  docs/models/operations/upsertdocsrequestbody.md:
+    id: 0ea6c826e5e0
+    last_write_checksum: sha1:47f306aafb8b672b657adeaab4b47474475b9283
+    pristine_git_object: efade4e4ab67a6ea00dec87b2b6bf1e9214d1f4a
+  docs/models/partitionconfig.md:
+    id: c05b2be5f472
+    last_write_checksum: sha1:7a592bf47a498bb9535f0627bb69f7355697b4ae
+    pristine_git_object: f763831ab02db0a6787b644f82dfb41b6bdf12bc
+  docs/models/partitionfilter.md:
+    id: be351801b096
+    last_write_checksum: sha1:a353fa4d167d33a42dc94c7db25ad0732694dca8
+    pristine_git_object: 0509631e6dab5cbb33f1f0e7eebd5dc0f069fa80
+  docs/models/security.md:
+    id: 452e4d4eb67a
+    last_write_checksum: sha1:a84b30b87a9ed12261cfed113287e932a2ee902f
+    pristine_git_object: 5f0fde7d4479dadb236a186600e9939e335443e6
+  docs/models/similarity.md:
+    id: 0305ea1ead2c
+    last_write_checksum: sha1:fbdea7b5fe6a0144f7f8c206371a23c6f91a48b8
+    pristine_git_object: 14aa0beb764ba4e0dec5f30e7401a40eeabe9045
+  docs/models/status.md:
+    id: 959cd204aadf
+    last_write_checksum: sha1:9b5ed1512145aeade2190ea83d422a73b3f3069d
+    pristine_git_object: c4c4af5feb1690624c769764400bcd4f0ced2b75
+  docs/models/typeenum.md:
+    id: d306d1d601a4
+    last_write_checksum: sha1:6668e4d268473422b619de906fc110e373bb0aeb
+    pristine_git_object: e73987778d3f03abbc259536d1b9c67600dcd115
+  docs/sdks/collections/README.md:
+    id: 7985e64efccf
+    last_write_checksum: sha1:d4ec3937a9a1f6ed60ba9da84771ef56085c227d
+    pristine_git_object: cf66515f1cc8ba2bb9325fbab1815003e2e03505
+  docs/sdks/docs/README.md:
+    id: 38e21ef377d8
+    last_write_checksum: sha1:43c6114f2e929582534371e2b019e2d9212f5f10
+    pristine_git_object: 7fe020dab790b352f368c316bef05df9da42ec23
+  eslint.config.mjs:
+    id: 461c8d07f6da
+    last_write_checksum: sha1:9398f326377fe47f67af2df6eb6370750c0790b4
+    pristine_git_object: 67bccfec985be20a00970d90155752832dd47135
+  examples/.env.template:
+    id: 52cbe5afed92
+    last_write_checksum: sha1:9d00638fc06f39dacc43c9644fa1df359a4cc469
+    pristine_git_object: 3aeef782345afd4191d96ddd77122c143742165d
+  examples/README.md:
+    id: 9d0f69d6e677
+    last_write_checksum: sha1:a224574a10f34fa4ab44996c060f8e62072c61e9
+    pristine_git_object: 62a1a07d1fe82ab5a1ee0ce7be819d12ca2d5b50
+  examples/collectionsList.example.ts:
+    id: 715552d021dc
+    last_write_checksum: sha1:0d0c1896cac82ef1af898458f553e0720c7991bb
+    pristine_git_object: 4371000f702891ce38c87bfee6381b443e26f8ef
+  examples/package.json:
+    id: c1d7b0ec8e7e
+    last_write_checksum: sha1:0d4bff893a85ad64aaffbba2da4ed2d6e8e4b97e
+    pristine_git_object: 5633094c8168868ba55fd56583c8c4f59a62fbde
+  jsr.json:
+    id: 7f6ab7767282
+    last_write_checksum: sha1:011e236ffef3f6c4fb9299d985449258fe56b629
+    pristine_git_object: 191a0e4f3bde78653f42f8b5a48be26241758274
+  package.json:
+    id: 7030d0b2f71b
+    last_write_checksum: sha1:2f964630ac955ccb9d9cd54fceecce5162355082
+    pristine_git_object: aa7141bc2e30813ccdf7073096f434b5d833abd1
+  src/core.ts:
+    id: f431fdbcd144
+    last_write_checksum: sha1:f63129035d0eb7ca20abe65c8ea0990cdb466058
+    pristine_git_object: 0da9129ed36ec65d781346299a6623fd6e12ce1f
+  src/funcs/collectionsCreate.ts:
+    id: f3eca02ad4af
+    last_write_checksum: sha1:6e94ac2e547c722d2b3d69187a37dcadc0b0c0d1
+    pristine_git_object: f7e9f21bebc31814d1bc14caf2d28bdc11e367d6
+  src/funcs/collectionsDelete.ts:
+    id: fa9a3d0373db
+    last_write_checksum: sha1:fe8ca11cf4327427d46f0fb693b87720d06eb815
+    pristine_git_object: 1194be8bc18afbfe8c7766b9b6d811b2bb6677cc
+  src/funcs/collectionsDocsBulkUpsert.ts:
+    id: c0e6a8a6d2a6
+    last_write_checksum: sha1:05bef4bc4e5b962b7fe7d1de48d31b1bb6357790
+    pristine_git_object: f4ed4db99a88005e2593189d9fcd0428aa171a0b
+  src/funcs/collectionsDocsDelete.ts:
+    id: 220f2f479f7b
+    last_write_checksum: sha1:ebf08560dad7827bbf3c63984987d9b1cbc258ec
+    pristine_git_object: e592e3fcdb1ee4a649666c4b93b22eea70d8ca85
+  src/funcs/collectionsDocsFetch.ts:
+    id: 380c27467977
+    last_write_checksum: sha1:8d6c09090f1bef4be161310fd5c3f87b2e6472f2
+    pristine_git_object: 72d5421bc116a69da50d3e87ba17693be9de1e32
+  src/funcs/collectionsDocsGetBulkUpsert.ts:
+    id: 78618e2044e5
+    last_write_checksum: sha1:1922920497968349a5741f686e7a2b0930112276
+    pristine_git_object: 938e47058b5459e098750cc0afff9e4f97ddbb3b
+  src/funcs/collectionsDocsListDocs.ts:
+    id: 86b765a02ed0
+    last_write_checksum: sha1:2b8978c816875f608152988ef0a9ede4283d6407
+    pristine_git_object: 77b54d7ed7ec583fda1388a94d7c093964447444
+  src/funcs/collectionsDocsUpdate.ts:
+    id: 00aae64b594c
+    last_write_checksum: sha1:22a2be52d915859cba8854592a3ee888ef594d1b
+    pristine_git_object: 8c8ae3c5f37545eb6a85e0c0e2f35100912032f3
+  src/funcs/collectionsDocsUpsert.ts:
+    id: 0bddcc5d67c4
+    last_write_checksum: sha1:d9384e70872a357705c6098846afff41f25beade
+    pristine_git_object: 35fa8351685a957b895dbbfcc7ee29e932ce5a2d
+  src/funcs/collectionsGet.ts:
+    id: 5ddf4639d74e
+    last_write_checksum: sha1:87bda1e59feb20ed389d64b6f6e3d2d2a8fd0b52
+    pristine_git_object: da5a8131fce54c9cafda178d2c81b00fe6922bbb
+  src/funcs/collectionsList.ts:
+    id: 9ada0edcbfc9
+    last_write_checksum: sha1:858d466676a2888b429030a40c521f4f347e99a1
+    pristine_git_object: aac52f795f26f17b4bac51a11bad76fe3f967cde
+  src/funcs/collectionsQuery.ts:
+    id: 8c8573f750c6
+    last_write_checksum: sha1:d1a05962afc2b2fddc312284944d9af9479a0751
+    pristine_git_object: dda268b3d43cda110ae8a4b4e12380fe19e2a4c8
+  src/funcs/collectionsUpdate.ts:
+    id: de68413edb44
+    last_write_checksum: sha1:79b2163b63448619d4ecf0437e86b356381bd86c
+    pristine_git_object: 9b22f7d94dd693103580cbcfa27f5359fa622218
+  src/hooks/hooks.ts:
+    id: a2463fc6f69b
+    last_write_checksum: sha1:3a90d88b4c6c07247db8e5f6441a79538232394e
+    pristine_git_object: 94ad0a323123b34dc638717c5d67a3c23c54d5c6
+  src/hooks/index.ts:
+    id: 5f2dab62b520
+    last_write_checksum: sha1:1a11c073a6cd792932218e1d4ed36b8567bad8ef
+    pristine_git_object: f60ec7acd76141a71d78008c5a362eb0236d8335
+  src/hooks/types.ts:
+    id: 2a02d86ec24f
+    last_write_checksum: sha1:27a3444c4839bec58ae89820fd8c2483edafc3f4
+    pristine_git_object: 9c36bf01332084f735909a71036c3544cc4c7e3a
+  src/index.ts:
+    id: c5fb850250c7
+    last_write_checksum: sha1:35c9cde3ae14b18b3f893a1afe8b6c44f8760f24
+    pristine_git_object: dbcba164a0082e3bb8c43cf21fa7f8ffb9d35dfc
+  src/lib/base64.ts:
+    id: "598522066688"
+    last_write_checksum: sha1:b0b12ddbd8625efb47c0e955a18641aeb10c6532
+    pristine_git_object: 0aebd8b0a4867e35cb3348fc52921c3c0b4725b7
+  src/lib/config.ts:
+    id: 320761608fb3
+    last_write_checksum: sha1:61128c91e7b83274e4d060ee43c646b4fe880371
+    pristine_git_object: 627d697d5711631f4510bcc96001232b79f14149
+  src/lib/dlv.ts:
+    id: b1988214835a
+    last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250
+    pristine_git_object: e81091f5e536f82739f71379b1fddc2d147c49e2
+  src/lib/encodings.ts:
+    id: 3bd8ead98afd
+    last_write_checksum: sha1:d20c131976ab8ac68b22bdde2b7ed84b5b873922
+    pristine_git_object: 31cd3733907afbee3641b9ab680ed417247a7d33
+  src/lib/env.ts:
+    id: c52972a3b198
+    last_write_checksum: sha1:16c7bf7b83748613ca020e956d53cc29656f3363
+    pristine_git_object: 569b126a37701673323e55a41bf42cca50c27794
+  src/lib/files.ts:
+    id: e5efa54fcb95
+    last_write_checksum: sha1:d0f325f445b8d22e7d73baf052c585ec2dd24841
+    pristine_git_object: 0344cd046d033f9e8a55de02f7935c5cec5dc30b
+  src/lib/http.ts:
+    id: 63a80782d37e
+    last_write_checksum: sha1:797cbf16d3c7c4d62d3ba0eedb08617524938457
+    pristine_git_object: 13cf1fd7894a89f727b8d2db2ad24313a94f68c7
+  src/lib/is-plain-object.ts:
+    id: b9862591096a
+    last_write_checksum: sha1:df687f25a9590b6fd95d39df41a652ae3fd4e517
+    pristine_git_object: 61070d3d7c7e5e95b1ed7e7ea21869eb0767db77
+  src/lib/logger.ts:
+    id: 7ee7741a02bf
+    last_write_checksum: sha1:0ec9d3a2a34c362746b767e4f9a746c055d57a7b
+    pristine_git_object: d181f2937d4128afbe9b0327e0f81d1fa9c877b7
+  src/lib/matchers.ts:
+    id: d54b2253b719
+    last_write_checksum: sha1:0c1a32d8eb603e556dbe5287ae5560edc22db5ce
+    pristine_git_object: c6f76cc9e4d0f1e43b590289b650a22f7a6f83b7
+  src/lib/primitives.ts:
+    id: 74859f750b28
+    last_write_checksum: sha1:987869fc54790b9c22e9182099103d6aa7c67016
+    pristine_git_object: d21f1dc49affa4e6d324bdd60811b470fdfa7eb6
+  src/lib/retries.ts:
+    id: b24a69d15639
+    last_write_checksum: sha1:f3da74dffcbe2756c69393f8600205aa1dc06e68
+    pristine_git_object: e3ce9aba72150fc3c18f3105d39b21aba809377b
+  src/lib/schemas.ts:
+    id: deb4b531fae1
+    last_write_checksum: sha1:209cfaabfa7fc1c1310f97453215cb0755619c6e
+    pristine_git_object: 47edb9725c2482c667e2ddc8a56b1fec4285c492
+  src/lib/sdks.ts:
+    id: 8a6d91f1218d
+    last_write_checksum: sha1:0152f61f17540d799ff9956c5313212708a4b2cc
+    pristine_git_object: 4551461760f6523019021b9eb384c41c109734f5
+  src/lib/security.ts:
+    id: 0502afa7922e
+    last_write_checksum: sha1:222ee357a5175550eac21388a326f06ffc900af3
+    pristine_git_object: 3a5b00d736d89250e4aec0bf0b3f11d30be419c2
+  src/lib/url.ts:
+    id: b0057e24ed76
+    last_write_checksum: sha1:d124050c7e755c0cce233b9e029afb584ff65201
+    pristine_git_object: f3a8de6c021de59c991707946cd294596cae954d
+  src/models/collectionresponse.ts:
+    id: e917559b1b5c
+    last_write_checksum: sha1:444b0ac6040022d5d95fd5a83116ef246d043834
+    pristine_git_object: 4326d48525756bc03db1a2322d7691c42f664916
+  src/models/errors/badrequesterror.ts:
+    id: bd5a812eef15
+    last_write_checksum: sha1:1637e5257331cc24c8fd3598e80d916012401560
+    pristine_git_object: e80d10424b43bc840d09dd4883811fb73c672fb3
+  src/models/errors/httpclienterrors.ts:
+    id: 6948de76af99
+    last_write_checksum: sha1:994ced121c54fecd0af038ccfb7855fbfd3868ec
+    pristine_git_object: b34f612124c797c2a1106b9735708f679a90b74f
+  src/models/errors/index.ts:
+    id: c4e22507cb83
+    last_write_checksum: sha1:d5e43b123373b560592831934ed389d2a7dd2222
+    pristine_git_object: ab5825cc62872b2e9228c530e50677c16b476233
+  src/models/errors/internalservererror.ts:
+    id: 7480894d7180
+    last_write_checksum: sha1:eda83eb8563e680ea07d99cc7af8e15685ed99d8
+    pristine_git_object: 55f9eba53f8721344a2cf324f49bd88ddd67dbee
+  src/models/errors/lambdadbdefaulterror.ts:
+    id: fec746b7dad5
+    last_write_checksum: sha1:b259fca53450c98237929e9693f37be25bc01354
+    pristine_git_object: 25568b10a67b50ce097e7506385188ca63d581d3
+  src/models/errors/lambdadberror.ts:
+    id: e1bb664bb78c
+    last_write_checksum: sha1:78d021705d179bd96f8f90b8318ba5d0d6e1cd1c
+    pristine_git_object: ddab7e28d290965fa783d4fcf5aa0e8a2c299bb4
+  src/models/errors/resourcealreadyexistserror.ts:
+    id: 400d5aaaa5f9
+    last_write_checksum: sha1:3cdd552889bccc6381ff63b2f3c46bbea5b1ea4a
+    pristine_git_object: 44b514a66eca2d341b44185480c8c219d88e6e6e
+  src/models/errors/resourcenotfounderror.ts:
+    id: b5b2527ba766
+    last_write_checksum: sha1:c4d5486a5a7b45cfb9df20e19792c380b83fb9f1
+    pristine_git_object: fceb42c53635696e60119d080b7461a15c0df5c3
+  src/models/errors/responsevalidationerror.ts:
+    id: 88ff98a41be9
+    last_write_checksum: sha1:40d155ed3a4c341a239be496ad68481ea0fcfb27
+    pristine_git_object: 700f3523648dcad5e42688a40f6df33588256f13
+  src/models/errors/sdkvalidationerror.ts:
+    id: fb6b2b49c445
+    last_write_checksum: sha1:a69da17627bcc32b820544608f3400423ea53f26
+    pristine_git_object: 6826e1208a5d7b7d310535d18909646522bf0fbd
+  src/models/errors/toomanyrequestserror.ts:
+    id: 48c438c49b0d
+    last_write_checksum: sha1:ba197ed6dde531e10827824e763b17e41567065d
+    pristine_git_object: f552d27577b41d5f2e72850850012d943f060892
+  src/models/errors/unauthenticatederror.ts:
+    id: aa75e29b84c9
+    last_write_checksum: sha1:808e4315ec1526c3e66e0846f09c05a669569713
+    pristine_git_object: ea6a30e6727508de64684ee9e3f292a2329bb3e3
+  src/models/fieldsselectorunion.ts:
+    id: 85d5a7d590e5
+    last_write_checksum: sha1:d18203e329bfca0ac616fc290d5f041c2e62095e
+    pristine_git_object: ec61bd338739641473fd4eae00050c0c3c951538
+  src/models/index.ts:
+    id: f93644b0f37e
+    last_write_checksum: sha1:7f1a722c9546d9a1ee7b41d58225a583a38615a8
+    pristine_git_object: 48d48b298346c8c99870412ecba1ecd7d5badda3
+  src/models/indexconfigsunion.ts:
+    id: 0933e38fe2ca
+    last_write_checksum: sha1:174f3ed7da68cfbb836620f1b919e9035795fea8
+    pristine_git_object: c571e6edbf5b1c6683166fe2632fc6fbafed61e2
+  src/models/messageresponse.ts:
+    id: fafc9db00f76
+    last_write_checksum: sha1:70b0e58072d8d2b94b67d8809e81654644434c26
+    pristine_git_object: 2f73d653e3996686f8487c7ca7e5273bbda4a5b9
+  src/models/operations/bulkupsertdocs.ts:
+    id: bc4a56e77c29
+    last_write_checksum: sha1:99f8d7fe71662b3c556beba68805f22197464f12
+    pristine_git_object: 11a15d66bfb344dd3a6aad6d5adf683516a61fdb
+  src/models/operations/createcollection.ts:
+    id: 015f86c72852
+    last_write_checksum: sha1:9656da07dd6ea185270782d421593eba0a3d79f1
+    pristine_git_object: d62cded2702d936719aadb3b220974923b41b882
+  src/models/operations/deletecollection.ts:
+    id: 748f2d397bc3
+    last_write_checksum: sha1:542a2430998de84d96d7ad1ace5584eaa87fc506
+    pristine_git_object: d441f1a602975da813711d4f370d52b557910789
+  src/models/operations/deletedocs.ts:
+    id: c21052ed5e8e
+    last_write_checksum: sha1:6d268df6e527745ca4d29aa204174436762d807f
+    pristine_git_object: 0b9b602b237343cb6e5e561c084b148b02cbab84
+  src/models/operations/fetchdocs.ts:
+    id: 66c2b7a227a1
+    last_write_checksum: sha1:0182cab27b8075a49eb1cff962a3627c2bb449a9
+    pristine_git_object: 7f15d3c9b7ab82e39ef063be9bc1a19d7340b37a
+  src/models/operations/getbulkupsertdocs.ts:
+    id: 0f1ae684e290
+    last_write_checksum: sha1:856735fe92af1653a3c1bce9c9d5daf01ebd2d80
+    pristine_git_object: 28f16287012f656efa491257af285ff12ae1ca9a
+  src/models/operations/getcollection.ts:
+    id: a170b5a04f2b
+    last_write_checksum: sha1:1d4bc107bdf32bf8d93ebfbb82b9f35f4a245478
+    pristine_git_object: 39ad26c0c59217febf987e0c6ecdddf33591bf46
+  src/models/operations/index.ts:
+    id: 0d9ffaf774d2
+    last_write_checksum: sha1:b53a3b971c6bfd70f80f28635e3365a22c66249d
+    pristine_git_object: 997bcd161284f76a3c8ed8aac2e89483242062e8
+  src/models/operations/listcollections.ts:
+    id: 99a901fb1c7e
+    last_write_checksum: sha1:b6ebba161fc71c221fcffc021946a196841b1093
+    pristine_git_object: e5e9e8811cf9a1ba01abaf180fce11a2bfa26d3b
+  src/models/operations/listdocs.ts:
+    id: 5811fd87057a
+    last_write_checksum: sha1:a52230f8694fb5d6139869da510946e4be218430
+    pristine_git_object: 3f87f6e12ed04fcaf6efbac41d03aa8f89d860cc
+  src/models/operations/querycollection.ts:
+    id: 241fe4e93347
+    last_write_checksum: sha1:4597d2409a3643c32b8478af8f0aac6c206932d2
+    pristine_git_object: 493822904ec5d3d39b7b85666893a05ecdcd84a4
+  src/models/operations/updatecollection.ts:
+    id: 6101351d26f7
+    last_write_checksum: sha1:e15f8f0566b8aaa3e80463248a367c7a1cdb3c51
+    pristine_git_object: 8dbd5bac4df5706fe73a859906bb8df2ccfee212
+  src/models/operations/updatedocs.ts:
+    id: d33949edf2e0
+    last_write_checksum: sha1:2c8cb376fc832e7aa49944635a0e1aa92603ac8c
+    pristine_git_object: 8d603d839b25b775f5872de352bda871fb0b882f
+  src/models/operations/upsertdocs.ts:
+    id: 8edd7d965664
+    last_write_checksum: sha1:571efacf99849c5b0cc706858412c67638a0decf
+    pristine_git_object: c4906d3e21e4718d8eeda3fd918cb0b64c058ddd
+  src/models/partitionconfig.ts:
+    id: af60f5d7eb70
+    last_write_checksum: sha1:a0f5e9ec27621134e036ac707b46df1a63a6fda9
+    pristine_git_object: 022621eb3a0ced655bfa1482d7cb1010aa765b5d
+  src/models/partitionfilter.ts:
+    id: 81b94232be6f
+    last_write_checksum: sha1:6a9751f1d4b72ebb9676e00053b1261f81923e59
+    pristine_git_object: b4ad440c8dcd8b41a602c519bb115d75072b6a31
+  src/models/security.ts:
+    id: d90c6c784ca5
+    last_write_checksum: sha1:60d14775bc8621681ff94e5b45605486c9fd15ff
+    pristine_git_object: fbdc1d5e70c1cecc711f8c060704a3ce8812c67e
+  src/models/status.ts:
+    id: c4f3d40de057
+    last_write_checksum: sha1:1651f77be80df40fb7d121408f16455f98a5ec4f
+    pristine_git_object: 4948dd21909a30f3b34b094231a85920d6e06fab
+  src/sdk/collections.ts:
+    id: d99973e217b6
+    last_write_checksum: sha1:1471f99f254c19e93fc1890aae855c4b61151550
+    pristine_git_object: 3395fc54a50fababaff84cce3fb90e14123fccc8
+  src/sdk/docs.ts:
+    id: 99c20038ec6c
+    last_write_checksum: sha1:732bb8b5acd4ec13d82f128a911a6b61d02255c4
+    pristine_git_object: 381beafe6cebca4ecf0b2e9542dfb1fd50517be5
+  src/sdk/index.ts:
+    id: a857902a703f
+    last_write_checksum: sha1:ed6d64f2a6135349aa8498b8d8cff9ba85c7fb8f
+    pristine_git_object: ecac2264817bb369ff2dbf0f0e9029807e67ff77
+  src/sdk/sdk.ts:
+    id: 784571af2f69
+    last_write_checksum: sha1:304bcdbcd729eb4d8e5c052ff1bc8865aeac1c25
+    pristine_git_object: 3d10d7504cc8e7d1d365a641dcebcf06309430cc
+  src/types/async.ts:
+    id: fac8da972f86
+    last_write_checksum: sha1:3ff07b3feaf390ec1aeb18ff938e139c6c4a9585
+    pristine_git_object: 689dba5de50e8769e5f3bb913e3f42a146d15bc1
+  src/types/blobs.ts:
+    id: f8ab9b326c86
+    last_write_checksum: sha1:cf45d78916671cb6345a11c97c633c64402bc27c
+    pristine_git_object: cce2892d4f573a120ef3907db90ab15f5979cfda
+  src/types/constdatetime.ts:
+    id: 0f7b6f513917
+    last_write_checksum: sha1:dfaaf9adfaf49808bd4c9dea0039f21b7088d9c0
+    pristine_git_object: fe62144eaf6a2054fc8ca9a98466e70f41b5434d
+  src/types/enums.ts:
+    id: 4d03ddfe5100
+    last_write_checksum: sha1:ee590453d2c87e33e89c633d37ee46907eca0e58
+    pristine_git_object: aba0ffd2a3308a31e516d83b52823d80aa65a8f9
+  src/types/fp.ts:
+    id: ae9f0fb8aab6
+    last_write_checksum: sha1:d24994d58f37a1ca106847fcc6d2e976c6f1c093
+    pristine_git_object: ccbe51eac69dfb0da5131f14fd753c4b47c1d527
+  src/types/index.ts:
+    id: cd7a0a5ed005
+    last_write_checksum: sha1:bf43b3dccb960ca9ae9c5ab940da4786255881cd
+    pristine_git_object: abf0b7ab8f196829df8946da40d627a46da68e3c
+  src/types/operations.ts:
+    id: 314da01dca47
+    last_write_checksum: sha1:c49e724cfb1259296381cb57bc0fcdd2eae45865
+    pristine_git_object: beb81e10f0b9eee2ed398a853fe6f737b743f818
+  src/types/rfcdate.ts:
+    id: 9eb64906dcd6
+    last_write_checksum: sha1:8e5f382e02fe21c2f2e24deb1b7bbf8cddd3dd16
+    pristine_git_object: c79b3f53a3dd922aa2ace5a4191c8652cf9a8e89
+  src/types/streams.ts:
+    id: f99be9c4bf14
+    last_write_checksum: sha1:cc9ced2dd34a76c3a1bd7784ccda1cc3b37ab9a9
+    pristine_git_object: a0163e7a99cea88f21d0ad4ce3af1c720180ee20
+  src/types/unrecognized.ts:
+    id: 476605c40716
+    last_write_checksum: sha1:d33ac686528492f4cdc0dbf81ed343b4afe020fe
+    pristine_git_object: b7a2a13f3dff50663429df24ae2f55b647ff1084
+  tsconfig.json:
+    id: 61ebb9fd6e8c
+    last_write_checksum: sha1:c3ec7996536cdb9a54319e7d1eb3b199b733d34c
+    pristine_git_object: 0ccdbe286a8780e06a469a9eb7e2fb95322fd507
 examples:
   listCollections:
     normalCollection:
       responses:
         "200":
-          application/json: {"collections": [{"projectName": "example-project-name", "collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["standard"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}, "numDocs": 10000, "collectionStatus": "ACTIVE"}]}
+          application/json: {"collections": [{"projectName": "example-project-name", "collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["standard"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}, "numPartitions": 468555, "numDocs": 10000, "collectionStatus": "ACTIVE"}]}
     clonedCollection:
       responses:
         "200":
@@ -196,13 +681,17 @@ examples:
           application/json: {"message": "Too many requests"}
         "500":
           application/json: {"message": "Internal server error"}
+    forkedCollection:
+      responses:
+        "200":
+          application/json: {"collections": [{"projectName": "example-project-name", "collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["standard"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}, "numPartitions": 306696, "numDocs": 10000, "sourceProjectName": "example-source-project-name", "sourceCollectionName": "example-source-collection-name", "sourceCollectionVersionId": "example-source-collection-version-id", "collectionStatus": "ACTIVE"}]}
   createCollection:
     normalCollection:
       requestBody:
         application/json: {"collectionName": "example-collection-name", "indexConfigs": {"example-field1": {"type": "text", "analyzers": ["english"]}, "example-field2": {"type": "vector", "dimensions": 128, "similarity": "cosine"}}}
       responses:
         "202":
-          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numDocs": 595485, "collectionStatus": "ACTIVE"}}
+          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numPartitions": 112848, "numDocs": 595485, "collectionStatus": "ACTIVE"}}
         "400":
           application/json: {}
         "401":
@@ -234,7 +723,7 @@ examples:
         application/json: {"collectionName": "<value>"}
       responses:
         "202":
-          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numDocs": 595485, "collectionStatus": "ACTIVE"}}
+          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numPartitions": 112848, "numDocs": 595485, "collectionStatus": "ACTIVE"}}
         "400":
           application/json: {"message": "Invalid request"}
         "401":
@@ -245,6 +734,22 @@ examples:
           application/json: {"message": "Too many requests"}
         "500":
           application/json: {"message": "Internal server error"}
+    forkedCollection:
+      requestBody:
+        application/json: {"collectionName": "example-collection-name", "sourceProjectName": "example-source-project-name", "sourceCollectionName": "example-source-collection-name", "sourceDatetime": "2023-10-01T12:00:00Z", "sourceProjectApiKey": "example-source-project-api-key"}
+      responses:
+        "202":
+          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numPartitions": 112848, "numDocs": 595485, "collectionStatus": "ACTIVE"}}
+        "400":
+          application/json: {}
+        "401":
+          application/json: {}
+        "409":
+          application/json: {}
+        "429":
+          application/json: {}
+        "500":
+          application/json: {}
   deleteCollection:
     example:
       parameters:
@@ -268,7 +773,7 @@ examples:
           collectionName: "<value>"
       responses:
         "200":
-          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numDocs": 592208, "collectionStatus": "ACTIVE"}}
+          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {}, "numPartitions": 489617, "numDocs": 592208, "collectionStatus": "ACTIVE"}}
     example:
       parameters:
         path:
@@ -308,7 +813,7 @@ examples:
         application/json: {"indexConfigs": {"key": {"type": "keyword"}}}
       responses:
         "200":
-          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {"key": {"type": "vector", "dimensions": 884939, "similarity": "cosine"}}, "numDocs": 365, "collectionStatus": "CREATING"}}
+          application/json: {"collection": {"projectName": "<value>", "collectionName": "<value>", "indexConfigs": {"key": {"type": "vector", "dimensions": 884939, "similarity": "cosine"}}, "numPartitions": 832336, "numDocs": 365, "collectionStatus": "CREATING"}}
   queryCollection:
     example:
       parameters:
@@ -483,4 +988,170 @@ examples:
           application/json: {"message": "Too many requests"}
         "500":
           application/json: {"message": "Internal server error"}
+  listDocs:
+    example:
+      parameters:
+        path:
+          collectionName: "<value>"
+      responses:
+        "200":
+          application/json: {"total": 2, "docs": [{"collection": "example-collection-name", "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}], "nextPageToken": "eyJpZCI6ICJhYmMiLCAiY3JlYXRlZF9hdCI6ICIyMDI0LTExLTA1VDE0OjI3OjU2KzAwOjAwIn0="}
+        "400":
+          application/json: {"message": "Invalid request"}
+        "401":
+          application/json: {"message": "Authentication failed"}
+        "404":
+          application/json: {"message": "Resource not found"}
+        "429":
+          application/json: {"message": "Too many requests"}
+        "500":
+          application/json: {"message": "Internal server error"}
 examplesVersion: 1.0.2
+generatedFiles:
+  - .devcontainer/README.md
+  - .devcontainer/devcontainer.json
+  - .devcontainer/setup.sh
+  - .gitattributes
+  - .npmignore
+  - FUNCTIONS.md
+  - RUNTIMES.md
+  - USAGE.md
+  - docs/lib/utils/retryconfig.md
+  - docs/models/analyzer.md
+  - docs/models/collectionresponse.md
+  - docs/models/errors/badrequesterror.md
+  - docs/models/errors/internalservererror.md
+  - docs/models/errors/resourcealreadyexistserror.md
+  - docs/models/errors/resourcenotfounderror.md
+  - docs/models/errors/toomanyrequestserror.md
+  - docs/models/errors/unauthenticatederror.md
+  - docs/models/indexconfigs.md
+  - docs/models/indexconfigsobject.md
+  - docs/models/indexconfigstext.md
+  - docs/models/indexconfigsunion.md
+  - docs/models/indexconfigsvector.md
+  - docs/models/messageresponse.md
+  - docs/models/operations/bulkupsertdocsrequest.md
+  - docs/models/operations/bulkupsertdocsrequestbody.md
+  - docs/models/operations/createcollectionrequest.md
+  - docs/models/operations/createcollectionresponse.md
+  - docs/models/operations/deletecollectionrequest.md
+  - docs/models/operations/deletedocsrequest.md
+  - docs/models/operations/deletedocsrequestbody.md
+  - docs/models/operations/fetchdocsdoc.md
+  - docs/models/operations/fetchdocsrequest.md
+  - docs/models/operations/fetchdocsrequestbody.md
+  - docs/models/operations/fetchdocsresponse.md
+  - docs/models/operations/getbulkupsertdocsrequest.md
+  - docs/models/operations/getbulkupsertdocsresponse.md
+  - docs/models/operations/getcollectionrequest.md
+  - docs/models/operations/getcollectionresponse.md
+  - docs/models/operations/httpmethod.md
+  - docs/models/operations/listcollectionsresponse.md
+  - docs/models/operations/querycollectiondoc.md
+  - docs/models/operations/querycollectionrequest.md
+  - docs/models/operations/querycollectionrequestbody.md
+  - docs/models/operations/querycollectionresponse.md
+  - docs/models/operations/type.md
+  - docs/models/operations/updatecollectionrequest.md
+  - docs/models/operations/updatecollectionrequestbody.md
+  - docs/models/operations/updatecollectionresponse.md
+  - docs/models/operations/updatedocsrequest.md
+  - docs/models/operations/updatedocsrequestbody.md
+  - docs/models/operations/upsertdocsrequest.md
+  - docs/models/operations/upsertdocsrequestbody.md
+  - docs/models/security.md
+  - docs/models/similarity.md
+  - docs/models/status.md
+  - docs/models/type.md
+  - docs/models/typeobject.md
+  - docs/models/typetext.md
+  - docs/models/typevector.md
+  - docs/sdks/collections/README.md
+  - docs/sdks/docs/README.md
+  - docs/sdks/lambdadb/README.md
+  - eslint.config.mjs
+  - examples/.env.template
+  - examples/README.md
+  - examples/collectionsList.example.ts
+  - examples/package.json
+  - jsr.json
+  - package.json
+  - src/core.ts
+  - src/funcs/collectionsCreate.ts
+  - src/funcs/collectionsDelete.ts
+  - src/funcs/collectionsDocsBulkUpsert.ts
+  - src/funcs/collectionsDocsDelete.ts
+  - src/funcs/collectionsDocsFetch.ts
+  - src/funcs/collectionsDocsGetBulkUpsert.ts
+  - src/funcs/collectionsDocsUpdate.ts
+  - src/funcs/collectionsDocsUpsert.ts
+  - src/funcs/collectionsGet.ts
+  - src/funcs/collectionsList.ts
+  - src/funcs/collectionsQuery.ts
+  - src/funcs/collectionsUpdate.ts
+  - src/hooks/hooks.ts
+  - src/hooks/index.ts
+  - src/hooks/types.ts
+  - src/index.ts
+  - src/lib/base64.ts
+  - src/lib/config.ts
+  - src/lib/dlv.ts
+  - src/lib/encodings.ts
+  - src/lib/env.ts
+  - src/lib/files.ts
+  - src/lib/http.ts
+  - src/lib/is-plain-object.ts
+  - src/lib/logger.ts
+  - src/lib/matchers.ts
+  - src/lib/primitives.ts
+  - src/lib/retries.ts
+  - src/lib/schemas.ts
+  - src/lib/sdks.ts
+  - src/lib/security.ts
+  - src/lib/url.ts
+  - src/models/collectionresponse.ts
+  - src/models/errors/badrequesterror.ts
+  - src/models/errors/httpclienterrors.ts
+  - src/models/errors/index.ts
+  - src/models/errors/internalservererror.ts
+  - src/models/errors/lambdadbdefaulterror.ts
+  - src/models/errors/lambdadberror.ts
+  - src/models/errors/resourcealreadyexistserror.ts
+  - src/models/errors/resourcenotfounderror.ts
+  - src/models/errors/responsevalidationerror.ts
+  - src/models/errors/sdkvalidationerror.ts
+  - src/models/errors/toomanyrequestserror.ts
+  - src/models/errors/unauthenticatederror.ts
+  - src/models/index.ts
+  - src/models/indexconfigsunion.ts
+  - src/models/messageresponse.ts
+  - src/models/operations/bulkupsertdocs.ts
+  - src/models/operations/createcollection.ts
+  - src/models/operations/deletecollection.ts
+  - src/models/operations/deletedocs.ts
+  - src/models/operations/fetchdocs.ts
+  - src/models/operations/getbulkupsertdocs.ts
+  - src/models/operations/getcollection.ts
+  - src/models/operations/index.ts
+  - src/models/operations/listcollections.ts
+  - src/models/operations/querycollection.ts
+  - src/models/operations/updatecollection.ts
+  - src/models/operations/updatedocs.ts
+  - src/models/operations/upsertdocs.ts
+  - src/models/security.ts
+  - src/models/status.ts
+  - src/sdk/collections.ts
+  - src/sdk/docs.ts
+  - src/sdk/index.ts
+  - src/sdk/sdk.ts
+  - src/types/async.ts
+  - src/types/blobs.ts
+  - src/types/constdatetime.ts
+  - src/types/enums.ts
+  - src/types/fp.ts
+  - src/types/index.ts
+  - src/types/operations.ts
+  - src/types/rfcdate.ts
+  - src/types/streams.ts
+  - tsconfig.json

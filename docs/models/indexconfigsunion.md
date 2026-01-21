@@ -28,6 +28,46 @@ const value: models.IndexConfigs = {
 };
 ```
 
+### `models.IndexConfigs`
+
+```typescript
+const value: models.IndexConfigs = {
+  type: "datetime",
+};
+```
+
+### `models.IndexConfigs`
+
+```typescript
+const value: models.IndexConfigs = {
+  type: "datetime",
+};
+```
+
+### `models.IndexConfigs`
+
+```typescript
+const value: models.IndexConfigs = {
+  type: "datetime",
+};
+```
+
+### `models.IndexConfigs`
+
+```typescript
+const value: models.IndexConfigs = {
+  type: "datetime",
+};
+```
+
+### `models.IndexConfigs`
+
+```typescript
+const value: models.IndexConfigs = {
+  type: "datetime",
+};
+```
+
 ### `models.IndexConfigsObject`
 
 ```typescript

@@ -18,7 +18,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function main() {
-  const result = await lambdaDB.list();
+  const result = await lambdaDB.collections.list();
 
   console.log(result);
 }

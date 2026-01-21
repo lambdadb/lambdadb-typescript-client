@@ -10,23 +10,28 @@ let value: CollectionResponse = {
   collectionName: "<value>",
   indexConfigs: {
     "key": {
-      type: "text",
+      type: "vector",
+      dimensions: 135607,
+      similarity: "cosine",
     },
   },
-  numDocs: 135607,
-  collectionStatus: "ACTIVE",
+  numPartitions: 506700,
+  numDocs: 731542,
+  collectionStatus: "DELETING",
 };
 ```
 
 ## Fields
 
-| Field                                      | Type                                       | Required                                   | Description                                |
-| ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
-| `projectName`                              | *string*                                   | :heavy_check_mark:                         | Project name.                              |
-| `collectionName`                           | *string*                                   | :heavy_check_mark:                         | Collection name.                           |
-| `indexConfigs`                             | Record<string, *models.IndexConfigsUnion*> | :heavy_check_mark:                         | N/A                                        |
-| `numDocs`                                  | *number*                                   | :heavy_check_mark:                         | Total number of documents.                 |
-| `sourceProjectName`                        | *string*                                   | :heavy_minus_sign:                         | Source project name.                       |
-| `sourceCollectionName`                     | *string*                                   | :heavy_minus_sign:                         | Source collection name.                    |
-| `sourceCollectionVersionId`                | *string*                                   | :heavy_minus_sign:                         | Source collection version.                 |
-| `collectionStatus`                         | [models.Status](../models/status.md)       | :heavy_check_mark:                         | Status                                     |
+| Field                                                       | Type                                                        | Required                                                    | Description                                                 |
+| ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| `projectName`                                               | *string*                                                    | :heavy_check_mark:                                          | Project name.                                               |
+| `collectionName`                                            | *string*                                                    | :heavy_check_mark:                                          | Collection name.                                            |
+| `indexConfigs`                                              | Record<string, *models.IndexConfigsUnion*>                  | :heavy_check_mark:                                          | N/A                                                         |
+| `partitionConfig`                                           | [models.PartitionConfig](../models/partitionconfig.md)      | :heavy_minus_sign:                                          | N/A                                                         |
+| `numPartitions`                                             | *number*                                                    | :heavy_check_mark:                                          | Total number of partitions including the default partition. |
+| `numDocs`                                                   | *number*                                                    | :heavy_check_mark:                                          | Total number of documents.                                  |
+| `sourceProjectName`                                         | *string*                                                    | :heavy_minus_sign:                                          | Source project name.                                        |
+| `sourceCollectionName`                                      | *string*                                                    | :heavy_minus_sign:                                          | Source collection name.                                     |
+| `sourceCollectionVersionId`                                 | *string*                                                    | :heavy_minus_sign:                                          | Source collection version.                                  |
+| `collectionStatus`                                          | [models.Status](../models/status.md)                        | :heavy_check_mark:                                          | Status                                                      |

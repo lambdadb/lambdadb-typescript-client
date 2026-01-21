@@ -10,6 +10,7 @@ export * from "./fetchdocs.js";
 export * from "./getbulkupsertdocs.js";
 export * from "./getcollection.js";
 export * from "./listcollections.js";
+export * from "./listdocs.js";
 export * from "./querycollection.js";
 export * from "./updatecollection.js";
 export * from "./updatedocs.js";

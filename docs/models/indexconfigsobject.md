@@ -15,7 +15,7 @@ let value: IndexConfigsObject = {
 
 ## Fields
 
-| Field                                        | Type                                         | Required                                     | Description                                  |
-| -------------------------------------------- | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
-| `type`                                       | [models.TypeObject](../models/typeobject.md) | :heavy_check_mark:                           | N/A                                          |
-| `objectIndexConfigs`                         | Record<string, *any*>                        | :heavy_check_mark:                           | N/A                                          |
+| Field                 | Type                  | Required              | Description           |
+| --------------------- | --------------------- | --------------------- | --------------------- |
+| `type`                | *"object"*            | :heavy_check_mark:    | N/A                   |
+| `objectIndexConfigs`  | Record<string, *any*> | :heavy_check_mark:    | N/A                   |

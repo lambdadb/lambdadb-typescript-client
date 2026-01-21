@@ -15,6 +15,6 @@ let value: IndexConfigsVector = {
 
 | Field                                        | Type                                         | Required                                     | Description                                  |
 | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
-| `type`                                       | [models.TypeVector](../models/typevector.md) | :heavy_check_mark:                           | N/A                                          |
+| `type`                                       | *"vector"*                                   | :heavy_check_mark:                           | N/A                                          |
 | `dimensions`                                 | *number*                                     | :heavy_check_mark:                           | Vector dimensions.                           |
 | `similarity`                                 | [models.Similarity](../models/similarity.md) | :heavy_minus_sign:                           | Vector similarity metric.                    |

@@ -8,7 +8,7 @@ import { UpdateCollectionRequestBody } from "@functional-systems/lambdadb/models
 let value: UpdateCollectionRequestBody = {
   indexConfigs: {
     "key": {
-      type: "keyword",
+      type: "datetime",
     },
   },
 };

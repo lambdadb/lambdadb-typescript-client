@@ -64,10 +64,7 @@ bun add @functional-systems/lambdadb
 ### Yarn
 
 ```bash
-yarn add @functional-systems/lambdadb zod
-
-# Note that Yarn does not install peer dependencies automatically. You will need
-# to install zod as shown above.
+yarn add @functional-systems/lambdadb
 ```
 
 > [!NOTE]
@@ -139,7 +136,7 @@ run();
 <details open>
 <summary>Available methods</summary>
 
-### [collections](docs/sdks/collections/README.md)
+### [Collections](docs/sdks/collections/README.md)
 
 * [list](docs/sdks/collections/README.md#list) - List all collections in an existing project.
 * [create](docs/sdks/collections/README.md#create) - Create a collection.
@@ -148,15 +145,15 @@ run();
 * [update](docs/sdks/collections/README.md#update) - Configure a collection.
 * [query](docs/sdks/collections/README.md#query) - Search a collection with a query and return the most similar documents.
 
-#### [collections.docs](docs/sdks/docs/README.md)
+#### [Collections.Docs](docs/sdks/docs/README.md)
 
+* [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 * [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
 * [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 * [delete](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
 * [fetch](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
-
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
@@ -182,6 +179,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
 - [`collectionsDocsFetch`](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
 - [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
+- [`collectionsDocsListDocs`](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 - [`collectionsDocsUpdate`](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 - [`collectionsDocsUpsert`](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 - [`collectionsGet`](docs/sdks/collections/README.md#get) - Get metadata of an existing collection.
@@ -324,8 +322,8 @@ run();
 
 
 **Inherit from [`LambdaDBError`](./src/models/errors/lambdadberror.ts)**:
-* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 8 of 12 methods.*
-* [`ResourceAlreadyExistsError`](./src/models/errors/resourcealreadyexistserror.ts): Resource already exists. Status code `409`. Applicable to 1 of 12 methods.*
+* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 9 of 13 methods.*
+* [`ResourceAlreadyExistsError`](./src/models/errors/resourcealreadyexistserror.ts): Resource already exists. Status code `409`. Applicable to 1 of 13 methods.*
 * [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>
@@ -350,7 +348,8 @@ The default server `https://{projectHost}` contains variables and is set to `htt
 import { LambdaDB } from "@functional-systems/lambdadb";
 
 const lambdaDB = new LambdaDB({
-  projectHost: "<value>",
+  serverIdx: 0,
+  projectHost: "api.lambdadb.com/projects/default",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
@@ -431,7 +430,7 @@ httpClient.addHook("requestError", (error, request) => {
   console.groupEnd();
 });
 
-const sdk = new LambdaDB({ httpClient });
+const sdk = new LambdaDB({ httpClient: httpClient });
 ```
 <!-- End Custom HTTP Client [http-client] -->
 
