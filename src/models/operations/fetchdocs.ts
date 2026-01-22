@@ -55,6 +55,14 @@ export type FetchDocsResponse = {
    */
   took: number;
   docs: Array<FetchDocsDoc>;
+  /**
+   * Whether the list of documents is included.
+   */
+  isDocsInline: boolean;
+  /**
+   * Download URL for the list of documents.
+   */
+  docsUrl?: string | undefined;
 };
 
 /** @internal */
@@ -144,6 +152,8 @@ export const FetchDocsResponse$inboundSchema: z.ZodType<
   total: z.number().int(),
   took: z.number().int(),
   docs: z.array(z.lazy(() => FetchDocsDoc$inboundSchema)),
+  isDocsInline: z.boolean(),
+  docsUrl: z.string().optional(),
 });
 
 export function fetchDocsResponseFromJSON(

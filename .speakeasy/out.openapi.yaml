@@ -1194,14 +1194,21 @@ paths:
                       required:
                         - "collection"
                         - "doc"
+                  "isDocsInline":
+                    type: "boolean"
+                    description: "Whether the list of documents is included."
+                  "docsUrl":
+                    type: "string"
+                    description: "Download URL for the list of documents."
                 required:
                   - "total"
                   - "took"
                   - "docs"
+                  - "isDocsInline"
               examples:
                 "example":
                   summary: "Example response for documents fetch"
-                  value: {"total": 2, "took": 10, "docs": [{"collection": "example-collection-name", "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}]}
+                  value: {"total": 2, "took": 10, "docs": [{"collection": "example-collection-name", "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}], "isDocsInline": true}
         "400":
           description: "Bad request"
           content:
@@ -1323,14 +1330,21 @@ paths:
                       required:
                         - "collection"
                         - "doc"
+                  "isDocsInline":
+                    type: "boolean"
+                    description: "Whether the list of documents is included."
+                  "docsUrl":
+                    type: "string"
+                    description: "Optional download URL for the list of documents."
                 required:
                   - "took"
                   - "total"
                   - "docs"
+                  - "isDocsInline"
               examples:
                 "example":
                   summary: "Example response for documents query"
-                  value: {"took": 10, "maxScore": 1, "total": 2, "docs": [{"collection": "example-collection-name", "score": 1, "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "score": 0.9, "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}]}
+                  value: {"took": 10, "maxScore": 1, "total": 2, "docs": [{"collection": "example-collection-name", "score": 1, "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "score": 0.9, "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}], "isDocsInline": true}
         "400":
           description: "Bad request"
           content:

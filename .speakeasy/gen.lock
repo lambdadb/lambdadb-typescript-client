@@ -1,17 +1,17 @@
 lockVersion: 2.0.0
 id: 6c0398ae-1e45-47b2-a468-fa4ee9593b40
 management:
-  docChecksum: 9f5fcef9820b664069285e4cca927cd9
+  docChecksum: 3bdd07c58141062993f70d1e027ec230
   docVersion: 1.1.1
-  speakeasyVersion: 1.691.0
-  generationVersion: 2.797.1
-  releaseVersion: 0.2.0
-  configChecksum: 564b7f02da9ea4289f9eb8b6a2555541
+  speakeasyVersion: 1.693.0
+  generationVersion: 2.798.0
+  releaseVersion: 0.2.1
+  configChecksum: b8534b9eac5e2e298856f5789c26c5dd
   published: true
 persistentEdits:
-  generation_id: c16bed3f-79f3-47c3-bc33-caa58ec82daf
-  pristine_commit_hash: 78fcc5afbf3b39516f1a57d7dcc54825f0bbc45f
-  pristine_tree_hash: 0ebe3e81153923a85fd41f677219c564b332b62a
+  generation_id: 757b027f-ff22-478a-b475-a008aef6b9eb
+  pristine_commit_hash: e7510821c3676315db2737e1aea0321a3daa42e0
+  pristine_tree_hash: e006fa03351e43bb17e78a3f9b7833f274a32165
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -183,8 +183,8 @@ trackedFiles:
     pristine_git_object: 25eeac85ca56dc8cdd370d46ab3f386439219c96
   docs/models/operations/fetchdocsresponse.md:
     id: f395584d5988
-    last_write_checksum: sha1:948934ab4c767cbcc943ad7e084222d1a43e5d79
-    pristine_git_object: 05d6cfc5736dd02274b597d117e29ce38035644b
+    last_write_checksum: sha1:2e911214e80d3b68e93fb046fd02c3636b7a4feb
+    pristine_git_object: 1de84aa11d01ed5497b5828e457bf6f6d8d28a2f
   docs/models/operations/getbulkupsertdocsrequest.md:
     id: 87b34833252a
     last_write_checksum: sha1:7cba59ecfb23086df1e41bad051ce85d6ad6ecb7
@@ -231,8 +231,8 @@ trackedFiles:
     pristine_git_object: c486986c5d0f70d760f97e88896a2d5536c2db2c
   docs/models/operations/querycollectionresponse.md:
     id: 99b0ead136d5
-    last_write_checksum: sha1:7a11b7690cd5652028efb29ad5f2dc108a2416ac
-    pristine_git_object: 5eca2716e63260d4f50f4d5352b27f016a6c1edc
+    last_write_checksum: sha1:13d63b7f69a128c64ea356fe1c5216ec84b1396f
+    pristine_git_object: 96da7d04bb3d1565db72abfc51968f5f0f4f5df5
   docs/models/operations/type.md:
     id: 8e39682ca85e
     last_write_checksum: sha1:8f64633485c4198cc794fc714b58a84076d807f2
@@ -319,12 +319,12 @@ trackedFiles:
     pristine_git_object: 5633094c8168868ba55fd56583c8c4f59a62fbde
   jsr.json:
     id: 7f6ab7767282
-    last_write_checksum: sha1:011e236ffef3f6c4fb9299d985449258fe56b629
-    pristine_git_object: 191a0e4f3bde78653f42f8b5a48be26241758274
+    last_write_checksum: sha1:0c407b4a23d5707f355b5003312ead83440b0639
+    pristine_git_object: d6d7aef5dbf8639870d2b37264ffc249c0082103
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:2f964630ac955ccb9d9cd54fceecce5162355082
-    pristine_git_object: aa7141bc2e30813ccdf7073096f434b5d833abd1
+    last_write_checksum: sha1:53f9c6b89eb11cf24dab120e702a8009d938c7d2
+    pristine_git_object: 616e98a57824a81677d918b090ec9cb028234969
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:f63129035d0eb7ca20abe65c8ea0990cdb466058
@@ -403,8 +403,8 @@ trackedFiles:
     pristine_git_object: 0aebd8b0a4867e35cb3348fc52921c3c0b4725b7
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:61128c91e7b83274e4d060ee43c646b4fe880371
-    pristine_git_object: 627d697d5711631f4510bcc96001232b79f14149
+    last_write_checksum: sha1:99df4583f2addf49083ce591641c046fa0fd06ee
+    pristine_git_object: 96927b228c2603b1a97695fd214e511b2d506f83
   src/lib/dlv.ts:
     id: b1988214835a
     last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250
@@ -547,8 +547,8 @@ trackedFiles:
     pristine_git_object: 0b9b602b237343cb6e5e561c084b148b02cbab84
   src/models/operations/fetchdocs.ts:
     id: 66c2b7a227a1
-    last_write_checksum: sha1:0182cab27b8075a49eb1cff962a3627c2bb449a9
-    pristine_git_object: 7f15d3c9b7ab82e39ef063be9bc1a19d7340b37a
+    last_write_checksum: sha1:18fd81416e9a5cfc388ff7fe22b8bbb36901457a
+    pristine_git_object: dd2593b6840f99ed461a6102cf0f1faae3350e57
   src/models/operations/getbulkupsertdocs.ts:
     id: 0f1ae684e290
     last_write_checksum: sha1:856735fe92af1653a3c1bce9c9d5daf01ebd2d80
@@ -571,8 +571,8 @@ trackedFiles:
     pristine_git_object: 3f87f6e12ed04fcaf6efbac41d03aa8f89d860cc
   src/models/operations/querycollection.ts:
     id: 241fe4e93347
-    last_write_checksum: sha1:4597d2409a3643c32b8478af8f0aac6c206932d2
-    pristine_git_object: 493822904ec5d3d39b7b85666893a05ecdcd84a4
+    last_write_checksum: sha1:b5aa81765820eb55ad62c183d73c4e20a41b4614
+    pristine_git_object: 5fc9d5dc1a0a21d6d022545ab985c38d92393b40
   src/models/operations/updatecollection.ts:
     id: 6101351d26f7
     last_write_checksum: sha1:e15f8f0566b8aaa3e80463248a367c7a1cdb3c51
@@ -823,7 +823,7 @@ examples:
         application/json: {"size": 2, "query": {"queryString": {"query": "example-field1:example-value"}}, "consistentRead": false, "includeVectors": false}
       responses:
         "200":
-          application/json: {"took": 10, "maxScore": 1, "total": 2, "docs": [{"collection": "example-collection-name", "score": 1, "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "score": 0.9, "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}]}
+          application/json: {"took": 10, "maxScore": 1, "total": 2, "docs": [{"collection": "example-collection-name", "score": 1, "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "score": 0.9, "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}], "isDocsInline": true}
         "400":
           application/json: {"message": "Invalid request"}
         "401":
@@ -977,7 +977,7 @@ examples:
         application/json: {"ids": ["example-doc-id-1", "example-doc-id-2"], "consistentRead": false, "includeVectors": false}
       responses:
         "200":
-          application/json: {"total": 2, "took": 10, "docs": [{"collection": "example-collection-name", "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}]}
+          application/json: {"total": 2, "took": 10, "docs": [{"collection": "example-collection-name", "doc": {"example-field1": "example-value1", "example-field2": [0.1, 0.2, 0.3]}}, {"collection": "example-collection-name", "doc": {"example-field1": "example-value2", "example-field2": [0.4, 0.5, 0.6]}}], "isDocsInline": true}
         "400":
           application/json: {"message": "Invalid request"}
         "401":

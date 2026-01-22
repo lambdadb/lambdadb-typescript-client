@@ -77,6 +77,14 @@ export type QueryCollectionResponse = {
    * List of documents.
    */
   docs: Array<QueryCollectionDoc>;
+  /**
+   * Whether the list of documents is included.
+   */
+  isDocsInline: boolean;
+  /**
+   * Optional download URL for the list of documents.
+   */
+  docsUrl?: string | undefined;
 };
 
 /** @internal */
@@ -172,6 +180,8 @@ export const QueryCollectionResponse$inboundSchema: z.ZodType<
   maxScore: z.number().optional(),
   total: z.number().int(),
   docs: z.array(z.lazy(() => QueryCollectionDoc$inboundSchema)),
+  isDocsInline: z.boolean(),
+  docsUrl: z.string().optional(),
 });
 
 export function queryCollectionResponseFromJSON(

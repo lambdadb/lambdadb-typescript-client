@@ -20,6 +20,7 @@ let value: QueryCollectionResponse = {
       },
     },
   ],
+  isDocsInline: false,
 };
 ```
 
@@ -31,3 +32,5 @@ let value: QueryCollectionResponse = {
 | `maxScore`                                                                       | *number*                                                                         | :heavy_minus_sign:                                                               | Maximum score.                                                                   |
 | `total`                                                                          | *number*                                                                         | :heavy_check_mark:                                                               | Total number of documents returned.                                              |
 | `docs`                                                                           | [operations.QueryCollectionDoc](../../models/operations/querycollectiondoc.md)[] | :heavy_check_mark:                                                               | List of documents.                                                               |
+| `isDocsInline`                                                                   | *boolean*                                                                        | :heavy_check_mark:                                                               | Whether the list of documents is included.                                       |
+| `docsUrl`                                                                        | *string*                                                                         | :heavy_minus_sign:                                                               | Optional download URL for the list of documents.                                 |
