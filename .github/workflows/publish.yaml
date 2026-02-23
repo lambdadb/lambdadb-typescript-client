@@ -1,5 +1,7 @@
 # Publish to npm. No longer uses Speakeasy; SDK is maintained manually.
-# Trigger: push tag v* (e.g. v0.3.0) or workflow_dispatch.
+# Trigger: push tag v* (e.g. v0.3.0 or v0.3.0-dev) or workflow_dispatch.
+# - On tag push: package version is set from the tag (e.g. v0.3.0-dev → 0.3.0-dev).
+# - Pre-release versions (contain '-') are published with dist-tag "dev"; others with "latest".
 # Secret required: NPM_TOKEN (npm access token with publish permission).
 name: Publish to npm
 
@@ -24,8 +26,24 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      # When triggered by a tag, set package version from tag (e.g. v0.3.0-dev → 0.3.0-dev)
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          npm pkg set version="$VERSION"
+          echo "Publishing version: $VERSION"
+
       - run: npm ci
       - run: npm run build
-      - run: npm publish --access public
+
+      # Pre-release versions (e.g. 0.3.0-dev) → tag "dev"; else "latest"
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then TAG=dev; else TAG=latest; fi
+          echo "Publishing @functional-systems/lambdadb@$VERSION with tag $TAG"
+          npm publish --access public --tag "$TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
