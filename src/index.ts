@@ -8,7 +8,7 @@ export { HTTPClient } from "./lib/http.js";
 export type { Fetcher, HTTPClientOptions } from "./lib/http.js";
 export * from "./sdk/sdk.js";
 
-/** Collection-scoped client (recommended). See docs/REFACTORING_PROPOSAL.md */
+/** Collection-scoped client (recommended). See docs/REFACTORING_STATUS.md */
 export {
   LambdaDBClient,
   CollectionHandle,
@@ -17,3 +17,11 @@ export {
   type RequestOptions as ClientRequestOptions,
   type LambdaDBClientOptions,
 } from "./client.js";
+
+/** Public API types (inputs and responses for the collection-scoped client). */
+export type * from "./types/public.js";
+
+/**
+ * @deprecated Use types from the package root (e.g. CreateCollectionInput, QueryCollectionResponse). Will be removed in the next major version.
+ */
+export type { operations, models } from "./client.js";

@@ -9,7 +9,11 @@ dotenv.config();
  *   npm run build && npx tsx collectionScoped.example.ts
  */
 
-import { LambdaDBClient } from "@functional-systems/lambdadb";
+import {
+  LambdaDBClient,
+  type ListDocsInput,
+  type ListDocsResponse,
+} from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
   projectApiKey: process.env.LAMBDADB_PROJECT_API_KEY ?? "<YOUR_PROJECT_API_KEY>",
@@ -24,8 +28,10 @@ async function main() {
   const meta = await collection.get();
   console.log("Collection:", meta);
 
-  // List documents (no collectionName in the call)
-  const { docs, total, nextPageToken } = await collection.docs.list({ size: 10 });
+  // List documents (no collectionName in the call); use public types for params and result
+  const listParams: ListDocsInput = { size: 10 };
+  const listResult: ListDocsResponse = await collection.docs.list(listParams);
+  const { docs, total, nextPageToken } = listResult;
   console.log(`Documents: ${docs.length} of ${total}`, nextPageToken ? "(has more)" : "");
 }
 

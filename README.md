@@ -109,6 +109,37 @@ async function run() {
 
 run();
 ```
+
+### TypeScript types
+
+Import request and response types from the package for type-safe usage. Use the **input** types for method arguments and the **response** types for return values.
+
+```typescript
+import {
+  LambdaDBClient,
+  type CreateCollectionInput,
+  type QueryCollectionInput,
+  type QueryCollectionResponse,
+  type ListDocsInput,
+  type ListDocsResponse,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+// Typed list params
+const params: ListDocsInput = { size: 20, pageToken: undefined };
+const listResult: ListDocsResponse = await collection.docs.list(params);
+
+// Typed query body and response
+const queryBody: QueryCollectionInput = {
+  query: { text: "hello" },
+  size: 10,
+};
+const queryResult: QueryCollectionResponse = await collection.query(queryBody);
+```
+
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `FetchDocsResponse`, `MessageResponse`; and model types like `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. All are exported from the main package.
 <!-- End SDK Example Usage [usage] -->
 
 <!-- Start Authentication [security] -->

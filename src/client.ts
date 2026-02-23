@@ -26,13 +26,34 @@ import { collectionsDocsListDocs } from "./funcs/collectionsDocsListDocs.js";
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
+import { unwrapAsync } from "./types/fp.js";
 import type * as operations from "./models/operations/index.js";
 import type * as models from "./models/index.js";
-import { unwrapAsync } from "./types/fp.js";
+import type {
+  CreateCollectionInput,
+  UpdateCollectionInput,
+  QueryCollectionInput,
+  QueryCollectionResponse,
+  QueryCollectionDoc,
+  ListDocsInput,
+  UpsertDocsInput,
+  UpdateDocsInput,
+  DeleteDocsInput,
+  FetchDocsInput,
+  FetchDocsResponse,
+  FetchDocsDoc,
+  BulkUpsertInput,
+  MessageResponse,
+} from "./types/public.js";
 
 export type { RequestOptions };
 
-// Re-export common types for facade users
+// Re-export public API types (request-body–level inputs and method return types)
+export type * from "./types/public.js";
+
+/**
+ * @deprecated Use types from the package root (e.g. CreateCollectionInput, QueryCollectionResponse, ListDocsInput). Will be removed in the next major version.
+ */
 export type { operations, models };
 
 /**
@@ -122,7 +143,7 @@ export class LambdaDBClient extends LambdaDBCore {
    * Create a new collection.
    */
   async createCollection(
-    request: operations.CreateCollectionRequest,
+    request: CreateCollectionInput,
     options?: RequestOptions,
   ) {
     return unwrapAsync(collectionsCreate(this, request, options));
@@ -151,7 +172,7 @@ export class CollectionHandle {
    * Configure (update) this collection.
    */
   async update(
-    requestBody: operations.UpdateCollectionRequestBody,
+    requestBody: UpdateCollectionInput,
     options?: RequestOptions,
   ) {
     return unwrapAsync(
@@ -185,9 +206,9 @@ export class CollectionHandle {
    * fetched from the presigned URL automatically so the response always has docs.
    */
   async query(
-    requestBody: operations.QueryCollectionRequestBody,
+    requestBody: QueryCollectionInput,
     options?: RequestOptions,
-  ): Promise<operations.QueryCollectionResponse> {
+  ): Promise<QueryCollectionResponse> {
     const result = await unwrapAsync(
       collectionsQuery(
         this.client,
@@ -199,7 +220,7 @@ export class CollectionHandle {
       ),
     );
     if (!result.isDocsInline && result.docsUrl) {
-      const docs = await fetchDocsFromUrl<operations.QueryCollectionDoc>(
+      const docs = await fetchDocsFromUrl<QueryCollectionDoc>(
         result.docsUrl,
       );
       return { ...result, docs, isDocsInline: true };
@@ -223,7 +244,7 @@ class CollectionDocs {
    * List documents in the collection.
    */
   async list(
-    params?: { size?: number; pageToken?: string },
+    params?: ListDocsInput,
     options?: RequestOptions,
   ) {
     return unwrapAsync(
@@ -239,9 +260,9 @@ class CollectionDocs {
    * Upsert documents. Max payload 6MB.
    */
   async upsert(
-    body: { docs: Array<Record<string, unknown>> },
+    body: UpsertDocsInput,
     options?: RequestOptions,
-  ): Promise<models.MessageResponse> {
+  ): Promise<MessageResponse> {
     return unwrapAsync(
       collectionsDocsUpsert(
         this.client,
@@ -258,9 +279,9 @@ class CollectionDocs {
    * Update documents (each doc must have id). Max payload 6MB.
    */
   async update(
-    body: { docs: Array<Record<string, unknown>> },
+    body: UpdateDocsInput,
     options?: RequestOptions,
-  ): Promise<models.MessageResponse> {
+  ): Promise<MessageResponse> {
     return unwrapAsync(
       collectionsDocsUpdate(
         this.client,
@@ -277,9 +298,9 @@ class CollectionDocs {
    * Delete documents by ids and/or filter.
    */
   async delete(
-    body: operations.DeleteDocsRequestBody,
+    body: DeleteDocsInput,
     options?: RequestOptions,
-  ): Promise<models.MessageResponse> {
+  ): Promise<MessageResponse> {
     return unwrapAsync(
       collectionsDocsDelete(
         this.client,
@@ -298,9 +319,9 @@ class CollectionDocs {
    * fetched from the presigned URL automatically so the response always has docs.
    */
   async fetch(
-    body: operations.FetchDocsRequestBody,
+    body: FetchDocsInput,
     options?: RequestOptions,
-  ): Promise<operations.FetchDocsResponse> {
+  ): Promise<FetchDocsResponse> {
     const result = await unwrapAsync(
       collectionsDocsFetch(
         this.client,
@@ -312,7 +333,7 @@ class CollectionDocs {
       ),
     );
     if (!result.isDocsInline && result.docsUrl) {
-      const docs = await fetchDocsFromUrl<operations.FetchDocsDoc>(
+      const docs = await fetchDocsFromUrl<FetchDocsDoc>(
         result.docsUrl,
       );
       return { ...result, docs, isDocsInline: true };
@@ -337,9 +358,9 @@ class CollectionDocs {
    * Trigger bulk upsert with an object key from getBulkUpsert().
    */
   async bulkUpsert(
-    body: { objectKey: string },
+    body: BulkUpsertInput,
     options?: RequestOptions,
-  ): Promise<models.MessageResponse> {
+  ): Promise<MessageResponse> {
     return unwrapAsync(
       collectionsDocsBulkUpsert(
         this.client,
@@ -358,9 +379,9 @@ class CollectionDocs {
    * you have a document list; use getBulkUpsert + bulkUpsert for low-level control.
    */
   async bulkUpsertDocs(
-    body: { docs: Array<Record<string, unknown>> },
+    body: UpsertDocsInput,
     options?: RequestOptions,
-  ): Promise<models.MessageResponse> {
+  ): Promise<MessageResponse> {
     const { url, type, httpMethod, objectKey, sizeLimitBytes } = await this.getBulkUpsert(options);
 
     const payload = { docs: body.docs };
