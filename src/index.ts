@@ -12,5 +12,8 @@ export * from "./sdk/sdk.js";
 export {
   LambdaDBClient,
   CollectionHandle,
+  DEFAULT_BASE_URL,
+  DEFAULT_PROJECT_NAME,
   type RequestOptions as ClientRequestOptions,
+  type LambdaDBClientOptions,
 } from "./client.js";

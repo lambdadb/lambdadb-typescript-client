@@ -11,6 +11,7 @@
  */
 
 import { LambdaDBCore } from "./core.js";
+import type { SDKOptions } from "./lib/config.js";
 import { collectionsCreate } from "./funcs/collectionsCreate.js";
 import { collectionsDelete } from "./funcs/collectionsDelete.js";
 import { collectionsGet } from "./funcs/collectionsGet.js";
@@ -34,11 +35,59 @@ export type { RequestOptions };
 // Re-export common types for facade users
 export type { operations, models };
 
+/** Default base URL for the LambdaDB API. */
+export const DEFAULT_BASE_URL = "https://api.lambdadb.ai";
+/** Default project name when not specified. */
+export const DEFAULT_PROJECT_NAME = "playground";
+
+/**
+ * Options for LambdaDBClient. Supports baseUrl + projectName (recommended) or
+ * legacy projectHost / serverURL. When neither serverURL nor projectHost is set,
+ * the base URL is built as `${baseUrl}/projects/${projectName}`.
+ */
+export type LambdaDBClientOptions = SDKOptions & {
+  /**
+   * API base URL (e.g. https://api.lambdadb.ai). Default: "https://api.lambdadb.ai"
+   */
+  baseUrl?: string;
+  /**
+   * Project name (path segment under /projects/). Default: "playground"
+   */
+  projectName?: string;
+};
+
+function normalizeClientOptions(
+  options: LambdaDBClientOptions = {},
+): SDKOptions {
+  const {
+    baseUrl = DEFAULT_BASE_URL,
+    projectName = DEFAULT_PROJECT_NAME,
+    serverURL,
+    projectHost,
+    ...rest
+  } = options;
+
+  if (serverURL !== undefined && serverURL !== null) {
+    return { ...rest, serverURL };
+  }
+  if (projectHost !== undefined && projectHost !== null) {
+    return { ...rest, projectHost };
+  }
+
+  const base = baseUrl.replace(/\/+$/, "");
+  const serverURLFromBase = `${base}/projects/${encodeURIComponent(projectName)}`;
+  return { ...rest, serverURL: serverURLFromBase };
+}
+
 /**
  * Client with collection-scoped API. Prefer this over the legacy
  * `LambdaDB` when you want to avoid passing collectionName on every call.
  */
 export class LambdaDBClient extends LambdaDBCore {
+  constructor(options?: LambdaDBClientOptions) {
+    super(normalizeClientOptions(options));
+  }
+
   /**
    * Get a handle for a specific collection. All methods on the handle
    * use this collection name; you do not pass it again.
