@@ -1,6 +1,6 @@
 # @functional-systems/lambdadb Examples
 
-This directory contains example scripts demonstrating how to use the @functional-systems/lambdadb SDK.
+Example scripts for the LambdaDB SDK. We use the **collection-scoped client** (`LambdaDBClient`).
 
 ## Prerequisites
 
@@ -14,18 +14,31 @@ This directory contains example scripts demonstrating how to use the @functional
    cp .env.template .env
    ```
 
-2. Edit `.env` and add your actual credentials (API keys, tokens, etc.)
+2. Edit `.env` and set `LAMBDADB_PROJECT_API_KEY` (or pass the key in code for testing).
 
 ## Running the Examples
 
-To run an example file from the examples directory:
+From the **repository root** (so the local SDK is used):
 
 ```bash
-npm run build && npx tsx example.ts
+npm run build && cd examples && npx tsx collectionsList.example.ts
 ```
+
+Or from the `examples` directory:
+
+```bash
+npm run build && npx tsx collectionsList.example.ts
+```
+
+## Examples
+
+| File | Description |
+|------|-------------|
+| `collectionsList.example.ts` | List all collections in the project (`client.listCollections()`) |
+| `collectionScoped.example.ts` | Use a collection handle to get metadata and list docs (`client.collection(name)`) |
 
 ## Creating new examples
 
-Duplicate an existing example file, they won't be overwritten by the generation process.
+Duplicate an existing example file and replace the logic. Use `LambdaDBClient` and `client.collection(name)` for the recommended API.
 
 

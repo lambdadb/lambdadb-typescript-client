@@ -1,7 +1,8 @@
-
 > **Remember to shutdown a GitHub Codespace when it is not in use!**
 
 # Dev Containers Quick Start
+
+**Note:** SDK generation from Speakeasy is no longer run in CI. The codebase is maintained manually. See [docs/OPENAPI_UPDATE.md](../docs/OPENAPI_UPDATE.md). The Speakeasy CLI in this container is optional (e.g. for generating usage snippets locally).
 
 The default location for usage snippets is the `samples` directory.
 

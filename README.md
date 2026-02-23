@@ -3,9 +3,8 @@
 Developer-friendly & type-safe Typescript SDK specifically catered to leverage *LambdaDB* API.
 
 <div align="left">
-    <a href="https://www.speakeasy.com/?utm_source=lambdadb&utm_campaign=typescript"><img src="https://custom-icon-badges.demolab.com/badge/-Built%20By%20Speakeasy-212015?style=for-the-badge&logoColor=FBE331&logo=speakeasy&labelColor=545454" /></a>
-    <a href="https://opensource.org/licenses/MIT">
-        <img src="https://img.shields.io/badge/License-MIT-blue.svg" style="width: 100px; height: 28px;" />
+    <a href="https://opensource.org/licenses/Apache-2.0">
+        <img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" style="width: 100px; height: 28px;" />
     </a>
 </div>
 
@@ -80,23 +79,30 @@ For supported JavaScript runtimes, please consult [RUNTIMES.md](RUNTIMES.md).
 <!-- Start SDK Example Usage [usage] -->
 ## SDK Example Usage
 
-### Example
+We recommend the **collection-scoped client** (`LambdaDBClient`): you get a handle for a collection once and then call methods without passing `collectionName` on every request.
+
+### Recommended: LambdaDBClient (collection-scoped)
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
+  // List all collections in the project
+  const list = await client.listCollections();
+  console.log(list);
 
-  console.log(result);
+  // Work with a specific collection — no collectionName in every call
+  const collection = client.collection("my-collection");
+  await collection.get();
+  await collection.docs.list({ size: 20 });
+  await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
 }
 
 run();
-
 ```
 <!-- End SDK Example Usage [usage] -->
 
@@ -113,20 +119,18 @@ This SDK supports the following security scheme globally:
 
 To authenticate with the API the `projectApiKey` parameter must be set when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
 run();
-
 ```
 <!-- End Authentication [security] -->
 
@@ -157,6 +161,20 @@ run();
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
+
+### Legacy API (`LambdaDB`)
+
+The classic client `LambdaDB` is still supported for compatibility. New code should prefer `LambdaDBClient` and `client.collection(name)`.
+
+```typescript
+import { LambdaDB } from "@functional-systems/lambdadb";
+
+const lambdaDB = new LambdaDB({ projectApiKey: "<YOUR_PROJECT_API_KEY>" });
+const result = await lambdaDB.collections.list();
+await lambdaDB.collections.docs.listDocs({ collectionName: "my-collection", size: 20 });
+```
+
+See [docs/sdks/collections/README.md](docs/sdks/collections/README.md) and [docs/sdks/docs/README.md](docs/sdks/docs/README.md) for the full legacy API reference.
 
 <!-- Start Standalone functions [standalone-funcs] -->
 ## Standalone functions
@@ -197,14 +215,14 @@ Some of the endpoints in this SDK support retries.  If you use the SDK without a
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list({
+  const result = await client.listCollections({
     retries: {
       strategy: "backoff",
       backoff: {
@@ -216,19 +234,17 @@ async function run() {
       retryConnectionErrors: false,
     },
   });
-
   console.log(result);
 }
 
 run();
-
 ```
 
 If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   retryConfig: {
     strategy: "backoff",
     backoff: {
@@ -243,8 +259,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
@@ -269,17 +284,16 @@ run();
 
 ### Example
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 import * as errors from "@functional-systems/lambdadb/models/errors";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
   try {
-    const result = await lambdaDB.collections.list();
-
+    const result = await client.listCollections();
     console.log(result);
   } catch (error) {
     // The base class for HTTP error responses
@@ -345,43 +359,39 @@ The default server `https://{projectHost}` contains variables and is set to `htt
 #### Example
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   serverIdx: 0,
   projectHost: "api.lambdadb.com/projects/default",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
 run();
-
 ```
 
 ### Override Server URL Per-Client
 
 The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   serverURL: "https://api.lambdadb.com/projects/default",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
 run();
-
 ```
 <!-- End Server Selection [server] -->
 
@@ -403,7 +413,7 @@ custom header and a timeout to requests and how to use the `"requestError"` hook
 to log errors:
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 import { HTTPClient } from "@functional-systems/lambdadb/lib/http";
 
 const httpClient = new HTTPClient({
@@ -430,7 +440,7 @@ httpClient.addHook("requestError", (error, request) => {
   console.groupEnd();
 });
 
-const sdk = new LambdaDB({ httpClient: httpClient });
+const client = new LambdaDBClient({ httpClient, projectApiKey: "<YOUR_PROJECT_API_KEY>" });
 ```
 <!-- End Custom HTTP Client [http-client] -->
 
@@ -445,25 +455,20 @@ You can pass a logger that matches `console`'s interface as an SDK option.
 > Beware that debug logging will reveal secrets, like API tokens in headers, in log messages printed to a console or files. It's recommended to use this feature only during local development and not in production.
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const sdk = new LambdaDB({ debugLogger: console });
+const client = new LambdaDBClient({ debugLogger: console, projectApiKey: "<YOUR_PROJECT_API_KEY>" });
 ```
 
 You can also enable a default debug logger by setting an environment variable `LAMBDADB_DEBUG` to true.
 <!-- End Debugging [debug] -->
 
-<!-- Placeholder for Future Speakeasy SDK Sections -->
-
 # Development
 
 ## Maturity
 
-This SDK is in beta, and there may be breaking changes between versions without a major version update. Therefore, we recommend pinning usage
-to a specific package version. This way, you can install the same version each time without breaking changes unless you are intentionally
-looking for the latest version.
+This SDK is in beta, and there may be breaking changes between versions without a major version update. Therefore, we recommend pinning usage to a specific package version unless you are intentionally looking for the latest version.
 
 ## Contributions
 
-While we value open-source contributions to this SDK, this library is generated programmatically. Any manual changes added to internal files will be overwritten on the next generation. 
-We look forward to hearing your feedback. Feel free to open a PR or an issue with a proof of concept and we'll do our best to include it in a future release. 
+We welcome contributions. The recommended API is implemented in `src/client.ts` (LambdaDBClient, collection-scoped). The rest of `src/` (funcs, models, lib) is maintained manually; see [docs/OPENAPI_UPDATE.md](docs/OPENAPI_UPDATE.md) for how API changes are applied. Feel free to open a PR or an issue. 

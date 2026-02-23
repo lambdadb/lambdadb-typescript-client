@@ -7,3 +7,10 @@ export * as files from "./lib/files.js";
 export { HTTPClient } from "./lib/http.js";
 export type { Fetcher, HTTPClientOptions } from "./lib/http.js";
 export * from "./sdk/sdk.js";
+
+/** Collection-scoped client (recommended). See docs/REFACTORING_PROPOSAL.md */
+export {
+  LambdaDBClient,
+  CollectionHandle,
+  type RequestOptions as ClientRequestOptions,
+} from "./client.js";

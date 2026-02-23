@@ -1,0 +1,31 @@
+# Publish to npm. No longer uses Speakeasy; SDK is maintained manually.
+# Trigger: push tag v* (e.g. v0.3.0) or workflow_dispatch.
+# Secret required: NPM_TOKEN (npm access token with publish permission).
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

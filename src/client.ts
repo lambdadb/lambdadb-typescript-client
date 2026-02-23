@@ -1,0 +1,272 @@
+/**
+ * Collection-scoped facade for LambdaDB API.
+ * Use this client for a better DX: no need to pass collectionName on every call.
+ *
+ * @example
+ * const client = new LambdaDBClient({ projectApiKey: "..." });
+ * const collection = client.collection("my-collection");
+ * await collection.get();
+ * await collection.docs.list({ size: 20 });
+ * await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
+ */
+
+import { LambdaDBCore } from "./core.js";
+import { collectionsCreate } from "./funcs/collectionsCreate.js";
+import { collectionsDelete } from "./funcs/collectionsDelete.js";
+import { collectionsGet } from "./funcs/collectionsGet.js";
+import { collectionsList } from "./funcs/collectionsList.js";
+import { collectionsQuery } from "./funcs/collectionsQuery.js";
+import { collectionsUpdate } from "./funcs/collectionsUpdate.js";
+import { collectionsDocsBulkUpsert } from "./funcs/collectionsDocsBulkUpsert.js";
+import { collectionsDocsDelete } from "./funcs/collectionsDocsDelete.js";
+import { collectionsDocsFetch } from "./funcs/collectionsDocsFetch.js";
+import { collectionsDocsGetBulkUpsert } from "./funcs/collectionsDocsGetBulkUpsert.js";
+import { collectionsDocsListDocs } from "./funcs/collectionsDocsListDocs.js";
+import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
+import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
+import type { RequestOptions } from "./lib/sdks.js";
+import type * as operations from "./models/operations/index.js";
+import type * as models from "./models/index.js";
+import { unwrapAsync } from "./types/fp.js";
+
+export type { RequestOptions };
+
+// Re-export common types for facade users
+export type { operations, models };
+
+/**
+ * Client with collection-scoped API. Prefer this over the legacy
+ * `LambdaDB` when you want to avoid passing collectionName on every call.
+ */
+export class LambdaDBClient extends LambdaDBCore {
+  /**
+   * Get a handle for a specific collection. All methods on the handle
+   * use this collection name; you do not pass it again.
+   */
+  collection(collectionName: string): CollectionHandle {
+    return new CollectionHandle(this, collectionName);
+  }
+
+  /**
+   * List all collections in the project.
+   */
+  async listCollections(options?: RequestOptions) {
+    return unwrapAsync(collectionsList(this, options));
+  }
+
+  /**
+   * Create a new collection.
+   */
+  async createCollection(
+    request: operations.CreateCollectionRequest,
+    options?: RequestOptions,
+  ) {
+    return unwrapAsync(collectionsCreate(this, request, options));
+  }
+}
+
+/**
+ * Handle for a single collection. All methods operate on this collection.
+ */
+export class CollectionHandle {
+  constructor(
+    private readonly client: LambdaDBCore,
+    readonly collectionName: string,
+  ) {}
+
+  /**
+   * Get metadata of this collection.
+   */
+  async get(options?: RequestOptions) {
+    return unwrapAsync(
+      collectionsGet(this.client, { collectionName: this.collectionName }, options),
+    );
+  }
+
+  /**
+   * Configure (update) this collection.
+   */
+  async update(
+    requestBody: operations.UpdateCollectionRequestBody,
+    options?: RequestOptions,
+  ) {
+    return unwrapAsync(
+      collectionsUpdate(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody,
+        },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Delete this collection.
+   */
+  async delete(options?: RequestOptions) {
+    return unwrapAsync(
+      collectionsDelete(
+        this.client,
+        { collectionName: this.collectionName },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Search this collection with a query.
+   */
+  async query(
+    requestBody: operations.QueryCollectionRequestBody,
+    options?: RequestOptions,
+  ) {
+    return unwrapAsync(
+      collectionsQuery(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody,
+        },
+        options,
+      ),
+    );
+  }
+
+  readonly docs: CollectionDocs = new CollectionDocs(this.client, this.collectionName);
+}
+
+/**
+ * Document operations scoped to a collection.
+ */
+class CollectionDocs {
+  constructor(
+    private readonly client: LambdaDBCore,
+    private readonly collectionName: string,
+  ) {}
+
+  /**
+   * List documents in the collection.
+   */
+  async list(
+    params?: { size?: number; pageToken?: string },
+    options?: RequestOptions,
+  ) {
+    return unwrapAsync(
+      collectionsDocsListDocs(
+        this.client,
+        { collectionName: this.collectionName, ...params },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Upsert documents. Max payload 6MB.
+   */
+  async upsert(
+    body: { docs: Array<Record<string, unknown>> },
+    options?: RequestOptions,
+  ): Promise<models.MessageResponse> {
+    return unwrapAsync(
+      collectionsDocsUpsert(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: body,
+        },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Update documents (each doc must have id). Max payload 6MB.
+   */
+  async update(
+    body: { docs: Array<Record<string, unknown>> },
+    options?: RequestOptions,
+  ): Promise<models.MessageResponse> {
+    return unwrapAsync(
+      collectionsDocsUpdate(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: body,
+        },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Delete documents by ids and/or filter.
+   */
+  async delete(
+    body: operations.DeleteDocsRequestBody,
+    options?: RequestOptions,
+  ): Promise<models.MessageResponse> {
+    return unwrapAsync(
+      collectionsDocsDelete(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: body,
+        },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Fetch documents by IDs (max 100).
+   */
+  async fetch(
+    body: operations.FetchDocsRequestBody,
+    options?: RequestOptions,
+  ) {
+    return unwrapAsync(
+      collectionsDocsFetch(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: body,
+        },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Get presigned URL and metadata for bulk upload (up to 200MB).
+   */
+  async getBulkUpsert(options?: RequestOptions) {
+    return unwrapAsync(
+      collectionsDocsGetBulkUpsert(
+        this.client,
+        { collectionName: this.collectionName },
+        options,
+      ),
+    );
+  }
+
+  /**
+   * Trigger bulk upsert with an object key from getBulkUpsert().
+   */
+  async bulkUpsert(
+    body: { objectKey: string },
+    options?: RequestOptions,
+  ): Promise<models.MessageResponse> {
+    return unwrapAsync(
+      collectionsDocsBulkUpsert(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: body,
+        },
+        options,
+      ),
+    );
+  }
+}
