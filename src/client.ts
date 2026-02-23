@@ -26,7 +26,8 @@ import { collectionsDocsListDocs } from "./funcs/collectionsDocsListDocs.js";
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
-import { unwrapAsync } from "./types/fp.js";
+import { unwrapAsync, OK, ERR } from "./types/fp.js";
+import type { Result } from "./types/fp.js";
 import type * as operations from "./models/operations/index.js";
 import type * as models from "./models/index.js";
 import type {
@@ -36,6 +37,7 @@ import type {
   QueryCollectionResponse,
   QueryCollectionDoc,
   ListDocsInput,
+  ListDocsResponse,
   UpsertDocsInput,
   UpdateDocsInput,
   DeleteDocsInput,
@@ -44,7 +46,27 @@ import type {
   FetchDocsDoc,
   BulkUpsertInput,
   MessageResponse,
+  ListCollectionsResponse,
+  CreateCollectionResponse,
+  GetCollectionResponse,
+  UpdateCollectionResponse,
+  GetBulkUpsertDocsResponse,
 } from "./types/public.js";
+import type {
+  ListCollectionsError,
+  CreateCollectionError,
+  GetCollectionError,
+  UpdateCollectionError,
+  DeleteCollectionError,
+  QueryCollectionError,
+  ListDocsError,
+  UpsertDocsError,
+  UpdateDocsError,
+  DeleteDocsError,
+  FetchDocsError,
+  GetBulkUpsertDocsError,
+  BulkUpsertDocsError,
+} from "./types/errors.js";
 
 export type { RequestOptions };
 
@@ -140,6 +162,15 @@ export class LambdaDBClient extends LambdaDBCore {
   }
 
   /**
+   * List all collections (Safe: returns Result instead of throwing).
+   */
+  async listCollectionsSafe(
+    options?: RequestOptions,
+  ): Promise<Result<ListCollectionsResponse, ListCollectionsError>> {
+    return await collectionsList(this, options);
+  }
+
+  /**
    * Create a new collection.
    */
   async createCollection(
@@ -147,6 +178,16 @@ export class LambdaDBClient extends LambdaDBCore {
     options?: RequestOptions,
   ) {
     return unwrapAsync(collectionsCreate(this, request, options));
+  }
+
+  /**
+   * Create a new collection (Safe: returns Result instead of throwing).
+   */
+  async createCollectionSafe(
+    request: CreateCollectionInput,
+    options?: RequestOptions,
+  ): Promise<Result<CreateCollectionResponse, CreateCollectionError>> {
+    return await collectionsCreate(this, request, options);
   }
 }
 
@@ -169,6 +210,15 @@ export class CollectionHandle {
   }
 
   /**
+   * Get metadata of this collection (Safe: returns Result instead of throwing).
+   */
+  async getSafe(
+    options?: RequestOptions,
+  ): Promise<Result<GetCollectionResponse, GetCollectionError>> {
+    return await collectionsGet(this.client, { collectionName: this.collectionName }, options);
+  }
+
+  /**
    * Configure (update) this collection.
    */
   async update(
@@ -188,6 +238,20 @@ export class CollectionHandle {
   }
 
   /**
+   * Configure (update) this collection (Safe: returns Result instead of throwing).
+   */
+  async updateSafe(
+    requestBody: UpdateCollectionInput,
+    options?: RequestOptions,
+  ): Promise<Result<UpdateCollectionResponse, UpdateCollectionError>> {
+    return await collectionsUpdate(
+      this.client,
+      { collectionName: this.collectionName, requestBody },
+      options,
+    );
+  }
+
+  /**
    * Delete this collection.
    */
   async delete(options?: RequestOptions) {
@@ -197,6 +261,19 @@ export class CollectionHandle {
         { collectionName: this.collectionName },
         options,
       ),
+    );
+  }
+
+  /**
+   * Delete this collection (Safe: returns Result instead of throwing).
+   */
+  async deleteSafe(
+    options?: RequestOptions,
+  ): Promise<Result<MessageResponse, DeleteCollectionError>> {
+    return await collectionsDelete(
+      this.client,
+      { collectionName: this.collectionName },
+      options,
     );
   }
 
@@ -224,6 +301,31 @@ export class CollectionHandle {
         result.docsUrl,
       );
       return { ...result, docs, isDocsInline: true };
+    }
+    return result;
+  }
+
+  /**
+   * Search this collection with a query (Safe: returns Result instead of throwing).
+   * When the API returns docs via docsUrl, documents are fetched from the presigned URL automatically.
+   */
+  async querySafe(
+    requestBody: QueryCollectionInput,
+    options?: RequestOptions,
+  ): Promise<Result<QueryCollectionResponse, QueryCollectionError>> {
+    const result = await collectionsQuery(
+      this.client,
+      { collectionName: this.collectionName, requestBody },
+      options,
+    );
+    if (!result.ok) return result;
+    if (!result.value.isDocsInline && result.value.docsUrl) {
+      try {
+        const docs = await fetchDocsFromUrl<QueryCollectionDoc>(result.value.docsUrl);
+        return OK({ ...result.value, docs, isDocsInline: true });
+      } catch (e) {
+        return ERR(e as QueryCollectionError);
+      }
     }
     return result;
   }
@@ -257,6 +359,20 @@ class CollectionDocs {
   }
 
   /**
+   * List documents in the collection (Safe: returns Result instead of throwing).
+   */
+  async listSafe(
+    params?: ListDocsInput,
+    options?: RequestOptions,
+  ): Promise<Result<ListDocsResponse, ListDocsError>> {
+    return await collectionsDocsListDocs(
+      this.client,
+      { collectionName: this.collectionName, ...params },
+      options,
+    );
+  }
+
+  /**
    * Upsert documents. Max payload 6MB.
    */
   async upsert(
@@ -272,6 +388,20 @@ class CollectionDocs {
         },
         options,
       ),
+    );
+  }
+
+  /**
+   * Upsert documents (Safe: returns Result instead of throwing). Max payload 6MB.
+   */
+  async upsertSafe(
+    body: UpsertDocsInput,
+    options?: RequestOptions,
+  ): Promise<Result<MessageResponse, UpsertDocsError>> {
+    return await collectionsDocsUpsert(
+      this.client,
+      { collectionName: this.collectionName, requestBody: body },
+      options,
     );
   }
 
@@ -295,6 +425,20 @@ class CollectionDocs {
   }
 
   /**
+   * Update documents (Safe: returns Result instead of throwing). Max payload 6MB.
+   */
+  async updateSafe(
+    body: UpdateDocsInput,
+    options?: RequestOptions,
+  ): Promise<Result<MessageResponse, UpdateDocsError>> {
+    return await collectionsDocsUpdate(
+      this.client,
+      { collectionName: this.collectionName, requestBody: body },
+      options,
+    );
+  }
+
+  /**
    * Delete documents by ids and/or filter.
    */
   async delete(
@@ -310,6 +454,20 @@ class CollectionDocs {
         },
         options,
       ),
+    );
+  }
+
+  /**
+   * Delete documents by ids and/or filter (Safe: returns Result instead of throwing).
+   */
+  async deleteSafe(
+    body: DeleteDocsInput,
+    options?: RequestOptions,
+  ): Promise<Result<MessageResponse, DeleteDocsError>> {
+    return await collectionsDocsDelete(
+      this.client,
+      { collectionName: this.collectionName, requestBody: body },
+      options,
     );
   }
 
@@ -342,6 +500,31 @@ class CollectionDocs {
   }
 
   /**
+   * Fetch documents by IDs (Safe: returns Result instead of throwing).
+   * When the API returns docs via docsUrl, documents are fetched from the presigned URL automatically.
+   */
+  async fetchSafe(
+    body: FetchDocsInput,
+    options?: RequestOptions,
+  ): Promise<Result<FetchDocsResponse, FetchDocsError>> {
+    const result = await collectionsDocsFetch(
+      this.client,
+      { collectionName: this.collectionName, requestBody: body },
+      options,
+    );
+    if (!result.ok) return result;
+    if (!result.value.isDocsInline && result.value.docsUrl) {
+      try {
+        const docs = await fetchDocsFromUrl<FetchDocsDoc>(result.value.docsUrl);
+        return OK({ ...result.value, docs, isDocsInline: true });
+      } catch (e) {
+        return ERR(e as FetchDocsError);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Get presigned URL and metadata for bulk upload (up to 200MB).
    */
   async getBulkUpsert(options?: RequestOptions) {
@@ -351,6 +534,19 @@ class CollectionDocs {
         { collectionName: this.collectionName },
         options,
       ),
+    );
+  }
+
+  /**
+   * Get presigned URL and metadata for bulk upload (Safe: returns Result instead of throwing).
+   */
+  async getBulkUpsertSafe(
+    options?: RequestOptions,
+  ): Promise<Result<GetBulkUpsertDocsResponse, GetBulkUpsertDocsError>> {
+    return await collectionsDocsGetBulkUpsert(
+      this.client,
+      { collectionName: this.collectionName },
+      options,
     );
   }
 
@@ -370,6 +566,20 @@ class CollectionDocs {
         },
         options,
       ),
+    );
+  }
+
+  /**
+   * Trigger bulk upsert (Safe: returns Result instead of throwing).
+   */
+  async bulkUpsertSafe(
+    body: BulkUpsertInput,
+    options?: RequestOptions,
+  ): Promise<Result<MessageResponse, BulkUpsertDocsError>> {
+    return await collectionsDocsBulkUpsert(
+      this.client,
+      { collectionName: this.collectionName, requestBody: body },
+      options,
     );
   }
 
@@ -407,5 +617,51 @@ class CollectionDocs {
     }
 
     return this.bulkUpsert({ objectKey }, options);
+  }
+
+  /**
+   * Bulk upsert documents in one call (Safe: returns Result instead of throwing).
+   * May return Error for local failures (payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
+   */
+  async bulkUpsertDocsSafe(
+    body: UpsertDocsInput,
+    options?: RequestOptions,
+  ): Promise<
+    Result<
+      MessageResponse,
+      GetBulkUpsertDocsError | BulkUpsertDocsError | Error
+    >
+  > {
+    const getResult = await this.getBulkUpsertSafe(options);
+    if (!getResult.ok) return getResult;
+    const { url, type, httpMethod, objectKey, sizeLimitBytes } = getResult.value;
+
+    const payload = { docs: body.docs };
+    const jsonString = JSON.stringify(payload);
+    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    if (sizeBytes > sizeLimitBytes) {
+      return ERR(
+        new Error(
+          `Bulk upsert payload size (${sizeBytes} bytes) exceeds limit (${sizeLimitBytes} bytes)`,
+        ),
+      );
+    }
+
+    const putResponse = await fetch(url, {
+      method: httpMethod,
+      headers: { "Content-Type": type },
+      body: jsonString,
+    });
+
+    if (!putResponse.ok) {
+      const text = await putResponse.text();
+      return ERR(
+        new Error(
+          `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
+        ),
+      );
+    }
+
+    return this.bulkUpsertSafe({ objectKey }, options);
   }
 }

@@ -319,10 +319,17 @@ run();
 | `error.rawResponse` | `Response` | Raw HTTP response                                                                       |
 | `error.data$`       |            | Optional. Some errors may contain structured data. [See Error Classes](#error-classes). |
 
-### Example
+### Default methods (throw on error)
+
+Regular methods throw on failure. Catch errors and use `instanceof` to narrow types. Error classes are exported from the main package:
+
 ```typescript
-import { LambdaDBClient } from "@functional-systems/lambdadb";
-import * as errors from "@functional-systems/lambdadb/models/errors";
+import {
+  LambdaDBClient,
+  LambdaDBError,
+  UnauthenticatedError,
+  ResourceNotFoundError,
+} from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
@@ -333,24 +340,48 @@ async function run() {
     const result = await client.listCollections();
     console.log(result);
   } catch (error) {
-    // The base class for HTTP error responses
-    if (error instanceof errors.LambdaDBError) {
-      console.log(error.message);
-      console.log(error.statusCode);
-      console.log(error.body);
-      console.log(error.headers);
-
-      // Depending on the method different errors may be thrown
-      if (error instanceof errors.UnauthenticatedError) {
-        console.log(error.data$.message); // string
+    if (error instanceof LambdaDBError) {
+      console.log(error.message, error.statusCode, error.body);
+      if (error instanceof UnauthenticatedError) {
+        console.log(error.data$.message);
+      }
+      if (error instanceof ResourceNotFoundError) {
+        console.log("Not found:", error.data$);
       }
     }
   }
 }
 
 run();
-
 ```
+
+### Safe methods (return Result)
+
+Use `*Safe` methods to get a `Result<T, E>` instead of throwing. You can handle errors without try/catch and narrow with type guards:
+
+```typescript
+import {
+  LambdaDBClient,
+  Result,
+  ResourceNotFoundError,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+
+const result = await client.listCollectionsSafe();
+if (result.ok) {
+  console.log(result.value.collections);
+} else {
+  const err = result.error;
+  if (err instanceof ResourceNotFoundError) {
+    console.log("Not found:", err.data$);
+  } else {
+    console.error(err);
+  }
+}
+```
+
+Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collection.getSafe`, `collection.updateSafe`, `collection.deleteSafe`, `collection.querySafe`, `collection.docs.listSafe`, `collection.docs.upsertSafe`, `collection.docs.updateSafe`, `collection.docs.deleteSafe`, `collection.docs.fetchSafe`, `collection.docs.getBulkUpsertSafe`, `collection.docs.bulkUpsertSafe`, `collection.docs.bulkUpsertDocsSafe`. The `Result` type and `OK` / `ERR` helpers are exported from the package.
 
 ### Error Classes
 **Primary errors:**
