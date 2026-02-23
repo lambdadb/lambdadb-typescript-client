@@ -35,6 +35,21 @@ export type { RequestOptions };
 // Re-export common types for facade users
 export type { operations, models };
 
+/**
+ * Fetches documents from a presigned docsUrl. Response must be { docs: [...] }.
+ */
+async function fetchDocsFromUrl<T>(docsUrl: string): Promise<T[]> {
+  const res = await fetch(docsUrl);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(
+      `Failed to fetch documents from URL: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
+    );
+  }
+  const json = (await res.json()) as { docs?: T[] };
+  return json.docs ?? [];
+}
+
 /** Default base URL for the LambdaDB API. */
 export const DEFAULT_BASE_URL = "https://api.lambdadb.ai";
 /** Default project name when not specified. */
@@ -166,12 +181,14 @@ export class CollectionHandle {
 
   /**
    * Search this collection with a query.
+   * When the API returns docs via docsUrl (isDocsInline false), documents are
+   * fetched from the presigned URL automatically so the response always has docs.
    */
   async query(
     requestBody: operations.QueryCollectionRequestBody,
     options?: RequestOptions,
-  ) {
-    return unwrapAsync(
+  ): Promise<operations.QueryCollectionResponse> {
+    const result = await unwrapAsync(
       collectionsQuery(
         this.client,
         {
@@ -181,6 +198,13 @@ export class CollectionHandle {
         options,
       ),
     );
+    if (!result.isDocsInline && result.docsUrl) {
+      const docs = await fetchDocsFromUrl<operations.QueryCollectionDoc>(
+        result.docsUrl,
+      );
+      return { ...result, docs, isDocsInline: true };
+    }
+    return result;
   }
 
   readonly docs: CollectionDocs = new CollectionDocs(this.client, this.collectionName);
@@ -270,12 +294,14 @@ class CollectionDocs {
 
   /**
    * Fetch documents by IDs (max 100).
+   * When the API returns docs via docsUrl (isDocsInline false), documents are
+   * fetched from the presigned URL automatically so the response always has docs.
    */
   async fetch(
     body: operations.FetchDocsRequestBody,
     options?: RequestOptions,
-  ) {
-    return unwrapAsync(
+  ): Promise<operations.FetchDocsResponse> {
+    const result = await unwrapAsync(
       collectionsDocsFetch(
         this.client,
         {
@@ -285,6 +311,13 @@ class CollectionDocs {
         options,
       ),
     );
+    if (!result.isDocsInline && result.docsUrl) {
+      const docs = await fetchDocsFromUrl<operations.FetchDocsDoc>(
+        result.docsUrl,
+      );
+      return { ...result, docs, isDocsInline: true };
+    }
+    return result;
   }
 
   /**
