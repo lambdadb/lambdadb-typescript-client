@@ -103,6 +103,8 @@ async function run() {
   await collection.get();
   await collection.docs.list({ size: 20 });
   await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
+  // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow
+  // await collection.docs.bulkUpsertDocs({ docs: largeDocArray });
 }
 
 run();
@@ -156,6 +158,7 @@ run();
 
 * [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list.
 * [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
 * [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.

@@ -318,4 +318,40 @@ class CollectionDocs {
       ),
     );
   }
+
+  /**
+   * Bulk upsert documents in one call (up to 200MB). Abstracts getBulkUpsert,
+   * S3 upload via presigned URL, and bulkUpsert. Use this for better DX when
+   * you have a document list; use getBulkUpsert + bulkUpsert for low-level control.
+   */
+  async bulkUpsertDocs(
+    body: { docs: Array<Record<string, unknown>> },
+    options?: RequestOptions,
+  ): Promise<models.MessageResponse> {
+    const { url, type, httpMethod, objectKey, sizeLimitBytes } = await this.getBulkUpsert(options);
+
+    const payload = { docs: body.docs };
+    const jsonString = JSON.stringify(payload);
+    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    if (sizeBytes > sizeLimitBytes) {
+      throw new Error(
+        `Bulk upsert payload size (${sizeBytes} bytes) exceeds limit (${sizeLimitBytes} bytes)`,
+      );
+    }
+
+    const putResponse = await fetch(url, {
+      method: httpMethod,
+      headers: { "Content-Type": type },
+      body: jsonString,
+    });
+
+    if (!putResponse.ok) {
+      const text = await putResponse.text();
+      throw new Error(
+        `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
+      );
+    }
+
+    return this.bulkUpsert({ objectKey }, options);
+  }
 }
