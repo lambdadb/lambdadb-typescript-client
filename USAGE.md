@@ -4,6 +4,7 @@ import { LambdaDBClient } from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  // Optional: baseUrl (default "https://api.lambdadb.ai"), projectName (default "playground")
 });
 
 async function run() {

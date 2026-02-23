@@ -2,6 +2,8 @@
 
 ## Overview
 
+> **Deprecated API.** The examples below use the **deprecated** client (`LambdaDB`, `lambdaDB.collections.*`). For new code, use **LambdaDBClient** and `client.collection(name)` instead. See the [main README](../../../README.md) for recommended usage and [Server selection (API base URL)](../../../README.md#server-selection-api-base-url) for **baseUrl** / **projectName** configuration.
+
 ### Available Operations
 
 * [list](#list) - List all collections in an existing project.

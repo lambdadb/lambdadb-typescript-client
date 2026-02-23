@@ -2,6 +2,8 @@
 
 ## Overview
 
+> **Deprecated API.** The examples below use the **deprecated** client (`LambdaDB`, `lambdaDB.collections.docs.*`). For new code, use **LambdaDBClient** and `client.collection(name).docs` instead. See the [main README](../../../README.md) for recommended usage and [Server selection (API base URL)](../../../README.md#server-selection-api-base-url) for **baseUrl** / **projectName** configuration.
+
 ### Available Operations
 
 * [listDocs](#listdocs) - List documents in a collection.

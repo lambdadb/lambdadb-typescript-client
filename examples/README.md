@@ -16,6 +16,8 @@ Example scripts for the LambdaDB SDK. We use the **collection-scoped client** (`
 
 2. Edit `.env` and set `LAMBDADB_PROJECT_API_KEY` (or pass the key in code for testing).
 
+The client uses **baseUrl** `https://api.lambdadb.ai` and **projectName** `playground` by default. To point at another project or host, pass `baseUrl` and `projectName` when creating `LambdaDBClient`.
+
 ## Running the Examples
 
 From the **repository root** (so the local SDK is used):

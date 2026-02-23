@@ -83,11 +83,14 @@ We recommend the **collection-scoped client** (`LambdaDBClient`): you get a hand
 
 ### Recommended: LambdaDBClient (collection-scoped)
 
+The client connects to `{baseUrl}/projects/{projectName}`. Defaults: **baseUrl** `https://api.lambdadb.ai`, **projectName** `playground`. Override with `baseUrl` and `projectName` when creating the client.
+
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  // Optional: baseUrl (default "https://api.lambdadb.ai"), projectName (default "playground")
 });
 
 async function run() {
@@ -346,52 +349,44 @@ run();
 <!-- End Error Handling [errors] -->
 
 <!-- Start Server Selection [server] -->
-## Server Selection
+## Server Selection (API base URL)
 
-### Server Variables
+`LambdaDBClient` builds the API base as **`{baseUrl}/projects/{projectName}`**. You can override the defaults when creating the client.
 
-The default server `https://{projectHost}` contains variables and is set to `https://api.lambdadb.com/projects/default` by default. To override default values, the following parameters are available when initializing the SDK client instance:
+| Option         | Type     | Default                     | Description                          |
+| -------------- | -------- | --------------------------- | ------------------------------------ |
+| `baseUrl`      | `string` | `"https://api.lambdadb.ai"` | API base URL (no trailing slash).    |
+| `projectName`  | `string` | `"playground"`              | Project name (path segment).         |
+| `serverURL`    | `string` | —                           | Full base URL (overrides baseUrl + projectName). |
+| `projectHost`  | `string` | —                           | Legacy: host path for URL (e.g. `api.lambdadb.ai/projects/my-project`). |
 
-| Variable      | Parameter             | Default                               | Description                |
-| ------------- | --------------------- | ------------------------------------- | -------------------------- |
-| `projectHost` | `projectHost: string` | `"api.lambdadb.com/projects/default"` | The project URL of the API |
-
-#### Example
+### Using baseUrl and projectName (recommended)
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
-  serverIdx: 0,
-  projectHost: "api.lambdadb.com/projects/default",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  baseUrl: "https://api.lambdadb.ai",
+  projectName: "my-project",
 });
 
-async function run() {
-  const result = await client.listCollections();
-  console.log(result);
-}
-
-run();
+const result = await client.listCollections();
 ```
 
-### Override Server URL Per-Client
+### Override with full server URL
 
-The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
+To set the base URL in one go, use `serverURL`:
+
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
-  serverURL: "https://api.lambdadb.com/projects/default",
+  serverURL: "https://api.lambdadb.ai/projects/my-project",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
-async function run() {
-  const result = await client.listCollections();
-  console.log(result);
-}
-
-run();
+const result = await client.listCollections();
 ```
 <!-- End Server Selection [server] -->
 
