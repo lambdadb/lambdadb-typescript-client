@@ -1,7 +1,8 @@
 # Publish to npm. No longer uses Speakeasy; SDK is maintained manually.
-# Trigger: push tag v* (e.g. v0.3.0 or v0.3.0-dev) or workflow_dispatch.
-# - On tag push: package version is set from the tag (e.g. v0.3.0-dev → 0.3.0-dev).
-# - Pre-release versions (contain '-') are published with dist-tag "dev"; others with "latest".
+# Trigger: push tag v* (e.g. v0.3.0 or v0.3.0-dev.1) or workflow_dispatch.
+# - On tag push: package version is set from the tag (e.g. v0.3.0-dev.1 → 0.3.0-dev.1).
+# - Use unique versions for each publish: 0.3.0-dev.1, 0.3.0-dev.2, 0.3.0-rc.1, 0.3.0-rc.2 (npm does not allow overwriting).
+# - Pre-release versions (contain '-') are published with dist-tag "dev" or "rc"; stable with "latest".
 # Secret required: NPM_TOKEN (npm access token with publish permission).
 name: Publish to npm
 
@@ -38,11 +39,13 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # Pre-release versions (e.g. 0.3.0-dev) → tag "dev"; else "latest"
+      # Pre-release: 0.3.0-dev.* → tag "dev", 0.3.0-rc.* → tag "rc"; stable → "latest"
       - name: Publish to npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if [[ "$VERSION" == *-* ]]; then TAG=dev; else TAG=latest; fi
+          if [[ "$VERSION" == *-rc.* ]] || [[ "$VERSION" == *-rc ]]; then TAG=rc
+          elif [[ "$VERSION" == *-* ]]; then TAG=dev
+          else TAG=latest; fi
           echo "Publishing @functional-systems/lambdadb@$VERSION with tag $TAG"
           npm publish --access public --tag "$TAG"
         env:
