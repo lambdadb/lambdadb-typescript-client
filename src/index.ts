@@ -28,6 +28,15 @@ export { OK, ERR } from "./types/fp.js";
 /** Error classes and per-operation error unions for Safe methods and instanceof checks. */
 export * from "./types/errors.js";
 
+/** Query input helper for collection.query() / collection.querySafe(). */
+export {
+  createQueryInput,
+  type CreateQueryInputOptions,
+} from "./lib/queryInput.js";
+
+/** Retry config type for LambdaDBClientOptions and RequestOptions. */
+export type { RetryConfig } from "./lib/retries.js";
+
 /**
  * @deprecated Use types from the package root (e.g. CreateCollectionInput, QueryCollectionResponse). Will be removed in the next major version.
  */

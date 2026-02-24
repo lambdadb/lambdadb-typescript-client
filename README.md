@@ -131,7 +131,7 @@ const collection = client.collection("my-collection");
 const params: ListDocsInput = { size: 20, pageToken: undefined };
 const listResult: ListDocsResponse = await collection.docs.list(params);
 
-// Typed query body and response
+// Typed query body and response (or use createQueryInput helper)
 const queryBody: QueryCollectionInput = {
   query: { text: "hello" },
   size: 10,
@@ -140,6 +140,41 @@ const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
 Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `FetchDocsResponse`, `MessageResponse`; and model types like `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. All are exported from the main package.
+
+### Pagination
+
+Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page.
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+// Page-by-page (memory efficient)
+for await (const page of collection.docs.listPages({ size: 50 })) {
+  console.log(page.docs.length, page.nextPageToken ?? "last page");
+}
+
+// Or load all docs (for small/medium collections)
+const { docs, total } = await collection.docs.listAll({ size: 100 });
+console.log(docs.length, total);
+```
+
+### Query helper
+
+Use `createQueryInput()` to build query parameters for `collection.query()` or `collection.querySafe()`:
+
+```typescript
+import { LambdaDBClient, createQueryInput } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+const input = createQueryInput({ text: "hello" }, { size: 10 });
+const result = await collection.query(input);
+```
+
 <!-- End SDK Example Usage [usage] -->
 
 <!-- Start Authentication [security] -->
@@ -303,6 +338,22 @@ async function run() {
 run();
 
 ```
+
+**Timeout and request-level options:** You can set a request timeout (ms) and retry behavior when creating the client or per call. If not set, there is no request timeout. The `RetryConfig` type is exported from the package for typing your options.
+
+```typescript
+import { LambdaDBClient, type RetryConfig } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
+  projectApiKey: "...",
+  timeoutMs: 30_000,       // 30s timeout for all requests
+  retryConfig: { strategy: "backoff", retryConnectionErrors: true },
+});
+
+// Override per request
+await client.listCollections({ timeoutMs: 10_000, retries: { strategy: "none" } });
+```
+
 <!-- End Retries [retries] -->
 
 <!-- Start Error Handling [errors] -->

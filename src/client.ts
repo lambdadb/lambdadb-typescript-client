@@ -373,6 +373,51 @@ class CollectionDocs {
   }
 
   /**
+   * Iterate over all pages of documents. Yields one page per API response (with docs and nextPageToken).
+   * Use this to process large result sets without loading everything into memory.
+   *
+   * Note: The API limits response size by payload, not by document count. The number of docs per page
+   * may be less than the requested `size` and can vary from page to page.
+   *
+   * @example
+   * for await (const page of collection.docs.listPages({ size: 50 })) {
+   *   console.log(page.docs.length, page.nextPageToken ?? "last page");
+   * }
+   */
+  async *listPages(
+    params?: ListDocsInput,
+    options?: RequestOptions,
+  ): AsyncGenerator<ListDocsResponse> {
+    let pageToken: string | undefined = params?.pageToken;
+    const baseParams: ListDocsInput = { size: params?.size, pageToken };
+    while (true) {
+      const page = await this.list({ ...baseParams, pageToken }, options);
+      yield page;
+      pageToken = page.nextPageToken;
+      if (pageToken == null || pageToken === "") break;
+    }
+  }
+
+  /**
+   * Fetch all documents across pages and return a single list. Uses listPages internally.
+   * For large collections, prefer listPages() to avoid high memory use.
+   *
+   * Note: Page size is constrained by API payload limits, so the number of docs per page may vary.
+   */
+  async listAll(
+    params?: ListDocsInput,
+    options?: RequestOptions,
+  ): Promise<{ docs: Array<Record<string, unknown>>; total: number }> {
+    const docs: Array<Record<string, unknown>> = [];
+    let total = 0;
+    for await (const page of this.listPages(params, options)) {
+      docs.push(...page.docs);
+      total = page.total;
+    }
+    return { docs, total };
+  }
+
+  /**
    * Upsert documents. Max payload 6MB.
    */
   async upsert(
