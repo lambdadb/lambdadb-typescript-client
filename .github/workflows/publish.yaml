@@ -3,7 +3,7 @@
 # - On tag push: package version is set from the tag (e.g. v0.3.0-dev.1 → 0.3.0-dev.1).
 # - Use unique versions for each publish: 0.3.0-dev.1, 0.3.0-dev.2, 0.3.0-rc.1, 0.3.0-rc.2 (npm does not allow overwriting).
 # - Pre-release versions (contain '-') are published with dist-tag "dev" or "rc"; stable with "latest".
-# Secret required: NPM_TOKEN (npm access token with publish permission).
+# npm Trusted Publisher must be configured for this repo/workflow on npmjs.com (OIDC — no NPM_TOKEN).
 name: Publish to npm
 
 on:
@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
       # When triggered by a tag, set package version from tag (e.g. v0.3.0-dev → 0.3.0-dev)
@@ -39,6 +39,9 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # npm Trusted Publishing (OIDC) requires npm 11.5.1+
+      - run: npm install -g npm@latest
+
       # Pre-release: 0.3.0-dev.* → tag "dev", 0.3.0-rc.* → tag "rc"; stable → "latest"
       - name: Publish to npm
         run: |
@@ -48,5 +51,3 @@ jobs:
           else TAG=latest; fi
           echo "Publishing @functional-systems/lambdadb@$VERSION with tag $TAG"
           npm publish --access public --tag "$TAG"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
