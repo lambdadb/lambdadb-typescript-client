@@ -2,10 +2,13 @@
 
 ## Overview
 
+> **Deprecated API.** The examples below use the **deprecated** client (`LambdaDB`, `lambdaDB.collections.docs.*`). For new code, use **LambdaDBClient** and `client.collection(name).docs` instead. See the [main README](../../../README.md) for recommended usage and [Server selection (API base URL)](../../../README.md#server-selection-api-base-url) for **baseUrl** / **projectName** configuration.
+
 ### Available Operations
 
 * [listDocs](#listdocs) - List documents in a collection.
 * [upsert](#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
+* [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); recommended when you have a document list.
 * [getBulkUpsert](#getbulkupsert) - Request required info to upload documents.
 * [bulkUpsert](#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
 * [update](#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
@@ -368,6 +371,50 @@ run();
 | errors.TooManyRequestsError  | 429                          | application/json             |
 | errors.InternalServerError   | 500                          | application/json             |
 | errors.LambdaDBDefaultError  | 4XX, 5XX                     | \*/\*                        |
+
+## bulkUpsertDocs
+
+Bulk upsert documents in one call (up to 200MB). This method abstracts the flow of getBulkUpsert, uploading to the presigned URL, and calling bulkUpsert. Use it when you have a document array and want a single-call API; use getBulkUpsert + bulkUpsert for low-level control (e.g. custom upload).
+
+**Available on the collection-scoped client only:** `LambdaDBClient` → `client.collection(collectionName).docs.bulkUpsertDocs(...)`.
+
+### Example Usage
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+
+async function run() {
+  const collection = client.collection("my-collection");
+  const result = await collection.docs.bulkUpsertDocs({
+    docs: [
+      { id: "1", text: "First document" },
+      { id: "2", text: "Second document" },
+    ],
+  });
+  console.log(result);
+}
+
+run();
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `body` | `{ docs: Array<Record<string, unknown>> }` | Yes | The documents to bulk upsert. |
+| `options` | RequestOptions | No | Request options (e.g. retries, timeout). |
+
+### Response
+
+**Promise\<[models.MessageResponse](../../models/messageresponse.md)\>**
+
+### Errors
+
+Errors can be thrown from: getBulkUpsert (API errors), upload (e.g. payload exceeds size limit or S3 PUT failure), or bulkUpsert (API errors).
 
 ## update
 

@@ -26,11 +26,13 @@ export type SDKOptions = {
    */
   serverIdx?: number | undefined;
   /**
-   * Sets the projectHost variable for url substitution
+   * Sets the projectHost variable for url substitution.
+   * @deprecated Prefer `baseUrl` + `projectName` when using {@link LambdaDBClient}.
    */
   projectHost?: string | undefined;
   /**
-   * Allows overriding the default server URL used by the SDK
+   * Allows overriding the default server URL used by the SDK.
+   * @deprecated Prefer `baseUrl` + `projectName` when using {@link LambdaDBClient}. Use this only when you need to override the full base URL.
    */
   serverURL?: string | undefined;
   /**

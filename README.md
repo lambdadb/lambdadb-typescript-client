@@ -3,9 +3,8 @@
 Developer-friendly & type-safe Typescript SDK specifically catered to leverage *LambdaDB* API.
 
 <div align="left">
-    <a href="https://www.speakeasy.com/?utm_source=lambdadb&utm_campaign=typescript"><img src="https://custom-icon-badges.demolab.com/badge/-Built%20By%20Speakeasy-212015?style=for-the-badge&logoColor=FBE331&logo=speakeasy&labelColor=545454" /></a>
-    <a href="https://opensource.org/licenses/MIT">
-        <img src="https://img.shields.io/badge/License-MIT-blue.svg" style="width: 100px; height: 28px;" />
+    <a href="https://opensource.org/licenses/Apache-2.0">
+        <img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" style="width: 100px; height: 28px;" />
     </a>
 </div>
 
@@ -80,24 +79,102 @@ For supported JavaScript runtimes, please consult [RUNTIMES.md](RUNTIMES.md).
 <!-- Start SDK Example Usage [usage] -->
 ## SDK Example Usage
 
-### Example
+We recommend the **collection-scoped client** (`LambdaDBClient`): you get a handle for a collection once and then call methods without passing `collectionName` on every request.
+
+### Recommended: LambdaDBClient (collection-scoped)
+
+The client connects to `{baseUrl}/projects/{projectName}`. Defaults: **baseUrl** `https://api.lambdadb.ai`, **projectName** `playground`. Override with `baseUrl` and `projectName` when creating the client.
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  // Optional: baseUrl (default "https://api.lambdadb.ai"), projectName (default "playground")
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
+  // List all collections in the project
+  const list = await client.listCollections();
+  console.log(list);
 
-  console.log(result);
+  // Work with a specific collection — no collectionName in every call
+  const collection = client.collection("my-collection");
+  await collection.get();
+  await collection.docs.list({ size: 20 });
+  await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
+  // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow
+  // await collection.docs.bulkUpsertDocs({ docs: largeDocArray });
 }
 
 run();
-
 ```
+
+### TypeScript types
+
+Import request and response types from the package for type-safe usage. Use the **input** types for method arguments and the **response** types for return values.
+
+```typescript
+import {
+  LambdaDBClient,
+  type CreateCollectionInput,
+  type QueryCollectionInput,
+  type QueryCollectionResponse,
+  type ListDocsInput,
+  type ListDocsResponse,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+// Typed list params
+const params: ListDocsInput = { size: 20, pageToken: undefined };
+const listResult: ListDocsResponse = await collection.docs.list(params);
+
+// Typed query body and response (or use createQueryInput helper)
+const queryBody: QueryCollectionInput = {
+  query: { text: "hello" },
+  size: 10,
+};
+const queryResult: QueryCollectionResponse = await collection.query(queryBody);
+```
+
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `FetchDocsResponse`, `MessageResponse`; and model types like `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. All are exported from the main package.
+
+### Pagination
+
+Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page.
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+// Page-by-page (memory efficient)
+for await (const page of collection.docs.listPages({ size: 50 })) {
+  console.log(page.docs.length, page.nextPageToken ?? "last page");
+}
+
+// Or load all docs (for small/medium collections)
+const { docs, total } = await collection.docs.listAll({ size: 100 });
+console.log(docs.length, total);
+```
+
+### Query helper
+
+Use `createQueryInput()` to build query parameters for `collection.query()` or `collection.querySafe()`:
+
+```typescript
+import { LambdaDBClient, createQueryInput } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("my-collection");
+
+const input = createQueryInput({ text: "hello" }, { size: 10 });
+const result = await collection.query(input);
+```
+
 <!-- End SDK Example Usage [usage] -->
 
 <!-- Start Authentication [security] -->
@@ -113,20 +190,18 @@ This SDK supports the following security scheme globally:
 
 To authenticate with the API the `projectApiKey` parameter must be set when initializing the SDK client instance. For example:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
 run();
-
 ```
 <!-- End Authentication [security] -->
 
@@ -149,6 +224,7 @@ run();
 
 * [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list.
 * [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
 * [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
@@ -157,6 +233,20 @@ run();
 
 </details>
 <!-- End Available Resources and Operations [operations] -->
+
+### Legacy API (`LambdaDB`)
+
+The classic client `LambdaDB` is still supported for compatibility. New code should prefer `LambdaDBClient` and `client.collection(name)`.
+
+```typescript
+import { LambdaDB } from "@functional-systems/lambdadb";
+
+const lambdaDB = new LambdaDB({ projectApiKey: "<YOUR_PROJECT_API_KEY>" });
+const result = await lambdaDB.collections.list();
+await lambdaDB.collections.docs.listDocs({ collectionName: "my-collection", size: 20 });
+```
+
+See [docs/sdks/collections/README.md](docs/sdks/collections/README.md) and [docs/sdks/docs/README.md](docs/sdks/docs/README.md) for the full legacy API reference.
 
 <!-- Start Standalone functions [standalone-funcs] -->
 ## Standalone functions
@@ -197,14 +287,14 @@ Some of the endpoints in this SDK support retries.  If you use the SDK without a
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list({
+  const result = await client.listCollections({
     retries: {
       strategy: "backoff",
       backoff: {
@@ -216,19 +306,17 @@ async function run() {
       retryConnectionErrors: false,
     },
   });
-
   console.log(result);
 }
 
 run();
-
 ```
 
 If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
+const client = new LambdaDBClient({
   retryConfig: {
     strategy: "backoff",
     backoff: {
@@ -243,14 +331,29 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
-  const result = await lambdaDB.collections.list();
-
+  const result = await client.listCollections();
   console.log(result);
 }
 
 run();
 
 ```
+
+**Timeout and request-level options:** You can set a request timeout (ms) and retry behavior when creating the client or per call. If not set, there is no request timeout. The `RetryConfig` type is exported from the package for typing your options.
+
+```typescript
+import { LambdaDBClient, type RetryConfig } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
+  projectApiKey: "...",
+  timeoutMs: 30_000,       // 30s timeout for all requests
+  retryConfig: { strategy: "backoff", retryConnectionErrors: true },
+});
+
+// Override per request
+await client.listCollections({ timeoutMs: 10_000, retries: { strategy: "none" } });
+```
+
 <!-- End Retries [retries] -->
 
 <!-- Start Error Handling [errors] -->
@@ -267,39 +370,69 @@ run();
 | `error.rawResponse` | `Response` | Raw HTTP response                                                                       |
 | `error.data$`       |            | Optional. Some errors may contain structured data. [See Error Classes](#error-classes). |
 
-### Example
-```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
-import * as errors from "@functional-systems/lambdadb/models/errors";
+### Default methods (throw on error)
 
-const lambdaDB = new LambdaDB({
+Regular methods throw on failure. Catch errors and use `instanceof` to narrow types. Error classes are exported from the main package:
+
+```typescript
+import {
+  LambdaDBClient,
+  LambdaDBError,
+  UnauthenticatedError,
+  ResourceNotFoundError,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
   try {
-    const result = await lambdaDB.collections.list();
-
+    const result = await client.listCollections();
     console.log(result);
   } catch (error) {
-    // The base class for HTTP error responses
-    if (error instanceof errors.LambdaDBError) {
-      console.log(error.message);
-      console.log(error.statusCode);
-      console.log(error.body);
-      console.log(error.headers);
-
-      // Depending on the method different errors may be thrown
-      if (error instanceof errors.UnauthenticatedError) {
-        console.log(error.data$.message); // string
+    if (error instanceof LambdaDBError) {
+      console.log(error.message, error.statusCode, error.body);
+      if (error instanceof UnauthenticatedError) {
+        console.log(error.data$.message);
+      }
+      if (error instanceof ResourceNotFoundError) {
+        console.log("Not found:", error.data$);
       }
     }
   }
 }
 
 run();
-
 ```
+
+### Safe methods (return Result)
+
+Use `*Safe` methods to get a `Result<T, E>` instead of throwing. You can handle errors without try/catch and narrow with type guards:
+
+```typescript
+import {
+  LambdaDBClient,
+  Result,
+  ResourceNotFoundError,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+
+const result = await client.listCollectionsSafe();
+if (result.ok) {
+  console.log(result.value.collections);
+} else {
+  const err = result.error;
+  if (err instanceof ResourceNotFoundError) {
+    console.log("Not found:", err.data$);
+  } else {
+    console.error(err);
+  }
+}
+```
+
+Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collection.getSafe`, `collection.updateSafe`, `collection.deleteSafe`, `collection.querySafe`, `collection.docs.listSafe`, `collection.docs.upsertSafe`, `collection.docs.updateSafe`, `collection.docs.deleteSafe`, `collection.docs.fetchSafe`, `collection.docs.getBulkUpsertSafe`, `collection.docs.bulkUpsertSafe`, `collection.docs.bulkUpsertDocsSafe`. The `Result` type and `OK` / `ERR` helpers are exported from the package.
 
 ### Error Classes
 **Primary errors:**
@@ -332,56 +465,44 @@ run();
 <!-- End Error Handling [errors] -->
 
 <!-- Start Server Selection [server] -->
-## Server Selection
+## Server Selection (API base URL)
 
-### Server Variables
+`LambdaDBClient` builds the API base as **`{baseUrl}/projects/{projectName}`**. You can override the defaults when creating the client.
 
-The default server `https://{projectHost}` contains variables and is set to `https://api.lambdadb.com/projects/default` by default. To override default values, the following parameters are available when initializing the SDK client instance:
+| Option         | Type     | Default                     | Description                          |
+| -------------- | -------- | --------------------------- | ------------------------------------ |
+| `baseUrl`      | `string` | `"https://api.lambdadb.ai"` | API base URL (no trailing slash).    |
+| `projectName`  | `string` | `"playground"`              | Project name (path segment).         |
+| `serverURL`    | `string` | —                           | Full base URL (overrides baseUrl + projectName). |
+| `projectHost`  | `string` | —                           | Legacy: host path for URL (e.g. `api.lambdadb.ai/projects/my-project`). |
 
-| Variable      | Parameter             | Default                               | Description                |
-| ------------- | --------------------- | ------------------------------------- | -------------------------- |
-| `projectHost` | `projectHost: string` | `"api.lambdadb.com/projects/default"` | The project URL of the API |
-
-#### Example
+### Using baseUrl and projectName (recommended)
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
-  serverIdx: 0,
-  projectHost: "api.lambdadb.com/projects/default",
+const client = new LambdaDBClient({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  baseUrl: "https://api.lambdadb.ai",
+  projectName: "my-project",
 });
 
-async function run() {
-  const result = await lambdaDB.collections.list();
-
-  console.log(result);
-}
-
-run();
-
+const result = await client.listCollections();
 ```
 
-### Override Server URL Per-Client
+### Override with full server URL
 
-The default server can be overridden globally by passing a URL to the `serverURL: string` optional parameter when initializing the SDK client instance. For example:
+To set the base URL in one go, use `serverURL`:
+
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const lambdaDB = new LambdaDB({
-  serverURL: "https://api.lambdadb.com/projects/default",
+const client = new LambdaDBClient({
+  serverURL: "https://api.lambdadb.ai/projects/my-project",
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
-async function run() {
-  const result = await lambdaDB.collections.list();
-
-  console.log(result);
-}
-
-run();
-
+const result = await client.listCollections();
 ```
 <!-- End Server Selection [server] -->
 
@@ -403,7 +524,7 @@ custom header and a timeout to requests and how to use the `"requestError"` hook
 to log errors:
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 import { HTTPClient } from "@functional-systems/lambdadb/lib/http";
 
 const httpClient = new HTTPClient({
@@ -430,7 +551,7 @@ httpClient.addHook("requestError", (error, request) => {
   console.groupEnd();
 });
 
-const sdk = new LambdaDB({ httpClient: httpClient });
+const client = new LambdaDBClient({ httpClient, projectApiKey: "<YOUR_PROJECT_API_KEY>" });
 ```
 <!-- End Custom HTTP Client [http-client] -->
 
@@ -445,25 +566,20 @@ You can pass a logger that matches `console`'s interface as an SDK option.
 > Beware that debug logging will reveal secrets, like API tokens in headers, in log messages printed to a console or files. It's recommended to use this feature only during local development and not in production.
 
 ```typescript
-import { LambdaDB } from "@functional-systems/lambdadb";
+import { LambdaDBClient } from "@functional-systems/lambdadb";
 
-const sdk = new LambdaDB({ debugLogger: console });
+const client = new LambdaDBClient({ debugLogger: console, projectApiKey: "<YOUR_PROJECT_API_KEY>" });
 ```
 
 You can also enable a default debug logger by setting an environment variable `LAMBDADB_DEBUG` to true.
 <!-- End Debugging [debug] -->
 
-<!-- Placeholder for Future Speakeasy SDK Sections -->
-
 # Development
 
 ## Maturity
 
-This SDK is in beta, and there may be breaking changes between versions without a major version update. Therefore, we recommend pinning usage
-to a specific package version. This way, you can install the same version each time without breaking changes unless you are intentionally
-looking for the latest version.
+This SDK is in beta, and there may be breaking changes between versions without a major version update. Therefore, we recommend pinning usage to a specific package version unless you are intentionally looking for the latest version.
 
 ## Contributions
 
-While we value open-source contributions to this SDK, this library is generated programmatically. Any manual changes added to internal files will be overwritten on the next generation. 
-We look forward to hearing your feedback. Feel free to open a PR or an issue with a proof of concept and we'll do our best to include it in a future release. 
+We welcome contributions. The recommended API is implemented in `src/client.ts` (LambdaDBClient, collection-scoped). The rest of `src/` (funcs, models, lib) is maintained manually; see [docs/OPENAPI_UPDATE.md](docs/OPENAPI_UPDATE.md) for how API changes are applied. Feel free to open a PR or an issue. 

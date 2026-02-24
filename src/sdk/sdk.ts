@@ -5,6 +5,9 @@
 import { ClientSDK } from "../lib/sdks.js";
 import { Collections } from "./collections.js";
 
+/**
+ * @deprecated Use {@link LambdaDBClient} and `client.collection(name)` instead. This legacy client will be removed in a future major version.
+ */
 export class LambdaDB extends ClientSDK {
   private _collections?: Collections;
   get collections(): Collections {

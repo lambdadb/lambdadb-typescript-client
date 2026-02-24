@@ -1,10 +1,13 @@
 {
   "name": "@functional-systems/lambdadb",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Functional Systems, Inc.",
   "homepage": "https://github.com/lambdadb/lambdadb-typescript-client#readme",
   "license": "Apache-2.0",
-  "repository": "https://github.com/lambdadb/lambdadb-typescript-client.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lambdadb/lambdadb-typescript-client.git"
+  },
   "type": "module",
   "tshy": {
     "sourceDialects": [
@@ -25,6 +28,7 @@
   "scripts": {
     "lint": "eslint --cache --max-warnings=0 src",
     "build": "tshy",
+    "test": "echo \"No tests yet\"",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {},

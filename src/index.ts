@@ -7,3 +7,37 @@ export * as files from "./lib/files.js";
 export { HTTPClient } from "./lib/http.js";
 export type { Fetcher, HTTPClientOptions } from "./lib/http.js";
 export * from "./sdk/sdk.js";
+
+/** Collection-scoped client (recommended). See docs/REFACTORING_STATUS.md */
+export {
+  LambdaDBClient,
+  CollectionHandle,
+  DEFAULT_BASE_URL,
+  DEFAULT_PROJECT_NAME,
+  type RequestOptions as ClientRequestOptions,
+  type LambdaDBClientOptions,
+} from "./client.js";
+
+/** Public API types (inputs and responses for the collection-scoped client). */
+export type * from "./types/public.js";
+
+/** Result type and helpers for Safe methods. */
+export type { Result } from "./types/fp.js";
+export { OK, ERR } from "./types/fp.js";
+
+/** Error classes and per-operation error unions for Safe methods and instanceof checks. */
+export * from "./types/errors.js";
+
+/** Query input helper for collection.query() / collection.querySafe(). */
+export {
+  createQueryInput,
+  type CreateQueryInputOptions,
+} from "./lib/queryInput.js";
+
+/** Retry config type for LambdaDBClientOptions and RequestOptions. */
+export type { RetryConfig } from "./lib/retries.js";
+
+/**
+ * @deprecated Use types from the package root (e.g. CreateCollectionInput, QueryCollectionResponse). Will be removed in the next major version.
+ */
+export type { operations, models } from "./client.js";

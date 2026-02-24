@@ -14,6 +14,9 @@ import * as models from "../models/index.js";
 import * as operations from "../models/operations/index.js";
 import { unwrapAsync } from "../types/fp.js";
 
+/**
+ * @deprecated Use {@link LambdaDBClient} and `client.collection(name).docs` (e.g. `.list()`, `.upsert()`, `.fetch()`). This legacy API will be removed in a future major version.
+ */
 export class Docs extends ClientSDK {
   /**
    * List documents in a collection.
