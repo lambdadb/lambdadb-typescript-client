@@ -12,7 +12,7 @@ servers:
     variables:
       "projectHost":
         description: "The project URL of the API"
-        default: "api.lambdadb.com/projects/default"
+        default: "api.lambdadb.ai/projects/playground"
 x-speakeasy-retries: {"strategy": "backoff", "backoff": {"initialInterval": 500, "maxInterval": 60000, "maxElapsedTime": 3600000, "exponent": 1.5}, "statusCodes": ["429", "5XX"], "retryConnectionErrors": true}
 components:
   parameters:
@@ -190,6 +190,15 @@ components:
           type: "string"
           description: "Source collection version."
         "collectionStatus": {"$ref": "#/components/schemas/Status"}
+        "createdAt":
+          type: "integer"
+          description: "Collection creation time in seconds since the Unix epoch."
+        "updatedAt":
+          type: "integer"
+          description: "Collection last update time in seconds since the Unix epoch."
+        "dataUpdatedAt":
+          type: "integer"
+          description: "Collection data last update time in seconds since the Unix epoch."
       required:
         - "projectName"
         - "collectionName"
@@ -197,6 +206,9 @@ components:
         - "numDocs"
         - "collectionStatus"
         - "numPartitions"
+        - "createdAt"
+        - "updatedAt"
+        - "dataUpdatedAt"
     "MessageResponse":
       type: "object"
       properties:
@@ -259,6 +271,19 @@ paths:
       description: "List all collections in an existing project."
       security:
         - ProjectApiKey: []
+      parameters:
+        - in: "query"
+          name: "size"
+          description: "Max number of collections to return at once."
+          schema:
+            type: "integer"
+            minimum: 1
+            maximum: 100
+        - in: "query"
+          name: "pageToken"
+          description: "Next page token."
+          schema:
+            type: "string"
       responses:
         "200":
           description: "A list of collections matched with a projectName."
@@ -270,6 +295,9 @@ paths:
                   "collections":
                     type: "array"
                     items: {"$ref": "#/components/schemas/CollectionResponse"}
+                  "nextPageToken":
+                    type: "string"
+                    description: "Next page token."
                 required:
                   - "collections"
               examples:

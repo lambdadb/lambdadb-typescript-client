@@ -27,10 +27,12 @@ export class Collections extends ClientSDK {
    * List all collections in an existing project.
    */
   async list(
+    request?: operations.ListCollectionsRequest,
     options?: RequestOptions,
   ): Promise<operations.ListCollectionsResponse> {
     return unwrapAsync(collectionsList(
       this,
+      request,
       options,
     ));
   }

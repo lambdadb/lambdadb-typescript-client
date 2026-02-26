@@ -94,9 +94,9 @@ const client = new LambdaDBClient({
 });
 
 async function run() {
-  // List all collections in the project
+  // List all collections in the project (optional: pass { size, pageToken } for pagination)
   const list = await client.listCollections();
-  console.log(list);
+  console.log(list); // list.collections[].createdAt etc. are Date
 
   // Work with a specific collection — no collectionName in every call
   const collection = client.collection("my-collection");
@@ -139,11 +139,11 @@ const queryBody: QueryCollectionInput = {
 const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
-Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `FetchDocsResponse`, `MessageResponse`; and model types like `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. All are exported from the main package.
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. Collection list/get responses expose timestamp fields (`createdAt`, `updatedAt`, `dataUpdatedAt`) as `Date`. All are exported from the main package.
 
 ### Pagination
 
-Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page.
+**Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
@@ -159,6 +159,21 @@ for await (const page of collection.docs.listPages({ size: 50 })) {
 // Or load all docs (for small/medium collections)
 const { docs, total } = await collection.docs.listAll({ size: 100 });
 console.log(docs.length, total);
+```
+
+**Collections:** Use `listCollections(params?)` with optional `size` and `pageToken`, or `listCollectionsPages(params?)` / `listAllCollections(params?)` to iterate or fetch all collections across pages.
+
+```typescript
+// One page
+const page = await client.listCollections({ size: 20 });
+
+// Page-by-page
+for await (const page of client.listCollectionsPages({ size: 20 })) {
+  console.log(page.collections.length, page.nextPageToken ?? "last");
+}
+
+// All collections
+const { collections } = await client.listAllCollections({ size: 50 });
 ```
 
 ### Query helper
@@ -213,7 +228,7 @@ run();
 
 ### [Collections](docs/sdks/collections/README.md)
 
-* [list](docs/sdks/collections/README.md#list) - List all collections in an existing project.
+* [list](docs/sdks/collections/README.md#list) - List all collections in an existing project (supports pagination: `size`, `pageToken`). On **LambdaDBClient** use `listCollections(params?)`, `listCollectionsPages(params?)`, or `listAllCollections(params?)` for iteration; collection responses include `createdAt`/`updatedAt`/`dataUpdatedAt` as `Date`.
 * [create](docs/sdks/collections/README.md#create) - Create a collection.
 * [delete](docs/sdks/collections/README.md#delete) - Delete an existing collection.
 * [get](docs/sdks/collections/README.md#get) - Get metadata of an existing collection.
@@ -294,7 +309,7 @@ const client = new LambdaDBClient({
 });
 
 async function run() {
-  const result = await client.listCollections({
+  const result = await client.listCollections(undefined, {
     retries: {
       strategy: "backoff",
       backoff: {
@@ -351,7 +366,7 @@ const client = new LambdaDBClient({
 });
 
 // Override per request
-await client.listCollections({ timeoutMs: 10_000, retries: { strategy: "none" } });
+await client.listCollections(undefined, { timeoutMs: 10_000, retries: { strategy: "none" } });
 ```
 
 <!-- End Retries [retries] -->

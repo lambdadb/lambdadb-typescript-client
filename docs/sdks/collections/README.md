@@ -15,7 +15,9 @@
 
 ## list
 
-List all collections in an existing project.
+List all collections in an existing project. Supports pagination via `size` (1–100) and `pageToken`; the response includes `collections` and optional `nextPageToken`.
+
+**LambdaDBClient (recommended):** Use `client.listCollections(params?, options?)` for a single page (returns `ListCollectionsResponseWithDates` with `createdAt`/`updatedAt`/`dataUpdatedAt` as `Date`), `client.listCollectionsPages(params?)` to iterate pages, or `client.listAllCollections(params?)` to fetch all collections.
 
 ### Example Usage
 
@@ -28,6 +30,7 @@ const lambdaDB = new LambdaDB({
 });
 
 async function run() {
+  // Optional first arg: { size?, pageToken? }
   const result = await lambdaDB.collections.list();
 
   console.log(result);
@@ -38,23 +41,21 @@ run();
 
 ### Standalone function
 
-The standalone function version of this method:
+The standalone function accepts an optional request (size, pageToken) and options:
 
 ```typescript
 import { LambdaDBCore } from "@functional-systems/lambdadb/core.js";
 import { collectionsList } from "@functional-systems/lambdadb/funcs/collectionsList.js";
 
-// Use `LambdaDBCore` for best tree-shaking performance.
-// You can create one instance of it to use across an application.
 const lambdaDB = new LambdaDBCore({
   projectApiKey: "<YOUR_PROJECT_API_KEY>",
 });
 
 async function run() {
-  const res = await collectionsList(lambdaDB);
+  const res = await collectionsList(lambdaDB, { size: 20 }); // optional request, optional options
   if (res.ok) {
     const { value: result } = res;
-    console.log(result);
+    console.log(result.collections, result.nextPageToken);
   } else {
     console.log("collectionsList failed:", res.error);
   }
@@ -67,13 +68,14 @@ run();
 
 | Parameter                                                                                                                                                                      | Type                                                                                                                                                                           | Required                                                                                                                                                                       | Description                                                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `request`                                                                                                                                                                      | Optional object with `size` (1–100) and `pageToken`                                                                                                                              | :heavy_minus_sign:                                                                                                                                                             | Pagination: max collections per page and next page token.                                                                                                                       |
 | `options`                                                                                                                                                                      | RequestOptions                                                                                                                                                                 | :heavy_minus_sign:                                                                                                                                                             | Used to set various options for making HTTP requests.                                                                                                                          |
 | `options.fetchOptions`                                                                                                                                                         | [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request#options)                                                                                        | :heavy_minus_sign:                                                                                                                                                             | Options that are passed to the underlying HTTP request. This can be used to inject extra headers for examples. All `Request` options, except `method` and `body`, are allowed. |
 | `options.retries`                                                                                                                                                              | [RetryConfig](../../lib/utils/retryconfig.md)                                                                                                                                  | :heavy_minus_sign:                                                                                                                                                             | Enables retrying HTTP requests under certain failure conditions.                                                                                                               |
 
 ### Response
 
-**Promise\<[operations.ListCollectionsResponse](../../models/operations/listcollectionsresponse.md)\>**
+**Promise\<[operations.ListCollectionsResponse](../../models/operations/listcollectionsresponse.md)\>** — `collections` and optional `nextPageToken`.
 
 ### Errors
 
