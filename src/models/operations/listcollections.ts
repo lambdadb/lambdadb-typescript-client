@@ -9,10 +9,38 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
 /**
+ * Request parameters for listing collections (pagination).
+ */
+export type ListCollectionsRequest = {
+  /**
+   * Max number of collections to return at once.
+   */
+  size?: number | undefined;
+  /**
+   * Next page token.
+   */
+  pageToken?: string | undefined;
+};
+
+/** @internal */
+export const ListCollectionsRequest$outboundSchema: z.ZodType<
+  ListCollectionsRequest,
+  z.ZodTypeDef,
+  ListCollectionsRequest
+> = z.object({
+  size: z.number().int().min(1).max(100).optional(),
+  pageToken: z.string().optional(),
+});
+
+/**
  * A list of collections matched with a projectName.
  */
 export type ListCollectionsResponse = {
   collections: Array<models.CollectionResponse>;
+  /**
+   * Next page token.
+   */
+  nextPageToken?: string | undefined;
 };
 
 /** @internal */
@@ -22,6 +50,7 @@ export const ListCollectionsResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   collections: z.array(models.CollectionResponse$inboundSchema),
+  nextPageToken: z.string().optional(),
 });
 
 export function listCollectionsResponseFromJSON(

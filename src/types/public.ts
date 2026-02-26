@@ -14,9 +14,16 @@ export type { FetchDocsRequestBody as FetchDocsInput } from "../models/operation
 export type { BulkUpsertDocsRequestBody as BulkUpsertInput } from "../models/operations/bulkupsertdocs.js";
 
 import type { ListDocsRequest } from "../models/operations/listdocs.js";
+import type { ListCollectionsRequest } from "../models/operations/listcollections.js";
 
 /** Parameters for listing documents (size, pageToken). */
 export type ListDocsInput = Pick<ListDocsRequest, "size" | "pageToken">;
+
+/** Parameters for listing collections (size, pageToken). */
+export type ListCollectionsInput = Pick<
+  ListCollectionsRequest,
+  "size" | "pageToken"
+>;
 
 // ---- Response types ----
 export type { ListCollectionsResponse } from "../models/operations/listcollections.js";
@@ -43,3 +50,66 @@ export type {
   FieldsSelectorUnion,
   CollectionResponse,
 } from "../models/index.js";
+
+// ---- Timestamp helpers (Unix seconds → Date) ----
+import type { CollectionResponse as CollectionResponseModel } from "../models/index.js";
+
+/**
+ * Collection response with timestamp fields as Date (for better DX).
+ * Use {@link collectionResponseWithDates} to convert API response.
+ */
+export type CollectionResponseWithDates = Omit<
+  CollectionResponseModel,
+  "createdAt" | "updatedAt" | "dataUpdatedAt"
+> & {
+  createdAt?: Date | undefined;
+  updatedAt?: Date | undefined;
+  dataUpdatedAt?: Date | undefined;
+};
+
+/**
+ * List collections response with timestamp fields as Date.
+ */
+export type ListCollectionsResponseWithDates = {
+  collections: CollectionResponseWithDates[];
+  nextPageToken?: string | undefined;
+};
+
+/**
+ * Converts Unix-second timestamp fields to Date. Safe to call on partial responses.
+ */
+export function collectionResponseWithDates(
+  c: CollectionResponseModel,
+): CollectionResponseWithDates {
+  const { createdAt, updatedAt, dataUpdatedAt, ...rest } = c;
+  const out: CollectionResponseWithDates = { ...rest };
+  if (createdAt != null) out.createdAt = new Date(createdAt * 1000);
+  if (updatedAt != null) out.updatedAt = new Date(updatedAt * 1000);
+  if (dataUpdatedAt != null)
+    out.dataUpdatedAt = new Date(dataUpdatedAt * 1000);
+  return out;
+}
+
+/** Converts ListCollectionsResponse to use Date for timestamp fields. */
+export function listCollectionsResponseWithDates(res: {
+  collections: CollectionResponseModel[];
+  nextPageToken?: string | undefined;
+}): ListCollectionsResponseWithDates {
+  const out: ListCollectionsResponseWithDates = {
+    collections: res.collections.map(collectionResponseWithDates),
+  };
+  if (res.nextPageToken !== undefined) out.nextPageToken = res.nextPageToken;
+  return out;
+}
+
+/** Get collection response with timestamp fields as Date. */
+export type GetCollectionResponseWithDates = {
+  collection: CollectionResponseWithDates;
+};
+
+/** Converts GetCollectionResponse to use Date for timestamp fields. */
+export function getCollectionResponseWithDates(res: {
+  collection: CollectionResponseModel;
+}): GetCollectionResponseWithDates {
+  return { collection: collectionResponseWithDates(res.collection) };
+}

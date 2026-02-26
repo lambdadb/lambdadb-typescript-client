@@ -30,14 +30,19 @@ import { unwrapAsync, OK, ERR } from "./types/fp.js";
 import type { Result } from "./types/fp.js";
 import type * as operations from "./models/operations/index.js";
 import type * as models from "./models/index.js";
-import type {
-  CreateCollectionInput,
-  UpdateCollectionInput,
-  QueryCollectionInput,
-  QueryCollectionResponse,
-  QueryCollectionDoc,
-  ListDocsInput,
-  ListDocsResponse,
+import {
+  listCollectionsResponseWithDates,
+  getCollectionResponseWithDates,
+  type CreateCollectionInput,
+  type UpdateCollectionInput,
+  type QueryCollectionInput,
+  type QueryCollectionResponse,
+  type QueryCollectionDoc,
+  type ListDocsInput,
+  type ListDocsResponse,
+  type ListCollectionsInput,
+  type ListCollectionsResponseWithDates,
+  type GetCollectionResponseWithDates,
   UpsertDocsInput,
   UpdateDocsInput,
   DeleteDocsInput,
@@ -46,9 +51,7 @@ import type {
   FetchDocsDoc,
   BulkUpsertInput,
   MessageResponse,
-  ListCollectionsResponse,
   CreateCollectionResponse,
-  GetCollectionResponse,
   UpdateCollectionResponse,
   GetBulkUpsertDocsResponse,
 } from "./types/public.js";
@@ -155,19 +158,66 @@ export class LambdaDBClient extends LambdaDBCore {
   }
 
   /**
-   * List all collections in the project.
+   * List collections in the project (with optional pagination). Timestamp fields are returned as Date.
    */
-  async listCollections(options?: RequestOptions) {
-    return unwrapAsync(collectionsList(this, options));
+  async listCollections(
+    params?: ListCollectionsInput,
+    options?: RequestOptions,
+  ): Promise<ListCollectionsResponseWithDates> {
+    const res = await unwrapAsync(collectionsList(this, params, options));
+    return listCollectionsResponseWithDates(res);
   }
 
   /**
-   * List all collections (Safe: returns Result instead of throwing).
+   * List collections (Safe: returns Result instead of throwing). Timestamp fields are Date.
    */
   async listCollectionsSafe(
+    params?: ListCollectionsInput,
     options?: RequestOptions,
-  ): Promise<Result<ListCollectionsResponse, ListCollectionsError>> {
-    return await collectionsList(this, options);
+  ): Promise<Result<ListCollectionsResponseWithDates, ListCollectionsError>> {
+    const result = await collectionsList(this, params, options);
+    if (!result.ok) return result;
+    return OK(listCollectionsResponseWithDates(result.value));
+  }
+
+  /**
+   * Iterate over all pages of collections. Yields one page per API response.
+   * Use this to process many collections without loading everything into memory.
+   *
+   * @example
+   * for await (const page of client.listCollectionsPages({ size: 20 })) {
+   *   console.log(page.collections.length, page.nextPageToken ?? "last page");
+   * }
+   */
+  async *listCollectionsPages(
+    params?: ListCollectionsInput,
+    options?: RequestOptions,
+  ): AsyncGenerator<ListCollectionsResponseWithDates> {
+    let pageToken: string | undefined = params?.pageToken;
+    const baseParams: ListCollectionsInput = { size: params?.size, pageToken };
+    while (true) {
+      const page = await this.listCollections(
+        { ...baseParams, pageToken } as ListCollectionsInput,
+        options,
+      );
+      yield page;
+      pageToken = page.nextPageToken;
+      if (pageToken == null || pageToken === "") break;
+    }
+  }
+
+  /**
+   * Fetch all collections across pages and return a single list. Uses listCollectionsPages internally.
+   */
+  async listAllCollections(
+    params?: ListCollectionsInput,
+    options?: RequestOptions,
+  ): Promise<{ collections: ListCollectionsResponseWithDates["collections"] }> {
+    const collections: ListCollectionsResponseWithDates["collections"] = [];
+    for await (const page of this.listCollectionsPages(params, options)) {
+      collections.push(...page.collections);
+    }
+    return { collections };
   }
 
   /**
@@ -201,21 +251,28 @@ export class CollectionHandle {
   ) {}
 
   /**
-   * Get metadata of this collection.
+   * Get metadata of this collection. Timestamp fields are returned as Date.
    */
-  async get(options?: RequestOptions) {
-    return unwrapAsync(
+  async get(options?: RequestOptions): Promise<GetCollectionResponseWithDates> {
+    const res = await unwrapAsync(
       collectionsGet(this.client, { collectionName: this.collectionName }, options),
     );
+    return getCollectionResponseWithDates(res);
   }
 
   /**
-   * Get metadata of this collection (Safe: returns Result instead of throwing).
+   * Get metadata of this collection (Safe: returns Result instead of throwing). Timestamp fields are Date.
    */
   async getSafe(
     options?: RequestOptions,
-  ): Promise<Result<GetCollectionResponse, GetCollectionError>> {
-    return await collectionsGet(this.client, { collectionName: this.collectionName }, options);
+  ): Promise<Result<GetCollectionResponseWithDates, GetCollectionError>> {
+    const result = await collectionsGet(
+      this.client,
+      { collectionName: this.collectionName },
+      options,
+    );
+    if (!result.ok) return result;
+    return OK(getCollectionResponseWithDates(result.value));
   }
 
   /**

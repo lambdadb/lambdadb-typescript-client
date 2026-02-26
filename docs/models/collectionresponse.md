@@ -18,6 +18,9 @@ let value: CollectionResponse = {
   numPartitions: 506700,
   numDocs: 731542,
   collectionStatus: "DELETING",
+  createdAt: 0,
+  updatedAt: 0,
+  dataUpdatedAt: 0,
 };
 ```
 
@@ -35,3 +38,6 @@ let value: CollectionResponse = {
 | `sourceCollectionName`                                      | *string*                                                    | :heavy_minus_sign:                                          | Source collection name.                                     |
 | `sourceCollectionVersionId`                                 | *string*                                                    | :heavy_minus_sign:                                          | Source collection version.                                  |
 | `collectionStatus`                                          | [models.Status](../models/status.md)                        | :heavy_check_mark:                                          | Status                                                      |
+| `createdAt`                                                 | *number*                                                    | :heavy_check_mark:                                          | Collection creation time in seconds since the Unix epoch.     |
+| `updatedAt`                                                 | *number*                                                    | :heavy_check_mark:                                          | Collection last update time in seconds since the Unix epoch. |
+| `dataUpdatedAt`                                             | *number*                                                    | :heavy_check_mark:                                          | Collection data last update time in seconds since the Unix epoch. |

@@ -8,8 +8,8 @@ const client = new LambdaDBClient({
 });
 
 async function run() {
-  const result = await client.listCollections();
-  console.log(result);
+  const result = await client.listCollections(); // optional: client.listCollections({ size, pageToken })
+  console.log(result); // result.collections[].createdAt etc. are Date
 
   const collection = client.collection("my-collection");
   await collection.docs.list({ size: 20 });

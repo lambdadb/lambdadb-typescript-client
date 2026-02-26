@@ -29,7 +29,7 @@ const lambdaDB = new LambdaDBCore({
 });
 
 async function run() {
-  const res = await collectionsList(lambdaDB);
+  const res = await collectionsList(lambdaDB, { size: 20 }); // optional request (size?, pageToken?), optional options
   if (res.ok) {
     const { value: result } = res;
     console.log(result);

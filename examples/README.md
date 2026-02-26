@@ -36,7 +36,7 @@ npm run build && npx tsx collectionsList.example.ts
 
 | File | Description |
 |------|-------------|
-| `collectionsList.example.ts` | List all collections in the project (`client.listCollections()`) |
+| `collectionsList.example.ts` | List all collections in the project (`client.listCollections()`, optional `listCollectionsPages()` / `listAllCollections()`) |
 | `collectionScoped.example.ts` | Use a collection handle to get metadata and list docs (`client.collection(name)`) |
 
 ## Creating new examples

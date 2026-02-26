@@ -51,6 +51,18 @@ export type CollectionResponse = {
    * Status
    */
   collectionStatus: Status;
+  /**
+   * Collection creation time in seconds since the Unix epoch.
+   */
+  createdAt: number;
+  /**
+   * Collection last update time in seconds since the Unix epoch.
+   */
+  updatedAt: number;
+  /**
+   * Collection data last update time in seconds since the Unix epoch.
+   */
+  dataUpdatedAt: number;
 };
 
 /** @internal */
@@ -69,6 +81,9 @@ export const CollectionResponse$inboundSchema: z.ZodType<
   sourceCollectionName: z.string().optional(),
   sourceCollectionVersionId: z.string().optional(),
   collectionStatus: Status$inboundSchema,
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+  dataUpdatedAt: z.number().int(),
 });
 
 export function collectionResponseFromJSON(

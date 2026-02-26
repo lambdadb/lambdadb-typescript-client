@@ -3,6 +3,7 @@
  */
 
 import { LambdaDBCore } from "../core.js";
+import { encodeFormQuery } from "../lib/encodings.js";
 import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { RequestOptions } from "../lib/sdks.js";
@@ -28,6 +29,7 @@ import { Result } from "../types/fp.js";
  */
 export function collectionsList(
   client: LambdaDBCore,
+  request?: operations.ListCollectionsRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -48,12 +50,14 @@ export function collectionsList(
 > {
   return new APIPromise($do(
     client,
+    request,
     options,
   ));
 }
 
 async function $do(
   client: LambdaDBCore,
+  request?: operations.ListCollectionsRequest,
   options?: RequestOptions,
 ): Promise<
   [
@@ -76,6 +80,11 @@ async function $do(
   ]
 > {
   const path = pathToFunc("/collections")();
+
+  const query = encodeFormQuery({
+    "pageToken": request?.pageToken,
+    "size": request?.size,
+  });
 
   const headers = new Headers(compactMap({
     Accept: "application/json",
@@ -116,6 +125,7 @@ async function $do(
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
+    query: query,
     userAgent: client._options.userAgent,
     timeoutMs: options?.timeoutMs || client._options.timeoutMs || -1,
   }, options);
