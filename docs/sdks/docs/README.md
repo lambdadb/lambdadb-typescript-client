@@ -19,6 +19,8 @@
 
 List documents in a collection.
 
+When using **LambdaDBClient**, `collection.docs.list()` and `collection.docs.listSafe()` automatically fetch documents from the presigned URL when the API returns `isDocsInline: false`, so the response always includes `docs`.
+
 ### Example Usage
 
 <!-- UsageSnippet language="typescript" operationID="listDocs" method="get" path="/collections/{collectionName}/docs" -->

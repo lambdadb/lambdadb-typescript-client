@@ -34,7 +34,10 @@ export type {
   QueryCollectionResponse,
   QueryCollectionDoc,
 } from "../models/operations/querycollection.js";
-export type { ListDocsResponse } from "../models/operations/listdocs.js";
+export type {
+  ListDocsResponse,
+  ListDocsDoc,
+} from "../models/operations/listdocs.js";
 export type { MessageResponse } from "../models/index.js";
 export type {
   FetchDocsResponse,

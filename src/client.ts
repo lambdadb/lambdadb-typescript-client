@@ -40,6 +40,7 @@ import {
   type QueryCollectionDoc,
   type ListDocsInput,
   type ListDocsResponse,
+  type ListDocsDoc,
   type ListCollectionsInput,
   type ListCollectionsResponseWithDates,
   type GetCollectionResponseWithDates,
@@ -401,32 +402,50 @@ class CollectionDocs {
 
   /**
    * List documents in the collection.
+   * When the API returns docs via docsUrl (isDocsInline false), documents are
+   * fetched from the presigned URL automatically so the response always has docs.
    */
   async list(
     params?: ListDocsInput,
     options?: RequestOptions,
   ) {
-    return unwrapAsync(
+    const result = await unwrapAsync(
       collectionsDocsListDocs(
         this.client,
         { collectionName: this.collectionName, ...params },
         options,
       ),
     );
+    if (!result.isDocsInline && result.docsUrl) {
+      const docs = await fetchDocsFromUrl<ListDocsDoc>(result.docsUrl);
+      return { ...result, docs, isDocsInline: true };
+    }
+    return result;
   }
 
   /**
    * List documents in the collection (Safe: returns Result instead of throwing).
+   * When the API returns docs via docsUrl, documents are fetched from the presigned URL automatically.
    */
   async listSafe(
     params?: ListDocsInput,
     options?: RequestOptions,
   ): Promise<Result<ListDocsResponse, ListDocsError>> {
-    return await collectionsDocsListDocs(
+    const result = await collectionsDocsListDocs(
       this.client,
       { collectionName: this.collectionName, ...params },
       options,
     );
+    if (!result.ok) return result;
+    if (!result.value.isDocsInline && result.value.docsUrl) {
+      try {
+        const docs = await fetchDocsFromUrl<ListDocsDoc>(result.value.docsUrl);
+        return OK({ ...result.value, docs, isDocsInline: true });
+      } catch (e) {
+        return ERR(e as ListDocsError);
+      }
+    }
+    return result;
   }
 
   /**
