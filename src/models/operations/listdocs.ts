@@ -22,6 +22,11 @@ export type ListDocsRequest = {
   pageToken?: string | undefined;
 };
 
+export type ListDocsDoc = {
+  collection: string;
+  doc: { [k: string]: any };
+};
+
 /**
  * Documents list.
  */
@@ -30,8 +35,16 @@ export type ListDocsResponse = {
   /**
    * A list of documents.
    */
-  docs: Array<{ [k: string]: any }>;
+  docs: Array<ListDocsDoc>;
   nextPageToken?: string | undefined;
+  /**
+   * Whether the list of documents is included.
+   */
+  isDocsInline: boolean;
+  /**
+   * Download URL for the list of documents.
+   */
+  docsUrl?: string | undefined;
 };
 
 /** @internal */
@@ -59,14 +72,26 @@ export function listDocsRequestToJSON(
 }
 
 /** @internal */
+export const ListDocsDoc$inboundSchema: z.ZodType<
+  ListDocsDoc,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  collection: z.string(),
+  doc: z.record(z.any()),
+});
+
+/** @internal */
 export const ListDocsResponse$inboundSchema: z.ZodType<
   ListDocsResponse,
   z.ZodTypeDef,
   unknown
 > = z.object({
   total: z.number().int(),
-  docs: z.array(z.record(z.any())),
+  docs: z.array(ListDocsDoc$inboundSchema),
   nextPageToken: z.string().optional(),
+  isDocsInline: z.boolean(),
+  docsUrl: z.string().optional(),
 });
 
 export function listDocsResponseFromJSON(
