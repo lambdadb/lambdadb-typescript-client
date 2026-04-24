@@ -23,8 +23,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
+          cache: "npm"
 
       # When triggered by a tag, set package version from tag (e.g. v0.3.0-dev → 0.3.0-dev)
       - name: Set version from tag
@@ -38,8 +39,12 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # npm Trusted Publishing (OIDC) requires npm 11.5.1+
-      - run: npm install -g npm@latest
+      # npm Trusted Publishing (OIDC) requires Node 22.14.0+ and npm 11.5.1+.
+      # Node 24 ships with a compatible npm, avoiding a fragile self-upgrade in CI.
+      - name: Verify publish toolchain
+        run: |
+          node --version
+          npm --version
 
       # Pre-release: 0.3.0-dev.* → tag "dev", 0.3.0-rc.* → tag "rc"; stable → "latest"
       - name: Publish to npm
