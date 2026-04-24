@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 
@@ -89,9 +89,9 @@ export const ListDocsResponse$inboundSchema: z.ZodType<
 > = z.object({
   total: z.number().int(),
   docs: z.array(ListDocsDoc$inboundSchema),
-  nextPageToken: z.string().optional(),
+  nextPageToken: nullToUndefined(z.string().optional()),
   isDocsInline: z.boolean(),
-  docsUrl: z.string().optional(),
+  docsUrl: nullToUndefined(z.string().optional()),
 });
 
 export function listDocsResponseFromJSON(

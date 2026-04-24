@@ -26,6 +26,7 @@ import { collectionsDocsListDocs } from "./funcs/collectionsDocsListDocs.js";
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
+import { UnexpectedClientError } from "./models/errors/httpclienterrors.js";
 import { unwrapAsync, OK, ERR } from "./types/fp.js";
 import type { Result } from "./types/fp.js";
 import type * as operations from "./models/operations/index.js";
@@ -89,12 +90,40 @@ async function fetchDocsFromUrl<T>(docsUrl: string): Promise<T[]> {
   const res = await fetch(docsUrl);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(
+    throw new UnexpectedClientError(
       `Failed to fetch documents from URL: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
     );
   }
-  const json = (await res.json()) as { docs?: T[] };
-  return json.docs ?? [];
+  const text = await res.text();
+  if (text.trim() === "") {
+    return [];
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch (cause) {
+    throw new UnexpectedClientError(
+      "Failed to parse documents from URL as JSON",
+      { cause },
+    );
+  }
+
+  if (payload == null) {
+    return [];
+  }
+  if (typeof payload !== "object" || Array.isArray(payload)) {
+    throw new UnexpectedClientError("Unexpected document payload shape from URL");
+  }
+
+  const { docs } = payload as { docs?: unknown };
+  if (docs == null) {
+    return [];
+  }
+  if (!Array.isArray(docs)) {
+    throw new UnexpectedClientError("Unexpected docs payload shape from URL");
+  }
+  return docs as T[];
 }
 
 /** Default base URL for the LambdaDB API. */

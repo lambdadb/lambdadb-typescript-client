@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../lib/schemas.js";
 import { ClosedEnum } from "../types/enums.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./errors/sdkvalidationerror.js";
@@ -182,7 +182,7 @@ export const IndexConfigsVector$inboundSchema: z.ZodType<
 > = z.object({
   type: z.literal("vector"),
   dimensions: z.number().int(),
-  similarity: Similarity$inboundSchema.default("cosine"),
+  similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
 });
 /** @internal */
 export type IndexConfigsVector$Outbound = {
@@ -233,7 +233,7 @@ export const IndexConfigsText$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("text"),
-  analyzers: z.array(Analyzer$inboundSchema).optional(),
+  analyzers: nullToUndefined(z.array(Analyzer$inboundSchema).optional()),
 });
 /** @internal */
 export type IndexConfigsText$Outbound = {
