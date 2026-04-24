@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../lib/schemas.js";
 import { ClosedEnum } from "../types/enums.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./errors/sdkvalidationerror.js";
@@ -47,9 +47,9 @@ export const PartitionConfig$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  fieldName: z.string().optional(),
-  dataType: DataType$inboundSchema.optional(),
-  numPartitions: z.number().int().optional(),
+  fieldName: nullToUndefined(z.string().optional()),
+  dataType: nullToUndefined(DataType$inboundSchema.optional()),
+  numPartitions: nullToUndefined(z.number().int().optional()),
 });
 /** @internal */
 export type PartitionConfig$Outbound = {

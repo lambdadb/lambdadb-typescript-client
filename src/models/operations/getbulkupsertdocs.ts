@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
@@ -101,10 +101,10 @@ export const GetBulkUpsertDocsResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   url: z.string(),
-  type: Type$inboundSchema.default("application/json"),
-  httpMethod: HttpMethod$inboundSchema.default("PUT"),
+  type: nullToUndefined(Type$inboundSchema.default("application/json")),
+  httpMethod: nullToUndefined(HttpMethod$inboundSchema.default("PUT")),
   objectKey: z.string(),
-  sizeLimitBytes: z.number().int().default(209715200),
+  sizeLimitBytes: nullToUndefined(z.number().int().default(209715200)),
 });
 
 export function getBulkUpsertDocsResponseFromJSON(

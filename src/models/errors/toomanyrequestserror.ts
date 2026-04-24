@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v3";
+import { nullToUndefined } from "../../lib/schemas.js";
 import { LambdaDBError } from "./lambdadberror.js";
 
 export type TooManyRequestsErrorData = {
@@ -31,7 +32,7 @@ export const TooManyRequestsError$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  message: z.string().optional(),
+  message: nullToUndefined(z.string().optional()),
   request$: z.instanceof(Request),
   response$: z.instanceof(Response),
   body$: z.string(),

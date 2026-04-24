@@ -4,7 +4,7 @@
 
 import * as z from "zod/v3";
 import { remap as remap$ } from "../../lib/primitives.js";
-import { safeParse } from "../../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
@@ -153,7 +153,7 @@ export const FetchDocsResponse$inboundSchema: z.ZodType<
   took: z.number().int(),
   docs: z.array(z.lazy(() => FetchDocsDoc$inboundSchema)),
   isDocsInline: z.boolean(),
-  docsUrl: z.string().optional(),
+  docsUrl: nullToUndefined(z.string().optional()),
 });
 
 export function fetchDocsResponseFromJSON(

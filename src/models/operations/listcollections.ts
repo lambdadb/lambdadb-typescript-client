@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
@@ -50,7 +50,7 @@ export const ListCollectionsResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   collections: z.array(models.CollectionResponse$inboundSchema),
-  nextPageToken: z.string().optional(),
+  nextPageToken: nullToUndefined(z.string().optional()),
 });
 
 export function listCollectionsResponseFromJSON(

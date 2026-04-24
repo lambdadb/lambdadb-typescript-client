@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { safeParse } from "../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./errors/sdkvalidationerror.js";
 import {
@@ -74,12 +74,12 @@ export const CollectionResponse$inboundSchema: z.ZodType<
   projectName: z.string(),
   collectionName: z.string(),
   indexConfigs: z.record(IndexConfigsUnion$inboundSchema),
-  partitionConfig: PartitionConfig$inboundSchema.optional(),
+  partitionConfig: nullToUndefined(PartitionConfig$inboundSchema.optional()),
   numPartitions: z.number().int(),
   numDocs: z.number().int(),
-  sourceProjectName: z.string().optional(),
-  sourceCollectionName: z.string().optional(),
-  sourceCollectionVersionId: z.string().optional(),
+  sourceProjectName: nullToUndefined(z.string().optional()),
+  sourceCollectionName: nullToUndefined(z.string().optional()),
+  sourceCollectionVersionId: nullToUndefined(z.string().optional()),
   collectionStatus: Status$inboundSchema,
   createdAt: z.number().int(),
   updatedAt: z.number().int(),

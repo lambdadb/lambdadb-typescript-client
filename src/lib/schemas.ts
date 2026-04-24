@@ -4,6 +4,7 @@
 
 import {
   output,
+  preprocess,
   ZodEffects,
   ZodError,
   ZodObject,
@@ -48,6 +49,17 @@ export function safeParse<Inp, Out>(
   } catch (err) {
     return ERR(new SDKValidationError(errorMessage, err, rawValue));
   }
+}
+
+/**
+ * Converts explicit JSON nulls to undefined before applying the provided
+ * schema. This lets inbound response schemas tolerate APIs that return
+ * `null` instead of omitting optional fields.
+ */
+export function nullToUndefined<T extends ZodTypeAny>(
+  schema: T,
+): ZodEffects<T, output<T>, unknown> {
+  return preprocess((value) => value === null ? undefined : value, schema);
 }
 
 export function collectExtraKeys<

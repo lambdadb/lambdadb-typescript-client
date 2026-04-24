@@ -4,7 +4,7 @@
 
 import * as z from "zod/v3";
 import { remap as remap$ } from "../../lib/primitives.js";
-import { safeParse } from "../../lib/schemas.js";
+import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
@@ -156,7 +156,7 @@ export const QueryCollectionDoc$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   collection: z.string(),
-  score: z.number().optional(),
+  score: nullToUndefined(z.number().optional()),
   doc: z.record(z.any()),
 });
 
@@ -177,11 +177,11 @@ export const QueryCollectionResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   took: z.number().int(),
-  maxScore: z.number().optional(),
+  maxScore: nullToUndefined(z.number().optional()),
   total: z.number().int(),
   docs: z.array(z.lazy(() => QueryCollectionDoc$inboundSchema)),
   isDocsInline: z.boolean(),
-  docsUrl: z.string().optional(),
+  docsUrl: nullToUndefined(z.string().optional()),
 });
 
 export function queryCollectionResponseFromJSON(
