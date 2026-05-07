@@ -7,7 +7,7 @@ import { remap as remap$ } from "../../lib/primitives.js";
 
 export type UpsertDocsRequestBody = {
   /**
-   * A list of documents to upsert.
+   * A list of documents to upsert. For managed embedding vector fields, omit the managed vector field and provide only the configured source text field.
    */
   docs: Array<{ [k: string]: any }>;
 };

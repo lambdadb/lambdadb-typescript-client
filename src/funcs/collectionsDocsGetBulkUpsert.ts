@@ -26,7 +26,7 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Request required info to upload documents.
+ * Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
  */
 export function collectionsDocsGetBulkUpsert(
   client: LambdaDBCore,
@@ -35,6 +35,7 @@ export function collectionsDocsGetBulkUpsert(
 ): APIPromise<
   Result<
     operations.GetBulkUpsertDocsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -64,6 +65,7 @@ async function $do(
   [
     Result<
       operations.GetBulkUpsertDocsResponse,
+      | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
@@ -152,7 +154,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "404", "429", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "404", "429", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -167,6 +169,7 @@ async function $do(
 
   const [result] = await M.match<
     operations.GetBulkUpsertDocsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -181,6 +184,7 @@ async function $do(
     | SDKValidationError
   >(
     M.json(200, operations.GetBulkUpsertDocsResponse$inboundSchema),
+    M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),

@@ -9,8 +9,8 @@
 * [listDocs](#listdocs) - List documents in a collection.
 * [upsert](#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
 * [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); recommended when you have a document list.
-* [getBulkUpsert](#getbulkupsert) - Request required info to upload documents.
-* [bulkUpsert](#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+* [getBulkUpsert](#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
+* [bulkUpsert](#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [update](#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 * [delete](#delete) - Delete documents by document IDs or query filter from a collection.
 * [fetch](#fetch) - Lookup and return documents by document IDs from a collection.
@@ -215,7 +215,7 @@ run();
 
 ## getBulkUpsert
 
-Request required info to upload documents.
+Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 
 ### Example Usage
 
@@ -292,7 +292,7 @@ run();
 
 ## bulkUpsert
 
-Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 
 ### Example Usage
 

@@ -675,7 +675,7 @@ class CollectionDocs {
   }
 
   /**
-   * Get presigned URL and metadata for bulk upload (up to 200MB).
+   * Get presigned URL and metadata for bulk upload (up to 200MB). Not supported for collections with managed embedding vector fields.
    */
   async getBulkUpsert(options?: RequestOptions) {
     return unwrapAsync(
@@ -688,7 +688,7 @@ class CollectionDocs {
   }
 
   /**
-   * Get presigned URL and metadata for bulk upload (Safe: returns Result instead of throwing).
+   * Get presigned URL and metadata for bulk upload (Safe: returns Result instead of throwing). Not supported for collections with managed embedding vector fields.
    */
   async getBulkUpsertSafe(
     options?: RequestOptions,
@@ -701,7 +701,7 @@ class CollectionDocs {
   }
 
   /**
-   * Trigger bulk upsert with an object key from getBulkUpsert().
+   * Trigger bulk upsert with an object key from getBulkUpsert(). Not supported for collections with managed embedding vector fields.
    */
   async bulkUpsert(
     body: BulkUpsertInput,
@@ -720,7 +720,7 @@ class CollectionDocs {
   }
 
   /**
-   * Trigger bulk upsert (Safe: returns Result instead of throwing).
+   * Trigger bulk upsert (Safe: returns Result instead of throwing). Not supported for collections with managed embedding vector fields.
    */
   async bulkUpsertSafe(
     body: BulkUpsertInput,
@@ -734,7 +734,7 @@ class CollectionDocs {
   }
 
   /**
-   * Bulk upsert documents in one call (up to 200MB). Abstracts getBulkUpsert,
+   * Bulk upsert documents in one call (up to 200MB). Not supported for collections with managed embedding vector fields. Abstracts getBulkUpsert,
    * S3 upload via presigned URL, and bulkUpsert. Use this for better DX when
    * you have a document list; use getBulkUpsert + bulkUpsert for low-level control.
    */
@@ -770,7 +770,7 @@ class CollectionDocs {
   }
 
   /**
-   * Bulk upsert documents in one call (Safe: returns Result instead of throwing).
+   * Bulk upsert documents in one call (Safe: returns Result instead of throwing). Not supported for collections with managed embedding vector fields.
    * May return Error for local failures (payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
    */
   async bulkUpsertDocsSafe(

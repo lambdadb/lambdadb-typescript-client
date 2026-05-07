@@ -139,7 +139,7 @@ const queryBody: QueryCollectionInput = {
 const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
-Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `PartitionConfig`, `FieldsSelectorUnion`. Collection list/get responses expose timestamp fields (`createdAt`, `updatedAt`, `dataUpdatedAt`) as `Date`. All are exported from the main package.
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection list/get responses expose timestamp fields (`createdAt`, `updatedAt`, `dataUpdatedAt`) as `Date`. All are exported from the main package.
 
 ### Pagination
 
@@ -188,6 +188,48 @@ const collection = client.collection("my-collection");
 
 const input = createQueryInput({ text: "hello" }, { size: 10 });
 const result = await collection.query(input);
+```
+
+### Managed embeddings
+
+Managed embedding vector fields generate vectors from a configured source text field. Create the collection with a text field and a managed vector field, then query that vector field with `knn.queryText`.
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+
+await client.createCollection({
+  collectionName: "semantic-items",
+  indexConfigs: {
+    body: { type: "text", analyzers: ["english"] },
+    bodyEmbedding: {
+      type: "vector",
+      managedEmbedding: true,
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+      },
+    },
+  },
+});
+
+const collection = client.collection("semantic-items");
+await collection.docs.upsert({
+  docs: [{ id: "policy-1", body: "Refunds are available within 30 days." }],
+});
+
+const result = await collection.query({
+  size: 10,
+  query: {
+    knn: {
+      field: "bodyEmbedding",
+      queryText: "refund policy",
+      k: 10,
+    },
+  },
+});
 ```
 
 <!-- End SDK Example Usage [usage] -->

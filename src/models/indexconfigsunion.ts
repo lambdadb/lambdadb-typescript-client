@@ -47,13 +47,57 @@ export type Similarity = ClosedEnum<typeof Similarity>;
 export type IndexConfigsVector = {
   type: "vector";
   /**
-   * Vector dimensions.
+   * Set to false or omit for unmanaged vector fields.
+   */
+  managedEmbedding?: false | undefined;
+  /**
+   * Vector dimensions for unmanaged vector fields.
    */
   dimensions: number;
   /**
-   * Vector similarity metric.
+   * Vector similarity metric for unmanaged vector fields.
    */
   similarity?: Similarity | undefined;
+};
+
+export const EmbeddingProvider = {
+  Openai: "openai",
+} as const;
+export type EmbeddingProvider = ClosedEnum<typeof EmbeddingProvider>;
+
+/**
+ * Managed embedding configuration for vector fields.
+ */
+export type EmbeddingConfig = {
+  /**
+   * Embedding provider.
+   */
+  provider: EmbeddingProvider;
+  /**
+   * Embedding model name. See /guides/collections/managed-embeddings for the current supported providers and models.
+   */
+  model: string;
+  /**
+   * Source text field name used to generate embeddings.
+   */
+  sourceField: string;
+  /**
+   * Resolved embedding dimensions. Optional in requests and resolved in stored collection metadata.
+   */
+  dimensions?: number | undefined;
+  /**
+   * Resolved vector similarity metric. Optional in requests and resolved in stored collection metadata.
+   */
+  similarity?: Similarity | undefined;
+};
+
+export type IndexConfigsManagedEmbeddingVector = {
+  type: "vector";
+  /**
+   * Managed embedding vector field.
+   */
+  managedEmbedding: true;
+  embedding: EmbeddingConfig;
 };
 
 export const Analyzer = {
@@ -75,6 +119,7 @@ export type IndexConfigsText = {
 export type IndexConfigsUnion =
   | IndexConfigsText
   | IndexConfigsVector
+  | IndexConfigsManagedEmbeddingVector
   | (IndexConfigs & { type: "keyword" })
   | (IndexConfigs & { type: "long" })
   | (IndexConfigs & { type: "double" })
@@ -181,12 +226,14 @@ export const IndexConfigsVector$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("vector"),
+  managedEmbedding: nullToUndefined(z.literal(false).optional()),
   dimensions: z.number().int(),
   similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
 });
 /** @internal */
 export type IndexConfigsVector$Outbound = {
   type: "vector";
+  managedEmbedding?: false | undefined;
   dimensions: number;
   similarity: string;
 };
@@ -198,6 +245,7 @@ export const IndexConfigsVector$outboundSchema: z.ZodType<
   IndexConfigsVector
 > = z.object({
   type: z.literal("vector"),
+  managedEmbedding: z.literal(false).optional(),
   dimensions: z.number().int(),
   similarity: Similarity$outboundSchema.default("cosine"),
 });
@@ -216,6 +264,112 @@ export function indexConfigsVectorFromJSON(
     jsonString,
     (x) => IndexConfigsVector$inboundSchema.parse(JSON.parse(x)),
     `Failed to parse 'IndexConfigsVector' from JSON`,
+  );
+}
+
+/** @internal */
+export const EmbeddingProvider$inboundSchema: z.ZodNativeEnum<
+  typeof EmbeddingProvider
+> = z.nativeEnum(EmbeddingProvider);
+/** @internal */
+export const EmbeddingProvider$outboundSchema: z.ZodNativeEnum<
+  typeof EmbeddingProvider
+> = EmbeddingProvider$inboundSchema;
+
+/** @internal */
+export const EmbeddingConfig$inboundSchema: z.ZodType<
+  EmbeddingConfig,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  provider: EmbeddingProvider$inboundSchema,
+  model: z.string(),
+  sourceField: z.string(),
+  dimensions: nullToUndefined(z.number().int().optional()),
+  similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
+});
+/** @internal */
+export type EmbeddingConfig$Outbound = {
+  provider: string;
+  model: string;
+  sourceField: string;
+  dimensions?: number | undefined;
+  similarity?: string | undefined;
+};
+
+/** @internal */
+export const EmbeddingConfig$outboundSchema: z.ZodType<
+  EmbeddingConfig$Outbound,
+  z.ZodTypeDef,
+  EmbeddingConfig
+> = z.object({
+  provider: EmbeddingProvider$outboundSchema,
+  model: z.string(),
+  sourceField: z.string(),
+  dimensions: z.number().int().optional(),
+  similarity: Similarity$outboundSchema.optional(),
+});
+
+export function embeddingConfigToJSON(
+  embeddingConfig: EmbeddingConfig,
+): string {
+  return JSON.stringify(EmbeddingConfig$outboundSchema.parse(embeddingConfig));
+}
+export function embeddingConfigFromJSON(
+  jsonString: string,
+): SafeParseResult<EmbeddingConfig, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) => EmbeddingConfig$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'EmbeddingConfig' from JSON`,
+  );
+}
+
+/** @internal */
+export const IndexConfigsManagedEmbeddingVector$inboundSchema: z.ZodType<
+  IndexConfigsManagedEmbeddingVector,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  type: z.literal("vector"),
+  managedEmbedding: z.literal(true),
+  embedding: z.lazy(() => EmbeddingConfig$inboundSchema),
+});
+/** @internal */
+export type IndexConfigsManagedEmbeddingVector$Outbound = {
+  type: "vector";
+  managedEmbedding: true;
+  embedding: EmbeddingConfig$Outbound;
+};
+
+/** @internal */
+export const IndexConfigsManagedEmbeddingVector$outboundSchema: z.ZodType<
+  IndexConfigsManagedEmbeddingVector$Outbound,
+  z.ZodTypeDef,
+  IndexConfigsManagedEmbeddingVector
+> = z.object({
+  type: z.literal("vector"),
+  managedEmbedding: z.literal(true),
+  embedding: z.lazy(() => EmbeddingConfig$outboundSchema),
+});
+
+export function indexConfigsManagedEmbeddingVectorToJSON(
+  indexConfigsManagedEmbeddingVector: IndexConfigsManagedEmbeddingVector,
+): string {
+  return JSON.stringify(
+    IndexConfigsManagedEmbeddingVector$outboundSchema.parse(
+      indexConfigsManagedEmbeddingVector,
+    ),
+  );
+}
+export function indexConfigsManagedEmbeddingVectorFromJSON(
+  jsonString: string,
+): SafeParseResult<IndexConfigsManagedEmbeddingVector, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (x) =>
+      IndexConfigsManagedEmbeddingVector$inboundSchema.parse(JSON.parse(x)),
+    `Failed to parse 'IndexConfigsManagedEmbeddingVector' from JSON`,
   );
 }
 
@@ -276,6 +430,7 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
 > = z.union([
   z.lazy(() => IndexConfigsText$inboundSchema),
   z.lazy(() => IndexConfigsVector$inboundSchema),
+  z.lazy(() => IndexConfigsManagedEmbeddingVector$inboundSchema),
   z.lazy(() => IndexConfigs$inboundSchema).and(
     z.object({ type: z.literal("keyword") }),
   ),
@@ -300,6 +455,7 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
 export type IndexConfigsUnion$Outbound =
   | IndexConfigsText$Outbound
   | IndexConfigsVector$Outbound
+  | IndexConfigsManagedEmbeddingVector$Outbound
   | (IndexConfigs$Outbound & { type: "keyword" })
   | (IndexConfigs$Outbound & { type: "long" })
   | (IndexConfigs$Outbound & { type: "double" })
@@ -316,6 +472,7 @@ export const IndexConfigsUnion$outboundSchema: z.ZodType<
 > = z.union([
   z.lazy(() => IndexConfigsText$outboundSchema),
   z.lazy(() => IndexConfigsVector$outboundSchema),
+  z.lazy(() => IndexConfigsManagedEmbeddingVector$outboundSchema),
   z.lazy(() => IndexConfigs$outboundSchema).and(
     z.object({ type: z.literal("keyword") }),
   ),
