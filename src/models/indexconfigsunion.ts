@@ -82,11 +82,11 @@ export type EmbeddingConfig = {
    */
   sourceField: string;
   /**
-   * Resolved embedding dimensions. Optional in requests and resolved in stored collection metadata.
+   * Embedding dimensions. Optional in requests and resolved in stored collection metadata.
    */
   dimensions?: number | undefined;
   /**
-   * Resolved vector similarity metric. Optional in requests and resolved in stored collection metadata.
+   * Vector similarity metric. Optional in requests and resolved in stored collection metadata.
    */
   similarity?: Similarity | undefined;
 };
@@ -248,7 +248,7 @@ export const IndexConfigsVector$outboundSchema: z.ZodType<
   managedEmbedding: z.literal(false).optional(),
   dimensions: z.number().int(),
   similarity: Similarity$outboundSchema.default("cosine"),
-});
+}).strict();
 
 export function indexConfigsVectorToJSON(
   indexConfigsVector: IndexConfigsVector,
@@ -286,7 +286,7 @@ export const EmbeddingConfig$inboundSchema: z.ZodType<
   model: z.string(),
   sourceField: z.string(),
   dimensions: nullToUndefined(z.number().int().optional()),
-  similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
+  similarity: nullToUndefined(Similarity$inboundSchema.optional()),
 });
 /** @internal */
 export type EmbeddingConfig$Outbound = {
@@ -308,7 +308,7 @@ export const EmbeddingConfig$outboundSchema: z.ZodType<
   sourceField: z.string(),
   dimensions: z.number().int().optional(),
   similarity: Similarity$outboundSchema.optional(),
-});
+}).strict();
 
 export function embeddingConfigToJSON(
   embeddingConfig: EmbeddingConfig,
@@ -351,7 +351,7 @@ export const IndexConfigsManagedEmbeddingVector$outboundSchema: z.ZodType<
   type: z.literal("vector"),
   managedEmbedding: z.literal(true),
   embedding: z.lazy(() => EmbeddingConfig$outboundSchema),
-});
+}).strict();
 
 export function indexConfigsManagedEmbeddingVectorToJSON(
   indexConfigsManagedEmbeddingVector: IndexConfigsManagedEmbeddingVector,

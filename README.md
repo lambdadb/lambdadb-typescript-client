@@ -103,7 +103,8 @@ async function run() {
   await collection.get();
   await collection.docs.list({ size: 20 });
   await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
-  // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow
+  // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow.
+  // Bulk upsert is not supported for collections with managed embedding vector fields.
   // await collection.docs.bulkUpsertDocs({ docs: largeDocArray });
 }
 
@@ -281,9 +282,9 @@ run();
 
 * [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
-* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list.
-* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
-* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list. Not supported for collections with managed embedding vector fields.
+* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
+* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 * [delete](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
 * [fetch](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
@@ -322,10 +323,10 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 
 - [`collectionsCreate`](docs/sdks/collections/README.md#create) - Create a collection.
 - [`collectionsDelete`](docs/sdks/collections/README.md#delete) - Delete an existing collection.
-- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB.
+- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 - [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
 - [`collectionsDocsFetch`](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
-- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents.
+- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 - [`collectionsDocsListDocs`](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 - [`collectionsDocsUpdate`](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 - [`collectionsDocsUpsert`](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
@@ -512,7 +513,7 @@ Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collecti
 
 
 **Inherit from [`LambdaDBError`](./src/models/errors/lambdadberror.ts)**:
-* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 9 of 13 methods.*
+* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 10 of 13 methods.*
 * [`ResourceAlreadyExistsError`](./src/models/errors/resourcealreadyexistserror.ts): Resource already exists. Status code `409`. Applicable to 1 of 13 methods.*
 * [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 

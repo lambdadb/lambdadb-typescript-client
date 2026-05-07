@@ -8,7 +8,7 @@
 
 * [listDocs](#listdocs) - List documents in a collection.
 * [upsert](#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
-* [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); recommended when you have a document list.
+* [bulkUpsertDocs](#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); recommended when you have a document list. Not supported for collections with managed embedding vector fields.
 * [getBulkUpsert](#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [bulkUpsert](#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [update](#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
@@ -284,6 +284,7 @@ run();
 
 | Error Type                   | Status Code                  | Content Type                 |
 | ---------------------------- | ---------------------------- | ---------------------------- |
+| errors.BadRequestError       | 400                          | application/json             |
 | errors.UnauthenticatedError  | 401                          | application/json             |
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |
@@ -376,7 +377,7 @@ run();
 
 ## bulkUpsertDocs
 
-Bulk upsert documents in one call (up to 200MB). This method abstracts the flow of getBulkUpsert, uploading to the presigned URL, and calling bulkUpsert. Use it when you have a document array and want a single-call API; use getBulkUpsert + bulkUpsert for low-level control (e.g. custom upload).
+Bulk upsert documents in one call (up to 200MB). Not supported for collections with managed embedding vector fields. This method abstracts the flow of getBulkUpsert, uploading to the presigned URL, and calling bulkUpsert. Use it when you have a document array and want a single-call API; use getBulkUpsert + bulkUpsert for low-level control (e.g. custom upload).
 
 **Available on the collection-scoped client only:** `LambdaDBClient` → `client.collection(collectionName).docs.bulkUpsertDocs(...)`.
 

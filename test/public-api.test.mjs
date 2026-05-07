@@ -5,6 +5,7 @@ import {
   BadRequestError,
   HTTPClient,
   LambdaDBClient,
+  SDKValidationError,
 } from "../dist/esm/index.js";
 
 const BASE_URL = "https://api.test";
@@ -148,14 +149,154 @@ test("public client supports managed embedding vector index configs", async () =
   });
 
   assert.equal(calls.length, 1);
+  assert.deepEqual(
+    result.collection.indexConfigs.bodyEmbedding.embedding,
+    {
+      ...managedIndexConfigs.bodyEmbedding.embedding,
+      dimensions: 1536,
+      similarity: "cosine",
+    },
+  );
+});
+
+test("managed embedding vector config supports optional embedding dimensions and similarity", async () => {
+  const { calls, client } = createClient((call) => {
+    assert.equal(call.method, "POST");
+    assert.deepEqual(JSON.parse(call.body), {
+      collectionName: "semantic-items",
+      indexConfigs: {
+        bodyEmbedding: {
+          type: "vector",
+          managedEmbedding: true,
+          embedding: {
+            provider: "openai",
+            model: "text-embedding-3-small",
+            sourceField: "body",
+            dimensions: 1536,
+            similarity: "cosine",
+          },
+        },
+      },
+    });
+
+    return jsonResponse(
+      {
+        collection: collectionFixture("semantic-items", {
+          indexConfigs: {
+            bodyEmbedding: {
+              type: "vector",
+              managedEmbedding: true,
+              embedding: {
+                provider: "openai",
+                model: "text-embedding-3-small",
+                sourceField: "body",
+                dimensions: 1536,
+                similarity: "cosine",
+              },
+            },
+          },
+        }),
+      },
+      { status: 202 },
+    );
+  });
+
+  const result = await client.createCollection({
+    collectionName: "semantic-items",
+    indexConfigs: {
+      bodyEmbedding: {
+        type: "vector",
+        managedEmbedding: true,
+        embedding: {
+          provider: "openai",
+          model: "text-embedding-3-small",
+          sourceField: "body",
+          dimensions: 1536,
+          similarity: "cosine",
+        },
+      },
+    },
+  });
+
+  assert.equal(calls.length, 1);
   assert.equal(
     result.collection.indexConfigs.bodyEmbedding.embedding.dimensions,
     1536,
   );
-  assert.equal(
-    result.collection.indexConfigs.bodyEmbedding.embedding.similarity,
-    "cosine",
-  );
+});
+
+test("managed embedding vector config rejects invalid Java contract shapes", async () => {
+  const { calls, client } = createClient(() => {
+    throw new Error("request should not be sent for invalid index configs");
+  });
+
+  const invalidIndexConfigs = [
+    {
+      type: "vector",
+      dimensions: 1536,
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+      },
+    },
+    {
+      type: "vector",
+      managedEmbedding: false,
+      dimensions: 1536,
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+      },
+    },
+    {
+      type: "vector",
+      managedEmbedding: true,
+      dimensions: 1536,
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+      },
+    },
+    {
+      type: "vector",
+      managedEmbedding: true,
+      similarity: "cosine",
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+      },
+    },
+    {
+      type: "vector",
+      managedEmbedding: true,
+    },
+    {
+      type: "vector",
+      managedEmbedding: true,
+      embedding: {
+        provider: "openai",
+        model: "text-embedding-3-small",
+        sourceField: "body",
+        unsupported: true,
+      },
+    },
+  ];
+
+  for (const indexConfig of invalidIndexConfigs) {
+    const result = await client.createCollectionSafe({
+      collectionName: "invalid-vector",
+      indexConfigs: { bodyEmbedding: indexConfig },
+    });
+
+    assert.equal(result.ok, false);
+    assert.ok(result.error instanceof SDKValidationError);
+  }
+
+  assert.equal(calls.length, 0);
 });
 
 test("collection query supports managed embedding queryText KNN payloads", async () => {
