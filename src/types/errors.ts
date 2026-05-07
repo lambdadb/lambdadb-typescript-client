@@ -94,4 +94,6 @@ export type FetchDocsError = UpdateCollectionError;
 export type BulkUpsertDocsError = UpdateCollectionError;
 
 /** Errors that can occur when getting bulk upsert docs info. */
-export type GetBulkUpsertDocsError = ListCollectionsError;
+export type GetBulkUpsertDocsError =
+  | errors.BadRequestError
+  | ListCollectionsError;

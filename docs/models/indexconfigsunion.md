@@ -20,6 +20,20 @@ const value: models.IndexConfigsVector = {
 };
 ```
 
+### `models.IndexConfigsManagedEmbeddingVector`
+
+```typescript
+const value: models.IndexConfigsManagedEmbeddingVector = {
+  type: "vector",
+  managedEmbedding: true,
+  embedding: {
+    provider: "openai",
+    model: "text-embedding-3-small",
+    sourceField: "body",
+  },
+};
+```
+
 ### `models.IndexConfigs`
 
 ```typescript
@@ -78,4 +92,3 @@ const value: models.IndexConfigsObject = {
   },
 };
 ```
-

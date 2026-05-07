@@ -48,6 +48,9 @@ export type { GetBulkUpsertDocsResponse } from "../models/operations/getbulkupse
 // ---- Models referenced by request/response bodies ----
 export type {
   IndexConfigsUnion,
+  IndexConfigsManagedEmbeddingVector,
+  EmbeddingConfig,
+  EmbeddingProvider,
   PartitionConfig,
   PartitionFilter,
   FieldsSelectorUnion,
