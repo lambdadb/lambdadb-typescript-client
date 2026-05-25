@@ -31,7 +31,7 @@ type CollectionLike = {
   docs: {
     upsert(body: { docs: JsonObject[] }): Promise<unknown>;
     fetch(body: JsonObject): Promise<{ docs: unknown[] }>;
-    delete(body: { ids: string[] }): Promise<unknown>;
+    delete(body: { ids?: string[]; filter?: JsonObject }): Promise<unknown>;
     list(body?: { size?: number; pageToken?: string }): Promise<{
       docs: unknown[];
       nextPageToken?: string | undefined;
@@ -432,26 +432,38 @@ export class QdrantCompatClient {
     options: {
       pointsSelector?: unknown;
       points_selector?: unknown;
+      points?: unknown;
+      ids?: unknown;
+      filter?: models.Filter | JsonObject | null;
       wait?: boolean | undefined;
       [key: string]: unknown;
     } = {},
   ): Promise<models.UpdateResult> {
-    const { pointsSelector, points_selector: pointsSelectorSnake, wait, ...rest } = options;
+    const {
+      pointsSelector,
+      points_selector: pointsSelectorSnake,
+      points,
+      ids: idsOption,
+      filter,
+      wait,
+      ...rest
+    } = options;
     warnIgnored(rest);
-    const ids = idsFromSelector(
-      pointsSelector ?? pointsSelectorSnake ?? options["points"] ?? options["ids"],
-    );
-    if (ids === undefined) {
+    const selector = pointsSelector ?? pointsSelectorSnake ?? points ?? idsOption;
+    const ids = idsFromSelector(selector);
+    const convertedFilter = filterToLambdaDB(filterFromSelector(selector) ?? filter);
+    if (ids === undefined && Object.keys(convertedFilter).length === 0) {
       throw new UnsupportedQdrantFeatureError(
-        "Only delete by point IDs is supported in v1",
+        "delete requires point IDs or a supported Qdrant filter",
       );
     }
     if (wait === false) {
       warn("wait=false is accepted but LambdaDB write visibility follows LambdaDB semantics");
     }
-    await this.client.collection(collectionName).docs.delete({
-      ids: ids.map(String),
-    });
+    const body: { ids?: string[]; filter?: JsonObject } = {};
+    if (ids !== undefined) body.ids = ids.map(String);
+    if (Object.keys(convertedFilter).length > 0) body.filter = convertedFilter;
+    await this.client.collection(collectionName).docs.delete(body);
     return new models.UpdateResult({ status: models.UpdateStatus.COMPLETED });
   }
 
@@ -822,6 +834,13 @@ function idsFromSelector(selector: unknown): models.PointId[] | undefined {
     const ids = selector["ids"];
     if (Array.isArray(points)) return points as models.PointId[];
     if (Array.isArray(ids)) return ids as models.PointId[];
+  }
+  return undefined;
+}
+
+function filterFromSelector(selector: unknown): models.Filter | JsonObject | null | undefined {
+  if (isObject(selector) && "filter" in selector) {
+    return selector["filter"] as models.Filter | JsonObject | null | undefined;
   }
   return undefined;
 }

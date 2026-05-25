@@ -95,7 +95,7 @@ that delegates to this adapter.
 | `query()` | `queryPoints()` | Support Qdrant JS package-style `{ query, filter, with_payload, with_vector }`. |
 | `search()` | alias to `queryPoints()` | Legacy compatibility returning `ScoredPoint[]`. |
 | `retrieve()` | `collection.docs.fetch()` | Strongly consistent fetch. |
-| `delete()` | `collection.docs.delete()` | Point IDs only in v1. |
+| `delete()` | `collection.docs.delete()` | Point IDs and supported Qdrant filters. |
 | `scroll()` | `collection.docs.list()` | Unfiltered, no vectors, best-effort cursor semantics. |
 | `count()` | collection metadata `numDocs` | Unfiltered count only. |
 
@@ -449,9 +449,8 @@ Supported v1 filters:
 | Geo/nested filters | throw in v1 |
 
 Unsupported result-changing options must throw before network calls. Examples:
-`offset`, `scoreThreshold`, shard routing, filtered scroll, filtered count, and
-delete-by-filter. Performance-only options such as `searchParams` may warn and
-continue.
+`offset`, `scoreThreshold`, shard routing, filtered scroll, and filtered count.
+Performance-only options such as `searchParams` may warn and continue.
 
 The filter DSL policy is no longer an open design question from the Python
 implementation: v1 uses LambdaDB `queryString` leaves and `bool` clauses, and
@@ -593,7 +592,8 @@ Exit criteria:
 
 - Plain object and model-instance points both work.
 - LambdaDB docs calls receive exact expected docs.
-- Delete-by-filter throws before any LambdaDB call.
+- Delete-by-filter converts through the same `filters.ts` path used by
+  `queryPoints()`.
 
 ### Step 5: Query And Filter Operations
 

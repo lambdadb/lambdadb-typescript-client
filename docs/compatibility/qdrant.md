@@ -91,7 +91,7 @@ const result = await client.queryPoints("docs", {
 | `queryPoints()` / `query_points()` | Supported | Dense vector query plus simple payload filters. |
 | `query()` | Supported | Qdrant JS package-style alias around `queryPoints()` using `filter`, `with_payload`, and `with_vector`. |
 | `search()` | Supported | Wrapper around `queryPoints()`. |
-| `delete()` | Limited | Point IDs only, including `{ points: [...] }` and `{ pointsSelector: [...] }`. Delete by filter is unsupported. |
+| `delete()` | Supported | Point IDs and supported Qdrant filters. Accepts `{ points: [...] }`, `{ pointsSelector: [...] }`, `{ filter }`, and `{ pointsSelector: { filter } }`. |
 | `scroll()` | Limited | Unfiltered scroll without vectors only. |
 | `count()` | Limited | Unfiltered collection count only. |
 
@@ -163,7 +163,6 @@ Payload fields cannot use `id` or the reserved `_qdrant_` prefix.
 - Sparse vectors
 - Multi-vector comparators
 - Geo payload indexes and geo filters
-- Delete by filter
 - Filtered scroll
 - Filtered count
 - Scroll with vectors

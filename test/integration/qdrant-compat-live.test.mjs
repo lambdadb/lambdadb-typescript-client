@@ -82,6 +82,23 @@ test("qdrant compatibility live smoke", {
     });
     assert.equal(deleteResult.status, models.UpdateStatus.COMPLETED);
 
+    const deleteByFilterResult = await client.delete(collectionName, {
+      pointsSelector: {
+        filter: new models.Filter({
+          must: [
+            new models.FieldCondition({
+              key: "tenant",
+              match: new models.MatchValue({ value: "other" }),
+            }),
+          ],
+        }),
+      },
+    });
+    assert.equal(deleteByFilterResult.status, models.UpdateStatus.COMPLETED);
+
+    const deletedByFilterRecords = await client.retrieve(collectionName, { ids: [3] });
+    assert.equal(deletedByFilterRecords.length, 0);
+
     await assert.rejects(
       client.scroll(collectionName, {
         scrollFilter: new models.Filter({

@@ -356,6 +356,42 @@ test("retrieve, delete, scroll, count, and getCollection return qdrant-style obj
   assert.equal(deleteResult.status, models.UpdateStatus.COMPLETED);
   assert.deepEqual(fake.collection("docs").docs.deletes, [{ ids: ["1"] }]);
 
+  await client.delete("docs", {
+    filter: new models.Filter({
+      must: [
+        new models.FieldCondition({
+          key: "tenant",
+          match: new models.MatchValue({ value: "acme" }),
+        }),
+      ],
+    }),
+  });
+  await client.delete("docs", {
+    pointsSelector: {
+      filter: {
+        must: [
+          {
+            key: "status",
+            match: { value: "archived" },
+          },
+        ],
+      },
+    },
+  });
+  assert.deepEqual(fake.collection("docs").docs.deletes, [
+    { ids: ["1"] },
+    {
+      filter: {
+        queryString: { query: "tenant:acme" },
+      },
+    },
+    {
+      filter: {
+        queryString: { query: "status:archived" },
+      },
+    },
+  ]);
+
   const [scrollRecords, nextOffset] = await client.scroll("docs", { limit: 3 });
   assert.equal(scrollRecords[0].id, 1);
   assert.equal(nextOffset, undefined);
