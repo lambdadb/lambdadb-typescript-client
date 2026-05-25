@@ -639,14 +639,11 @@ export class QdrantCompatClient {
     }
     const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
     const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
-    if (vectorSelector !== false) {
-      throw new UnsupportedQdrantFeatureError("Scroll with vectors is not supported in v1");
-    }
     const response = await this.client.collection(collectionName).docs.list({ size: limit });
     return [
       response.docs.map((doc) => docToRecord(doc, {
         withPayload: payloadSelector,
-        withVectors: false,
+        withVectors: vectorSelector,
       })),
       response.nextPageToken,
     ];

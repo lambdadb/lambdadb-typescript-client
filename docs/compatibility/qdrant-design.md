@@ -96,7 +96,7 @@ that delegates to this adapter.
 | `search()` | alias to `queryPoints()` | Legacy compatibility returning `ScoredPoint[]`. |
 | `retrieve()` | `collection.docs.fetch()` | Strongly consistent fetch. |
 | `delete()` | `collection.docs.delete()` | Point IDs and supported Qdrant filters. |
-| `scroll()` | `collection.docs.list()` | Unfiltered, no vectors, best-effort cursor semantics. |
+| `scroll()` | `collection.docs.list()` | Unfiltered, payload/vector response selectors are applied client-side. |
 | `count()` | collection metadata `numDocs` | Unfiltered count only. |
 
 ### V2 Coverage Candidates
@@ -713,7 +713,7 @@ The `0.4.1` patch extends the adapter without changing existing behavior:
 
 - `delete()` supports supported Qdrant filters through the same `filters.ts`
   conversion path used by `queryPoints()`.
-- `retrieve()`, `queryPoints()`, and `query()` support field-list
+- `retrieve()`, `queryPoints()`, `query()`, and `scroll()` support field-list
   `withPayload` / `with_payload` and `withVectors` / `with_vector` selectors.
 - External smoke coverage now includes LangChain filter search/delete and
   LlamaIndex delete-by-filter flows.

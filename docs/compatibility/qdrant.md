@@ -92,7 +92,7 @@ const result = await client.queryPoints("docs", {
 | `query()` | Supported | Qdrant JS package-style alias around `queryPoints()` using `filter`, `with_payload`, and `with_vector`. |
 | `search()` | Supported | Wrapper around `queryPoints()`. |
 | `delete()` | Supported | Point IDs and supported Qdrant filters. Accepts `{ points: [...] }`, `{ pointsSelector: [...] }`, `{ filter }`, and `{ pointsSelector: { filter } }`. |
-| `scroll()` | Limited | Unfiltered scroll without vectors only. |
+| `scroll()` | Limited | Unfiltered scroll with payload/vector response selectors. |
 | `count()` | Limited | Unfiltered collection count only. |
 
 ## Payload Indexes
@@ -173,8 +173,9 @@ await client.query("docs", {
 });
 ```
 
-`scroll()` still rejects vector selectors because scroll with vectors is not
-supported in this compatibility layer.
+`scroll()` maps to LambdaDB list documents. LambdaDB list responses include
+stored vector values, so the compatibility layer applies Qdrant-style vector
+selectors while shaping the response.
 
 ## Filter Support
 
@@ -200,7 +201,6 @@ supported in this compatibility layer.
 - Geo payload indexes and geo filters
 - Filtered scroll
 - Filtered count
-- Scroll with vectors
 - `queryPoints()` offset
 - `scoreThreshold`
 - HNSW/search tuning semantics beyond warnings
