@@ -50,7 +50,13 @@ class FakeDocs {
       docs: [
         {
           collection: "docs",
-          doc: { id: "1", _qdrant_id: 1, tenant: "acme" },
+          doc: {
+            id: "1",
+            _qdrant_id: 1,
+            _qdrant_vector: [0.1, 0.2],
+            _qdrant_vector_title: [0.3, 0.4],
+            tenant: "acme",
+          },
         },
       ],
       nextPageToken: undefined,
@@ -445,8 +451,14 @@ test("retrieve, delete, scroll, count, and getCollection return qdrant-style obj
     },
   ]);
 
-  const [scrollRecords, nextOffset] = await client.scroll("docs", { limit: 3 });
+  const [scrollRecords, nextOffset] = await client.scroll("docs", {
+    limit: 3,
+    withPayload: ["tenant"],
+    withVectors: ["title"],
+  });
   assert.equal(scrollRecords[0].id, 1);
+  assert.deepEqual(scrollRecords[0].payload, { tenant: "acme" });
+  assert.deepEqual(scrollRecords[0].vector, { title: [0.3, 0.4] });
   assert.equal(nextOffset, undefined);
   assert.deepEqual(fake.collection("docs").docs.lists, [{ size: 3 }]);
 
