@@ -103,7 +103,6 @@ that delegates to this adapter.
 
 - Sparse vectors.
 - Broader Qdrant model and method coverage driven by real integrations.
-- `withPayload` and `withVectors` selector variants beyond boolean.
 - Optional shim package for Qdrant import compatibility.
 
 ## Proposed Package Layout
@@ -600,6 +599,8 @@ Exit criteria:
 - Implement `filters.ts`.
 - Implement `queryPoints` and `search`.
 - Support boolean `withPayload` and `withVectors`.
+- Support field-list payload/vector selectors for `retrieve()`, `queryPoints()`,
+  and `query()`.
 
 Exit criteria:
 
@@ -708,13 +709,21 @@ The `0.4.0` implementation:
 - Keeps filter translation isolated so backend query DSL changes do not touch
   client method bodies.
 
+The `0.4.1` patch extends the adapter without changing existing behavior:
+
+- `delete()` supports supported Qdrant filters through the same `filters.ts`
+  conversion path used by `queryPoints()`.
+- `retrieve()`, `queryPoints()`, and `query()` support field-list
+  `withPayload` / `with_payload` and `withVectors` / `with_vector` selectors.
+- External smoke coverage now includes LangChain filter search/delete and
+  LlamaIndex delete-by-filter flows.
+
 ## Future Work
 
 - Sparse vector compatibility: map Qdrant sparse vectors onto LambdaDB
   sparse-vector fields once the backend/indexing contract is finalized.
 - Broader Qdrant coverage driven by real integration demand, especially model
   shapes and method variants used by popular JavaScript RAG libraries.
-- Selector parity for non-boolean `withPayload` / `withVectors` field lists.
 - Payload index lifecycle improvements, including safe backfill or reindex
   support if LambdaDB adds server-side support for applying new indexes to
   existing documents.
