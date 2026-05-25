@@ -2,12 +2,14 @@
 
 {
   "name": "@functional-systems/lambdadb",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "exports": {
     ".": "./src/index.ts",    
     "./models/errors": "./src/models/errors/index.ts",    
     "./models": "./src/models/index.ts",    
     "./models/operations": "./src/models/operations/index.ts",
+    "./compat/qdrant": "./src/compat/qdrant.ts",
+    "./compat/qdrant/models": "./src/compat/qdrant/models.ts",
     "./lib/config": "./src/lib/config.ts",
     "./lib/http": "./src/lib/http.ts",
     "./lib/retries": "./src/lib/retries.ts",

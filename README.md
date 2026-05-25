@@ -23,6 +23,7 @@ LambdaDB API: LambdaDB Open API Spec
   * [SDK Installation](#sdk-installation)
   * [Requirements](#requirements)
   * [SDK Example Usage](#sdk-example-usage)
+  * [Qdrant Compatibility](#qdrant-compatibility)
   * [Authentication](#authentication)
   * [Available Resources and Operations](#available-resources-and-operations)
   * [Standalone functions](#standalone-functions)
@@ -189,6 +190,47 @@ const collection = client.collection("my-collection");
 
 const input = createQueryInput({ text: "hello" }, { size: 10 });
 const result = await collection.query(input);
+```
+
+### Qdrant Compatibility
+
+For common Qdrant JavaScript client migration paths, use the explicit
+Qdrant-style compatibility adapter:
+
+```typescript
+import { QdrantCompatClient, models } from "@functional-systems/lambdadb/compat/qdrant";
+
+const client = new QdrantCompatClient({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+  projectName: "playground",
+});
+
+await client.createCollection("docs", {
+  vectorsConfig: new models.VectorParams({
+    size: 3,
+    distance: models.Distance.COSINE,
+  }),
+});
+```
+
+The adapter covers the common dense-vector RAG subset and is not a full Qdrant
+client replacement. See [docs/compatibility/qdrant.md](docs/compatibility/qdrant.md)
+for supported methods, data mapping, and unsupported features.
+
+Live Qdrant compatibility smoke tests can load credentials from a local `.env`
+file:
+
+```bash
+cp .env.example .env
+# Fill in LAMBDADB_PROJECT_API_KEY and set LAMBDADB_RUN_LIVE_TESTS=1.
+npm run test:live:qdrant
+```
+
+External integration smoke tests for LangChain JS and LlamaIndex TS use an
+in-process fake LambdaDB transport and do not require credentials:
+
+```bash
+npm run test:external:qdrant
 ```
 
 ### Managed embeddings
