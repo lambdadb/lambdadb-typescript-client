@@ -96,19 +96,19 @@ export function pointToDoc(point: unknown): JsonObject {
 
 export function docToRecord(
   input: unknown,
-  options: { withPayload?: boolean; withVectors?: boolean } = {},
+  options: { withPayload?: boolean | string[]; withVectors?: boolean | string[] } = {},
 ): models.Record {
   const doc = unwrapDoc(input);
   return new models.Record({
     id: docId(doc),
-    payload: options.withPayload === false ? undefined : payloadFromDoc(doc),
-    vector: vectorFromDoc(doc, options.withVectors === true),
+    payload: payloadFromDoc(doc, options.withPayload ?? true),
+    vector: vectorFromDoc(doc, options.withVectors ?? false),
   });
 }
 
 export function resultToScoredPoint(
   result: unknown,
-  options: { withPayload?: boolean; withVectors?: boolean } = {},
+  options: { withPayload?: boolean | string[]; withVectors?: boolean | string[] } = {},
 ): models.ScoredPoint {
   const doc = unwrapDoc(result);
   const score = isObject(result) && typeof result["score"] === "number"
@@ -117,8 +117,8 @@ export function resultToScoredPoint(
   return new models.ScoredPoint({
     id: docId(doc),
     score,
-    payload: options.withPayload === false ? undefined : payloadFromDoc(doc),
-    vector: vectorFromDoc(doc, options.withVectors === true),
+    payload: payloadFromDoc(doc, options.withPayload ?? true),
+    vector: vectorFromDoc(doc, options.withVectors ?? false),
   });
 }
 
@@ -356,26 +356,34 @@ function validatePayload(payload: JsonObject): void {
   }
 }
 
-function payloadFromDoc(doc: JsonObject): JsonObject {
+function payloadFromDoc(doc: JsonObject, selector: boolean | string[]): JsonObject | undefined {
+  if (selector === false) return undefined;
+  const selectedFields = Array.isArray(selector) ? new Set(selector) : undefined;
   const payload: JsonObject = {};
   for (const [key, value] of Object.entries(doc)) {
-    if (key !== ID_FIELD && !key.startsWith(RESERVED_PREFIX)) {
+    if (
+      key !== ID_FIELD &&
+      !key.startsWith(RESERVED_PREFIX) &&
+      (selectedFields === undefined || selectedFields.has(key))
+    ) {
       payload[key] = value;
     }
   }
   return payload;
 }
 
-function vectorFromDoc(doc: JsonObject, withVectors: boolean): unknown {
-  if (!withVectors) return undefined;
+function vectorFromDoc(doc: JsonObject, selector: boolean | string[]): unknown {
+  if (selector === false) return undefined;
+  const selectedNames = Array.isArray(selector) ? new Set(selector) : undefined;
 
   const named: JsonObject = {};
   let defaultVector: unknown;
   for (const [key, value] of Object.entries(doc)) {
-    if (key === DEFAULT_VECTOR_NAME) {
+    if (key === DEFAULT_VECTOR_NAME && shouldIncludeVectorName("", key, selectedNames)) {
       defaultVector = value;
     } else if (key.startsWith(`${DEFAULT_VECTOR_NAME}_`)) {
-      named[key.slice(DEFAULT_VECTOR_NAME.length + 1)] = value;
+      const name = key.slice(DEFAULT_VECTOR_NAME.length + 1);
+      if (shouldIncludeVectorName(name, key, selectedNames)) named[name] = value;
     }
   }
 
@@ -384,6 +392,16 @@ function vectorFromDoc(doc: JsonObject, withVectors: boolean): unknown {
     return named;
   }
   return defaultVector;
+}
+
+function shouldIncludeVectorName(
+  qdrantName: string,
+  internalName: string,
+  selectedNames: Set<string> | undefined,
+): boolean {
+  return selectedNames === undefined ||
+    selectedNames.has(qdrantName) ||
+    selectedNames.has(internalName);
 }
 
 function docId(doc: JsonObject): PointId {

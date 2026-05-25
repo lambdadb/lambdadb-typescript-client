@@ -328,6 +328,59 @@ test("queryPoints maps dense vectors, filters, and responses", async () => {
   );
 });
 
+test("payload and vector selectors map to LambdaDB fields and qdrant responses", async () => {
+  const fake = new FakeLambdaDB();
+  const collection = fake.collection("docs");
+  collection.query = async function query(body) {
+    this.queries.push(body);
+    return {
+      docs: [
+        {
+          collection: this.name,
+          score: 0.9,
+          doc: {
+            id: "1",
+            _qdrant_id: 1,
+            _qdrant_vector: [0.1, 0.2],
+            _qdrant_vector_title: [0.3, 0.4],
+            tenant: "acme",
+            hidden: "value",
+          },
+        },
+      ],
+    };
+  };
+  const client = new QdrantCompatClient(fake);
+
+  const response = await client.queryPoints("docs", {
+    query: [0.1, 0.2],
+    limit: 1,
+    withPayload: ["tenant"],
+    withVectors: ["title"],
+  });
+
+  assert.deepEqual(response.points[0].payload, { tenant: "acme" });
+  assert.deepEqual(response.points[0].vector, { title: [0.3, 0.4] });
+  assert.deepEqual(collection.queries[0].fields, {
+    include: ["_qdrant_id", "tenant", "_qdrant_vector_title"],
+  });
+  assert.equal(collection.queries[0].includeVectors, true);
+
+  const records = await client.retrieve("docs", {
+    ids: [1],
+    withPayload: ["tenant"],
+    withVectors: false,
+  });
+  assert.deepEqual(records[0].payload, { tenant: "acme" });
+  assert.equal(records[0].vector, undefined);
+  assert.deepEqual(collection.docs.fetches.at(-1), {
+    ids: ["1"],
+    consistentRead: true,
+    includeVectors: false,
+    fields: { include: ["_qdrant_id", "tenant"] },
+  });
+});
+
 test("retrieve, delete, scroll, count, and getCollection return qdrant-style objects", async () => {
   const fake = new FakeLambdaDB();
   fake.indexConfigs = {

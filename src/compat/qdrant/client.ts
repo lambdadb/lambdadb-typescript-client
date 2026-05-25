@@ -2,6 +2,7 @@ import { LambdaDBClient, type LambdaDBClientOptions } from "../../client.js";
 import { ResourceNotFoundError } from "../../models/errors/index.js";
 import type { CreateCollectionInput } from "../../types/public.js";
 import {
+  ORIGINAL_ID_FIELD,
   mergeIndexConfigs,
   payloadSchemaToIndexConfigs,
   plainIndexConfigs,
@@ -10,6 +11,7 @@ import {
   queryVectorAndField,
   resultToScoredPoint,
   docToRecord,
+  vectorFieldName,
   vectorConfigToIndexConfigs,
   type IndexConfigs,
 } from "./conversions.js";
@@ -82,10 +84,10 @@ type QueryPointsOptions = {
   queryFilter?: models.Filter | JsonObject | null;
   query_filter?: models.Filter | JsonObject | null;
   limit?: number | undefined;
-  withPayload?: boolean | undefined;
-  with_payload?: boolean | undefined;
-  withVectors?: boolean | undefined;
-  with_vectors?: boolean | undefined;
+  withPayload?: PayloadSelector | undefined;
+  with_payload?: PayloadSelector | undefined;
+  withVectors?: VectorSelector | undefined;
+  with_vectors?: VectorSelector | undefined;
   using?: string | undefined;
   searchParams?: models.SearchParams | JsonObject | null;
   search_params?: models.SearchParams | JsonObject | null;
@@ -97,6 +99,9 @@ type QueryPointsOptions = {
   shard_key_selector?: unknown;
   [key: string]: unknown;
 };
+
+type PayloadSelector = boolean | string[];
+type VectorSelector = boolean | string[];
 
 export class QdrantCompatClient {
   private readonly client: LambdaDBLike;
@@ -399,10 +404,10 @@ export class QdrantCompatClient {
     collectionName: string,
     options: {
       ids: models.PointId[];
-      withPayload?: boolean | undefined;
-      with_payload?: boolean | undefined;
-      withVectors?: boolean | undefined;
-      with_vectors?: boolean | undefined;
+      withPayload?: PayloadSelector | undefined;
+      with_payload?: PayloadSelector | undefined;
+      withVectors?: VectorSelector | undefined;
+      with_vectors?: VectorSelector | undefined;
       [key: string]: unknown;
     },
   ): Promise<models.Record[]> {
@@ -415,15 +420,19 @@ export class QdrantCompatClient {
       ...rest
     } = options;
     warnIgnored(rest);
-    const includeVectors = withVectors ?? withVectorsSnake ?? false;
-    const response = await this.client.collection(collectionName).docs.fetch({
+    const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
+    const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
+    const fetchBody: JsonObject = {
       ids: ids.map(String),
       consistentRead: true,
-      includeVectors,
-    });
+      includeVectors: vectorSelector !== false,
+    };
+    const fields = fieldsForSelectors(payloadSelector, vectorSelector);
+    if (fields !== undefined) fetchBody["fields"] = fields;
+    const response = await this.client.collection(collectionName).docs.fetch(fetchBody);
     return response.docs.map((doc) => docToRecord(doc, {
-      withPayload: withPayload ?? withPayloadSnake ?? true,
-      withVectors: includeVectors,
+      withPayload: payloadSelector,
+      withVectors: vectorSelector,
     }));
   }
 
@@ -512,7 +521,8 @@ export class QdrantCompatClient {
       warn("Qdrant searchParams are ignored by the LambdaDB compatibility client");
     }
 
-    const includeVectors = withVectors ?? withVectorsSnake ?? false;
+    const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
+    const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
     const { vector, field } = queryVectorAndField(query, using);
     const knn: JsonObject = {
       field,
@@ -522,16 +532,19 @@ export class QdrantCompatClient {
     const convertedFilter = filterToLambdaDB(queryFilter ?? queryFilterSnake);
     if (Object.keys(convertedFilter).length > 0) knn["filter"] = convertedFilter;
 
-    const response = await this.client.collection(collectionName).query({
+    const queryBody: JsonObject = {
       query: { knn },
       size: limit,
       consistentRead: true,
-      includeVectors,
-    });
+      includeVectors: vectorSelector !== false,
+    };
+    const fields = fieldsForSelectors(payloadSelector, vectorSelector);
+    if (fields !== undefined) queryBody["fields"] = fields;
+    const response = await this.client.collection(collectionName).query(queryBody);
     return new models.QueryResponse({
       points: response.docs.map((result) => resultToScoredPoint(result, {
-        withPayload: withPayload ?? withPayloadSnake ?? true,
-        withVectors: includeVectors,
+        withPayload: payloadSelector,
+        withVectors: vectorSelector,
       })),
     });
   }
@@ -549,10 +562,10 @@ export class QdrantCompatClient {
       query: unknown;
       limit?: number | undefined;
       filter?: models.Filter | JsonObject | null;
-      with_payload?: boolean | unknown[] | undefined;
-      withPayload?: boolean | unknown[] | undefined;
-      with_vector?: boolean | undefined;
-      withVectors?: boolean | undefined;
+      with_payload?: PayloadSelector | undefined;
+      withPayload?: PayloadSelector | undefined;
+      with_vector?: VectorSelector | undefined;
+      withVectors?: VectorSelector | undefined;
       params?: unknown;
       [key: string]: unknown;
     },
@@ -574,9 +587,9 @@ export class QdrantCompatClient {
     };
     if (filter !== undefined) queryOptions.queryFilter = filter;
     if (limit !== undefined) queryOptions.limit = limit;
-    const payloadSelector = payloadSelectorToBoolean(withPayload ?? withPayloadSnake);
+    const payloadSelector = normalizeOptionalPayloadSelector(withPayload ?? withPayloadSnake);
     if (payloadSelector !== undefined) queryOptions.withPayload = payloadSelector;
-    const vectorSelector = withVectors ?? withVectorSnake;
+    const vectorSelector = normalizeOptionalVectorSelector(withVectors ?? withVectorSnake);
     if (vectorSelector !== undefined) queryOptions.withVectors = vectorSelector;
     if (isObject(params)) queryOptions.searchParams = params;
     return this.queryPoints(collectionName, queryOptions);
@@ -603,10 +616,10 @@ export class QdrantCompatClient {
       scrollFilter?: models.Filter | JsonObject | null;
       scroll_filter?: models.Filter | JsonObject | null;
       limit?: number | undefined;
-      withPayload?: boolean | undefined;
-      with_payload?: boolean | undefined;
-      withVectors?: boolean | undefined;
-      with_vectors?: boolean | undefined;
+      withPayload?: PayloadSelector | undefined;
+      with_payload?: PayloadSelector | undefined;
+      withVectors?: VectorSelector | undefined;
+      with_vectors?: VectorSelector | undefined;
       [key: string]: unknown;
     } = {},
   ): Promise<[models.Record[], string | undefined]> {
@@ -624,13 +637,15 @@ export class QdrantCompatClient {
     if (scrollFilter !== undefined || scrollFilterSnake !== undefined) {
       throw new UnsupportedQdrantFeatureError("Filtered scroll is not supported in v1");
     }
-    if (withVectors === true || withVectorsSnake === true) {
+    const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
+    const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
+    if (vectorSelector !== false) {
       throw new UnsupportedQdrantFeatureError("Scroll with vectors is not supported in v1");
     }
     const response = await this.client.collection(collectionName).docs.list({ size: limit });
     return [
       response.docs.map((doc) => docToRecord(doc, {
-        withPayload: withPayload ?? withPayloadSnake ?? true,
+        withPayload: payloadSelector,
         withVectors: false,
       })),
       response.nextPageToken,
@@ -851,9 +866,48 @@ function hasSameIndexConfigs(existing: IndexConfigs, expected: IndexConfigs): bo
   );
 }
 
-function payloadSelectorToBoolean(selector: boolean | unknown[] | undefined): boolean | undefined {
-  if (Array.isArray(selector)) return true;
-  return selector;
+function normalizeOptionalPayloadSelector(selector: unknown): PayloadSelector | undefined {
+  if (selector === undefined) return undefined;
+  return normalizePayloadSelector(selector);
+}
+
+function normalizePayloadSelector(selector: unknown): PayloadSelector {
+  if (selector === true || selector === false) return selector;
+  if (Array.isArray(selector) && selector.every((item) => typeof item === "string")) {
+    return selector;
+  }
+  throw new QdrantCompatValidationError(
+    "withPayload/with_payload must be a boolean or a string field list",
+  );
+}
+
+function normalizeOptionalVectorSelector(selector: unknown): VectorSelector | undefined {
+  if (selector === undefined) return undefined;
+  return normalizeVectorSelector(selector);
+}
+
+function normalizeVectorSelector(selector: unknown): VectorSelector {
+  if (selector === true || selector === false) return selector;
+  if (Array.isArray(selector) && selector.every((item) => typeof item === "string")) {
+    return selector;
+  }
+  throw new QdrantCompatValidationError(
+    "withVectors/with_vector must be a boolean or a string vector-name list",
+  );
+}
+
+function fieldsForSelectors(
+  payloadSelector: PayloadSelector,
+  vectorSelector: VectorSelector,
+): { include: string[] } | undefined {
+  if (!Array.isArray(payloadSelector)) return undefined;
+  if (vectorSelector === true) return undefined;
+
+  const include = new Set<string>([ORIGINAL_ID_FIELD, ...payloadSelector]);
+  if (Array.isArray(vectorSelector)) {
+    for (const name of vectorSelector) include.add(vectorFieldName(name));
+  }
+  return { include: Array.from(include) };
 }
 
 function isLambdaDBLike(value: unknown): value is LambdaDBLike {

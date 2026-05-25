@@ -87,8 +87,8 @@ const result = await client.queryPoints("docs", {
 | `upsert()` | Supported | Dense vectors only. Qdrant IDs become LambdaDB document IDs. |
 | `uploadPoints()` / `upload_points()` | Supported | Batches points through `upsert()`. |
 | `uploadCollection()` / `upload_collection()` | Supported | Converts vectors, ids, and payload arrays into points. |
-| `retrieve()` | Supported | Uses strongly consistent LambdaDB fetches. |
-| `queryPoints()` / `query_points()` | Supported | Dense vector query plus simple payload filters. |
+| `retrieve()` | Supported | Uses strongly consistent LambdaDB fetches. Supports boolean and field-list payload/vector selectors. |
+| `queryPoints()` / `query_points()` | Supported | Dense vector query plus simple payload filters. Supports boolean and field-list payload/vector selectors. |
 | `query()` | Supported | Qdrant JS package-style alias around `queryPoints()` using `filter`, `with_payload`, and `with_vector`. |
 | `search()` | Supported | Wrapper around `queryPoints()`. |
 | `delete()` | Supported | Point IDs and supported Qdrant filters. Accepts `{ points: [...] }`, `{ pointsSelector: [...] }`, `{ filter }`, and `{ pointsSelector: { filter } }`. |
@@ -140,6 +140,41 @@ collection with `payloadSchema` or reingest documents after adding the index.
 | payload fields | top-level document fields |
 
 Payload fields cannot use `id` or the reserved `_qdrant_` prefix.
+
+## Payload And Vector Selectors
+
+Boolean selectors work as expected:
+
+```ts
+await client.queryPoints("docs", {
+  query: [1.0, 0.0, 0.0],
+  withPayload: true,
+  withVectors: false,
+});
+```
+
+Field-list payload selectors are mapped to LambdaDB `fields.include` and are
+also applied to the Qdrant-style response payload:
+
+```ts
+await client.query("docs", {
+  query: [1.0, 0.0, 0.0],
+  with_payload: ["tenant", "title"],
+});
+```
+
+Vector-name selectors request vectors from LambdaDB and filter the returned
+Qdrant-style vector object by Qdrant vector name:
+
+```ts
+await client.query("docs", {
+  query: [1.0, 0.0, 0.0],
+  with_vector: ["title"],
+});
+```
+
+`scroll()` still rejects vector selectors because scroll with vectors is not
+supported in this compatibility layer.
 
 ## Filter Support
 
