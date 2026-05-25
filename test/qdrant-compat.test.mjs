@@ -1,0 +1,402 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  QdrantClient,
+  QdrantCompatClient,
+  UnsupportedQdrantFeatureError,
+  models,
+} from "../dist/esm/compat/qdrant.js";
+import { PointStruct } from "../dist/esm/compat/qdrant/models.js";
+
+class FakeDocs {
+  constructor() {
+    this.upserts = [];
+    this.deletes = [];
+    this.fetches = [];
+    this.lists = [];
+  }
+
+  async upsert(body) {
+    this.upserts.push(body);
+    return { message: "ok" };
+  }
+
+  async fetch(body) {
+    this.fetches.push(body);
+    return {
+      docs: [
+        {
+          collection: "docs",
+          doc: {
+            id: "1",
+            _qdrant_id: 1,
+            _qdrant_vector: [0.1, 0.2],
+            tenant: "acme",
+          },
+        },
+      ],
+    };
+  }
+
+  async delete(body) {
+    this.deletes.push(body);
+    return { message: "ok" };
+  }
+
+  async list(body = {}) {
+    this.lists.push(body);
+    return {
+      docs: [
+        {
+          collection: "docs",
+          doc: { id: "1", _qdrant_id: 1, tenant: "acme" },
+        },
+      ],
+      nextPageToken: undefined,
+    };
+  }
+}
+
+class FakeCollection {
+  constructor(owner, name) {
+    this.owner = owner;
+    this.name = name;
+    this.docs = new FakeDocs();
+    this.queries = [];
+    this.updates = [];
+    this.deletes = [];
+  }
+
+  async get() {
+    this.owner.gets.push({ collectionName: this.name });
+    return {
+      collection: {
+        collectionName: this.name,
+        indexConfigs: this.owner.indexConfigs,
+        numDocs: this.owner.numDocs,
+        collectionStatus: "ACTIVE",
+      },
+    };
+  }
+
+  async update(body) {
+    this.updates.push(body);
+    this.owner.indexConfigs = body.indexConfigs;
+    return { collection: { collectionName: this.name, indexConfigs: body.indexConfigs } };
+  }
+
+  async delete() {
+    this.deletes.push({});
+    return { message: "ok" };
+  }
+
+  async query(body) {
+    this.queries.push(body);
+    return {
+      docs: [
+        {
+          collection: this.name,
+          score: 0.9,
+          doc: {
+            id: "1",
+            _qdrant_id: 1,
+            _qdrant_vector: [0.1, 0.2],
+            tenant: "acme",
+          },
+        },
+      ],
+    };
+  }
+}
+
+class FakeLambdaDB {
+  constructor() {
+    this.created = [];
+    this.gets = [];
+    this.indexConfigs = {};
+    this.numDocs = 0;
+    this.collectionsByName = new Map();
+  }
+
+  async createCollection(body) {
+    this.created.push(body);
+    this.indexConfigs = body.indexConfigs ?? {};
+    return { collection: { collectionName: body.collectionName } };
+  }
+
+  collection(name) {
+    if (!this.collectionsByName.has(name)) {
+      this.collectionsByName.set(name, new FakeCollection(this, name));
+    }
+    return this.collectionsByName.get(name);
+  }
+}
+
+test("qdrant compatibility exports public client and models", () => {
+  assert.equal(QdrantClient, QdrantCompatClient);
+  assert.equal(models.PointStruct, PointStruct);
+
+  const point = new models.PointStruct({
+    id: 1,
+    vector: [0.1, 0.2],
+    payload: { tenant: "acme" },
+  });
+  assert.equal(point.id, 1);
+});
+
+test("createCollection maps vector params and payload schema", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  assert.equal(
+    await client.createCollection("docs", {
+      vectorsConfig: new models.VectorParams({
+        size: 3,
+        distance: models.Distance.DOT,
+      }),
+      payloadSchema: {
+        tenant: models.PayloadSchemaType.KEYWORD,
+        views: models.PayloadSchemaType.INTEGER,
+        score: models.PayloadSchemaType.FLOAT,
+        active: models.PayloadSchemaType.BOOL,
+      },
+    }),
+    true,
+  );
+
+  assert.deepEqual(fake.created, [
+    {
+      collectionName: "docs",
+      indexConfigs: {
+        _qdrant_vector: {
+          type: "vector",
+          dimensions: 3,
+          similarity: "dot_product",
+        },
+        tenant: { type: "keyword" },
+        views: { type: "long" },
+        score: { type: "double" },
+        active: { type: "boolean" },
+      },
+    },
+  ]);
+});
+
+test("createPayloadIndex merges existing configs and rejects non-empty backfill", async () => {
+  const fake = new FakeLambdaDB();
+  fake.indexConfigs = {
+    _qdrant_vector: {
+      type: "vector",
+      dimensions: 3,
+      similarity: "cosine",
+    },
+  };
+  const client = new QdrantCompatClient(fake);
+
+  assert.equal(
+    await client.createPayloadIndex(
+      "docs",
+      "tenant",
+      models.PayloadSchemaType.KEYWORD,
+    ),
+    true,
+  );
+
+  assert.deepEqual(fake.collection("docs").updates, [
+    {
+      indexConfigs: {
+        _qdrant_vector: {
+          type: "vector",
+          dimensions: 3,
+          similarity: "cosine",
+        },
+        tenant: { type: "keyword" },
+      },
+    },
+  ]);
+
+  fake.numDocs = 3;
+  await assert.rejects(
+    client.createPayloadIndex("docs", "views", models.PayloadSchemaType.INTEGER),
+    UnsupportedQdrantFeatureError,
+  );
+});
+
+test("upsert maps qdrant points to LambdaDB documents", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  const result = await client.upsert("docs", {
+    points: [
+      new models.PointStruct({
+        id: 1,
+        vector: [0.1, 0.2],
+        payload: { tenant: "acme" },
+      }),
+    ],
+  });
+
+  assert.equal(result.status, models.UpdateStatus.COMPLETED);
+  assert.deepEqual(fake.collection("docs").docs.upserts, [
+    {
+      docs: [
+        {
+          id: "1",
+          _qdrant_id: 1,
+          _qdrant_vector: [0.1, 0.2],
+          tenant: "acme",
+        },
+      ],
+    },
+  ]);
+
+  await assert.rejects(
+    client.upsert("docs", {
+      points: [{ id: 1, vector: [0.1], payload: { _qdrant_vector: [0.2] } }],
+    }),
+    /reserved prefix/,
+  );
+
+  await assert.rejects(
+    client.upsert("docs", {
+      points: [
+        {
+          id: 1,
+          vector: {
+            sparse: new models.SparseVector({ indices: [1], values: [0.9] }),
+          },
+        },
+      ],
+    }),
+    UnsupportedQdrantFeatureError,
+  );
+});
+
+test("queryPoints maps dense vectors, filters, and responses", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  const response = await client.queryPoints("docs", {
+    query: [0.1, 0.2],
+    queryFilter: new models.Filter({
+      must: [
+        new models.FieldCondition({
+          key: "tenant",
+          match: new models.MatchValue({ value: "acme" }),
+        }),
+      ],
+      mustNot: [
+        new models.FieldCondition({
+          key: "status",
+          match: new models.MatchValue({ value: "deleted" }),
+        }),
+      ],
+    }),
+    limit: 5,
+    withVectors: true,
+  });
+
+  assert.equal(response.points[0].id, 1);
+  assert.equal(response.points[0].score, 0.9);
+  assert.deepEqual(response.points[0].payload, { tenant: "acme" });
+  assert.deepEqual(response.points[0].vector, [0.1, 0.2]);
+  assert.deepEqual(fake.collection("docs").queries, [
+    {
+      query: {
+        knn: {
+          field: "_qdrant_vector",
+          k: 5,
+          queryVector: [0.1, 0.2],
+          filter: {
+            bool: [
+              { queryString: { query: "tenant:acme" }, occur: "filter" },
+              { queryString: { query: "status:deleted" }, occur: "must_not" },
+            ],
+          },
+        },
+      },
+      size: 5,
+      consistentRead: true,
+      includeVectors: true,
+    },
+  ]);
+
+  await assert.rejects(
+    client.queryPoints("docs", { query: [0.1], offset: 1 }),
+    UnsupportedQdrantFeatureError,
+  );
+});
+
+test("retrieve, delete, scroll, count, and getCollection return qdrant-style objects", async () => {
+  const fake = new FakeLambdaDB();
+  fake.indexConfigs = {
+    _qdrant_vector: {
+      type: "vector",
+      dimensions: 2,
+      similarity: "cosine",
+    },
+  };
+  fake.numDocs = 12;
+  const client = new QdrantCompatClient(fake);
+
+  const collection = await client.getCollection("docs");
+  assert.equal(collection.config.params.vectors.size, 2);
+  assert.equal(collection.config.params.vectors.distance, models.Distance.COSINE);
+
+  const records = await client.retrieve("docs", { ids: [1], withVectors: true });
+  assert.equal(records[0].id, 1);
+  assert.deepEqual(records[0].payload, { tenant: "acme" });
+  assert.deepEqual(records[0].vector, [0.1, 0.2]);
+  assert.deepEqual(fake.collection("docs").docs.fetches, [
+    { ids: ["1"], consistentRead: true, includeVectors: true },
+  ]);
+
+  const deleteResult = await client.delete("docs", { pointsSelector: [1] });
+  assert.equal(deleteResult.status, models.UpdateStatus.COMPLETED);
+  assert.deepEqual(fake.collection("docs").docs.deletes, [{ ids: ["1"] }]);
+
+  await client.delete("docs", {
+    filter: new models.Filter({
+      must: [
+        new models.FieldCondition({
+          key: "tenant",
+          match: new models.MatchValue({ value: "acme" }),
+        }),
+      ],
+    }),
+  });
+  await client.delete("docs", {
+    pointsSelector: {
+      filter: {
+        must: [
+          {
+            key: "status",
+            match: { value: "archived" },
+          },
+        ],
+      },
+    },
+  });
+  assert.deepEqual(fake.collection("docs").docs.deletes, [
+    { ids: ["1"] },
+    {
+      filter: {
+        queryString: { query: "tenant:acme" },
+      },
+    },
+    {
+      filter: {
+        queryString: { query: "status:archived" },
+      },
+    },
+  ]);
+
+  const [scrollRecords, nextOffset] = await client.scroll("docs", { limit: 3 });
+  assert.equal(scrollRecords[0].id, 1);
+  assert.equal(nextOffset, undefined);
+  assert.deepEqual(fake.collection("docs").docs.lists, [{ size: 3 }]);
+
+  const count = await client.count("docs");
+  assert.equal(count.count, 12);
+});
