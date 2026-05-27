@@ -3,7 +3,7 @@
  */
 
 import { LambdaDBCore } from "../core.js";
-import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
+import { encodeJSON, encodeSimple } from "../lib/encodings.js";
 import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
@@ -26,11 +26,11 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * List documents in a collection.
+ * List documents in a collection with optional filters, field selection, and vector inclusion.
  */
-export function collectionsDocsListDocs(
+export function collectionsDocsListDocsExtended(
   client: LambdaDBCore,
-  request: operations.ListDocsRequest,
+  request: operations.ListDocsExtendedRequest,
   options?: RequestOptions,
 ): APIPromise<
   Result<
@@ -59,7 +59,7 @@ export function collectionsDocsListDocs(
 
 async function $do(
   client: LambdaDBCore,
-  request: operations.ListDocsRequest,
+  request: operations.ListDocsExtendedRequest,
   options?: RequestOptions,
 ): Promise<
   [
@@ -84,14 +84,14 @@ async function $do(
 > {
   const parsed = safeParse(
     request,
-    (value) => operations.ListDocsRequest$outboundSchema.parse(value),
+    (value) => operations.ListDocsExtendedRequest$outboundSchema.parse(value),
     "Input validation failed",
   );
   if (!parsed.ok) {
     return [parsed, { status: "invalid" }];
   }
   const payload = parsed.value;
-  const body = null;
+  const body = encodeJSON("body", payload.RequestBody, { explode: true });
 
   const pathParams = {
     collectionName: encodeSimple("collectionName", payload.collectionName, {
@@ -100,15 +100,12 @@ async function $do(
     }),
   };
 
-  const path = pathToFunc("/collections/{collectionName}/docs")(pathParams);
-
-  const query = encodeFormQuery({
-    "includeVectors": payload.includeVectors,
-    "pageToken": payload.pageToken,
-    "size": payload.size,
-  });
+  const path = pathToFunc("/collections/{collectionName}/docs/list")(
+    pathParams,
+  );
 
   const headers = new Headers(compactMap({
+    "Content-Type": "application/json",
     Accept: "application/json",
   }));
 
@@ -119,7 +116,7 @@ async function $do(
   const context = {
     options: client._options,
     baseURL: options?.serverURL ?? client._baseURL ?? "",
-    operationID: "listDocs",
+    operationID: "listDocsExtended",
     oAuth2Scopes: null,
 
     resolvedSecurity: requestSecurity,
@@ -143,11 +140,10 @@ async function $do(
 
   const requestRes = client._createRequest(context, {
     security: requestSecurity,
-    method: "GET",
+    method: "POST",
     baseURL: options?.serverURL,
     path: path,
     headers: headers,
-    query: query,
     body: body,
     userAgent: client._options.userAgent,
     timeoutMs: options?.timeoutMs || client._options.timeoutMs || -1,

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   QdrantClient,
   QdrantCompatClient,
+  QdrantCompatValidationError,
   UnsupportedQdrantFeatureError,
   models,
 } from "../dist/esm/compat/qdrant.js";
@@ -59,7 +60,7 @@ class FakeDocs {
           },
         },
       ],
-      nextPageToken: undefined,
+      nextPageToken: "next-token",
     };
   }
 }
@@ -334,6 +335,45 @@ test("queryPoints maps dense vectors, filters, and responses", async () => {
   );
 });
 
+test("MatchText maps to LambdaDB text filter terms", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  await client.queryPoints("docs", {
+    query: [0.1, 0.2],
+    queryFilter: new models.Filter({
+      must: [
+        new models.FieldCondition({
+          key: "body",
+          match: new models.MatchText({ text: "serverless database" }),
+        }),
+      ],
+    }),
+  });
+
+  assert.deepEqual(fake.collection("docs").queries[0].query.knn.filter, {
+    bool: [
+      { queryString: { query: "body:serverless" }, occur: "filter" },
+      { queryString: { query: "body:database" }, occur: "filter" },
+    ],
+  });
+
+  await assert.rejects(
+    client.queryPoints("docs", {
+      query: [0.1, 0.2],
+      queryFilter: new models.Filter({
+        must: [
+          new models.FieldCondition({
+            key: "body",
+            match: new models.MatchText({ text: " " }),
+          }),
+        ],
+      }),
+    }),
+    QdrantCompatValidationError,
+  );
+});
+
 test("payload and vector selectors map to LambdaDB fields and qdrant responses", async () => {
   const fake = new FakeLambdaDB();
   const collection = fake.collection("docs");
@@ -459,9 +499,49 @@ test("retrieve, delete, scroll, count, and getCollection return qdrant-style obj
   assert.equal(scrollRecords[0].id, 1);
   assert.deepEqual(scrollRecords[0].payload, { tenant: "acme" });
   assert.deepEqual(scrollRecords[0].vector, { title: [0.3, 0.4] });
-  assert.equal(nextOffset, undefined);
-  assert.deepEqual(fake.collection("docs").docs.lists, [{ size: 3 }]);
+  assert.equal(nextOffset, "next-token");
+  assert.deepEqual(fake.collection("docs").docs.lists, [
+    {
+      size: 3,
+      includeVectors: true,
+      fields: { include: ["_qdrant_id", "tenant", "_qdrant_vector_title"] },
+    },
+  ]);
 
   const count = await client.count("docs");
   assert.equal(count.count, 12);
+});
+
+test("filtered scroll maps to extended list options and page-token offsets", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  const [records, nextOffset] = await client.scroll("docs", {
+    scrollFilter: new models.Filter({
+      must: [
+        new models.FieldCondition({
+          key: "tenant",
+          match: new models.MatchValue({ value: "acme" }),
+        }),
+      ],
+    }),
+    offset: "page-1",
+    withPayload: true,
+  });
+
+  assert.equal(nextOffset, "next-token");
+  assert.equal(records[0].id, 1);
+  assert.deepEqual(fake.collection("docs").docs.lists, [
+    {
+      size: 10,
+      includeVectors: false,
+      pageToken: "page-1",
+      filter: { queryString: { query: "tenant:acme" } },
+    },
+  ]);
+
+  await assert.rejects(
+    client.scroll("docs", { offset: 1 }),
+    UnsupportedQdrantFeatureError,
+  );
 });

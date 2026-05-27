@@ -23,6 +23,7 @@ import { collectionsDocsDelete } from "./funcs/collectionsDocsDelete.js";
 import { collectionsDocsFetch } from "./funcs/collectionsDocsFetch.js";
 import { collectionsDocsGetBulkUpsert } from "./funcs/collectionsDocsGetBulkUpsert.js";
 import { collectionsDocsListDocs } from "./funcs/collectionsDocsListDocs.js";
+import { collectionsDocsListDocsExtended } from "./funcs/collectionsDocsListDocsExtended.js";
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
@@ -438,12 +439,36 @@ class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ) {
+    const useExtendedList = params?.filter != null
+      || params?.partitionFilter != null
+      || params?.fields != null;
     const result = await unwrapAsync(
-      collectionsDocsListDocs(
-        this.client,
-        { collectionName: this.collectionName, ...params },
-        options,
-      ),
+      useExtendedList
+        ? collectionsDocsListDocsExtended(
+          this.client,
+          {
+            collectionName: this.collectionName,
+            requestBody: {
+              size: params?.size,
+              pageToken: params?.pageToken,
+              filter: params?.filter,
+              partitionFilter: params?.partitionFilter,
+              fields: params?.fields,
+              includeVectors: params?.includeVectors,
+            },
+          },
+          options,
+        )
+        : collectionsDocsListDocs(
+          this.client,
+          {
+            collectionName: this.collectionName,
+            size: params?.size,
+            pageToken: params?.pageToken,
+            includeVectors: params?.includeVectors,
+          },
+          options,
+        ),
     );
     if (!result.isDocsInline && result.docsUrl) {
       const docs = await fetchDocsFromUrl<ListDocsDoc>(result.docsUrl);
@@ -460,11 +485,35 @@ class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ): Promise<Result<ListDocsResponse, ListDocsError>> {
-    const result = await collectionsDocsListDocs(
-      this.client,
-      { collectionName: this.collectionName, ...params },
-      options,
-    );
+    const useExtendedList = params?.filter != null
+      || params?.partitionFilter != null
+      || params?.fields != null;
+    const result = useExtendedList
+      ? await collectionsDocsListDocsExtended(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          requestBody: {
+            size: params?.size,
+            pageToken: params?.pageToken,
+            filter: params?.filter,
+            partitionFilter: params?.partitionFilter,
+            fields: params?.fields,
+            includeVectors: params?.includeVectors,
+          },
+        },
+        options,
+      )
+      : await collectionsDocsListDocs(
+        this.client,
+        {
+          collectionName: this.collectionName,
+          size: params?.size,
+          pageToken: params?.pageToken,
+          includeVectors: params?.includeVectors,
+        },
+        options,
+      );
     if (!result.ok) return result;
     if (!result.value.isDocsInline && result.value.docsUrl) {
       try {
@@ -494,7 +543,14 @@ class CollectionDocs {
     options?: RequestOptions,
   ): AsyncGenerator<ListDocsResponse> {
     let pageToken: string | undefined = params?.pageToken;
-    const baseParams: ListDocsInput = { size: params?.size, pageToken };
+    const baseParams: ListDocsInput = {
+      size: params?.size,
+      pageToken,
+      filter: params?.filter,
+      partitionFilter: params?.partitionFilter,
+      fields: params?.fields,
+      includeVectors: params?.includeVectors,
+    };
     while (true) {
       const page = await this.list({ ...baseParams, pageToken }, options);
       yield page;
