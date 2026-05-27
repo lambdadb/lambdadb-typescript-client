@@ -16,8 +16,15 @@ export type { BulkUpsertDocsRequestBody as BulkUpsertInput } from "../models/ope
 import type { ListDocsRequest } from "../models/operations/listdocs.js";
 import type { ListCollectionsRequest } from "../models/operations/listcollections.js";
 
-/** Parameters for listing documents (size, pageToken). */
-export type ListDocsInput = Pick<ListDocsRequest, "size" | "pageToken">;
+/** Parameters for listing documents, including extended list options. */
+export type ListDocsInput = Pick<
+  ListDocsRequest,
+  "size" | "pageToken" | "includeVectors"
+> & {
+  filter?: Record<string, unknown> | undefined;
+  partitionFilter?: import("../models/index.js").PartitionFilter | undefined;
+  fields?: import("../models/index.js").FieldsSelectorUnion | undefined;
+};
 
 /** Parameters for listing collections (size, pageToken). */
 export type ListCollectionsInput = Pick<

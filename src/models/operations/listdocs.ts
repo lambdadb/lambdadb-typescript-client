@@ -3,9 +3,11 @@
  */
 
 import * as z from "zod/v3";
+import { remap as remap$ } from "../../lib/primitives.js";
 import { nullToUndefined, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
+import * as models from "../index.js";
 
 export type ListDocsRequest = {
   /**
@@ -20,6 +22,10 @@ export type ListDocsRequest = {
    * Next page token.
    */
   pageToken?: string | undefined;
+  /**
+   * Set to true to include vector values in the response. Defaults to false.
+   */
+  includeVectors?: boolean | undefined;
 };
 
 export type ListDocsDoc = {
@@ -52,6 +58,7 @@ export type ListDocsRequest$Outbound = {
   collectionName: string;
   size?: number | undefined;
   pageToken?: string | undefined;
+  includeVectors: boolean;
 };
 
 /** @internal */
@@ -63,12 +70,105 @@ export const ListDocsRequest$outboundSchema: z.ZodType<
   collectionName: z.string(),
   size: z.number().int().optional(),
   pageToken: z.string().optional(),
+  includeVectors: z.boolean().default(false),
 });
 
 export function listDocsRequestToJSON(
   listDocsRequest: ListDocsRequest,
 ): string {
   return JSON.stringify(ListDocsRequest$outboundSchema.parse(listDocsRequest));
+}
+
+export type ListDocsExtendedRequestBody = {
+  /**
+   * Max number of documents to return at once.
+   */
+  size?: number | undefined;
+  /**
+   * Next page token.
+   */
+  pageToken?: string | undefined;
+  /**
+   * Filter applied before pagination.
+   */
+  filter?: { [k: string]: any } | undefined;
+  partitionFilter?: models.PartitionFilter | undefined;
+  /**
+   * An object to specify a list of field names to include and/or exclude in the result.
+   */
+  fields?: models.FieldsSelectorUnion | undefined;
+  /**
+   * Set to true to include vector values in the response. Defaults to false.
+   */
+  includeVectors?: boolean | undefined;
+};
+
+export type ListDocsExtendedRequest = {
+  /**
+   * Collection name.
+   */
+  collectionName: string;
+  requestBody: ListDocsExtendedRequestBody;
+};
+
+/** @internal */
+export type ListDocsExtendedRequestBody$Outbound = {
+  size?: number | undefined;
+  pageToken?: string | undefined;
+  filter?: { [k: string]: any } | undefined;
+  partitionFilter?: models.PartitionFilter$Outbound | undefined;
+  fields?: models.FieldsSelectorUnion$Outbound | undefined;
+  includeVectors: boolean;
+};
+
+/** @internal */
+export const ListDocsExtendedRequestBody$outboundSchema: z.ZodType<
+  ListDocsExtendedRequestBody$Outbound,
+  z.ZodTypeDef,
+  ListDocsExtendedRequestBody
+> = z.object({
+  size: z.number().int().optional(),
+  pageToken: z.string().optional(),
+  filter: z.record(z.any()).optional(),
+  partitionFilter: models.PartitionFilter$outboundSchema.optional(),
+  fields: models.FieldsSelectorUnion$outboundSchema.optional(),
+  includeVectors: z.boolean().default(false),
+});
+
+export function listDocsExtendedRequestBodyToJSON(
+  listDocsExtendedRequestBody: ListDocsExtendedRequestBody,
+): string {
+  return JSON.stringify(
+    ListDocsExtendedRequestBody$outboundSchema.parse(listDocsExtendedRequestBody),
+  );
+}
+
+/** @internal */
+export type ListDocsExtendedRequest$Outbound = {
+  collectionName: string;
+  RequestBody: ListDocsExtendedRequestBody$Outbound;
+};
+
+/** @internal */
+export const ListDocsExtendedRequest$outboundSchema: z.ZodType<
+  ListDocsExtendedRequest$Outbound,
+  z.ZodTypeDef,
+  ListDocsExtendedRequest
+> = z.object({
+  collectionName: z.string(),
+  requestBody: z.lazy(() => ListDocsExtendedRequestBody$outboundSchema),
+}).transform((v) => {
+  return remap$(v, {
+    requestBody: "RequestBody",
+  });
+});
+
+export function listDocsExtendedRequestToJSON(
+  listDocsExtendedRequest: ListDocsExtendedRequest,
+): string {
+  return JSON.stringify(
+    ListDocsExtendedRequest$outboundSchema.parse(listDocsExtendedRequest),
+  );
 }
 
 /** @internal */

@@ -92,9 +92,11 @@ function matchQueries(field: string, rawMatch: unknown): LambdaDBQuery[] {
     return match.except.map((value) => queryString(`${field}:${formatScalar(value)}`));
   }
   if (match instanceof MatchText) {
-    throw new UnsupportedQdrantFeatureError(
-      "MatchText is not supported in the v1 Qdrant compatibility filter",
-    );
+    const terms = match.text.split(/\s+/).filter(Boolean);
+    if (terms.length === 0) {
+      throw new QdrantCompatValidationError("MatchText text must not be empty");
+    }
+    return terms.map((term) => queryString(`${field}:${formatScalar(term)}`));
   }
 
   throw new UnsupportedQdrantFeatureError(

@@ -1,6 +1,6 @@
 import { LambdaDBClient, type LambdaDBClientOptions } from "../../client.js";
 import { ResourceNotFoundError } from "../../models/errors/index.js";
-import type { CreateCollectionInput } from "../../types/public.js";
+import type { CreateCollectionInput, ListDocsInput } from "../../types/public.js";
 import {
   ORIGINAL_ID_FIELD,
   mergeIndexConfigs,
@@ -24,6 +24,7 @@ import {
 } from "./errors.js";
 
 type JsonObject = { [key: string]: unknown };
+type ListDocsBody = ListDocsInput;
 
 type CollectionLike = {
   get(): Promise<{ collection: JsonObject }>;
@@ -34,7 +35,7 @@ type CollectionLike = {
     upsert(body: { docs: JsonObject[] }): Promise<unknown>;
     fetch(body: JsonObject): Promise<{ docs: unknown[] }>;
     delete(body: { ids?: string[]; filter?: JsonObject }): Promise<unknown>;
-    list(body?: { size?: number; pageToken?: string }): Promise<{
+    list(body?: ListDocsBody): Promise<{
       docs: unknown[];
       nextPageToken?: string | undefined;
     }>;
@@ -615,6 +616,7 @@ export class QdrantCompatClient {
     options: {
       scrollFilter?: models.Filter | JsonObject | null;
       scroll_filter?: models.Filter | JsonObject | null;
+      offset?: string | number | undefined;
       limit?: number | undefined;
       withPayload?: PayloadSelector | undefined;
       with_payload?: PayloadSelector | undefined;
@@ -626,6 +628,7 @@ export class QdrantCompatClient {
     const {
       scrollFilter,
       scroll_filter: scrollFilterSnake,
+      offset,
       limit = 10,
       withPayload,
       with_payload: withPayloadSnake,
@@ -634,12 +637,23 @@ export class QdrantCompatClient {
       ...rest
     } = options;
     warnIgnored(rest);
-    if (scrollFilter !== undefined || scrollFilterSnake !== undefined) {
-      throw new UnsupportedQdrantFeatureError("Filtered scroll is not supported in v1");
+    if (offset !== undefined && typeof offset !== "string") {
+      throw new UnsupportedQdrantFeatureError(
+        "Qdrant point-id scroll offsets are not supported; use the returned LambdaDB page-token offset",
+      );
     }
     const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
     const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
-    const response = await this.client.collection(collectionName).docs.list({ size: limit });
+    const fields = fieldsForSelectors(payloadSelector, vectorSelector);
+    const convertedFilter = filterToLambdaDB(scrollFilter ?? scrollFilterSnake);
+    const listBody: ListDocsBody = {
+      size: limit,
+      includeVectors: vectorSelector !== false,
+    };
+    if (offset !== undefined) listBody.pageToken = offset;
+    if (Object.keys(convertedFilter).length > 0) listBody.filter = convertedFilter;
+    if (fields !== undefined) listBody.fields = fields;
+    const response = await this.client.collection(collectionName).docs.list(listBody);
     return [
       response.docs.map((doc) => docToRecord(doc, {
         withPayload: payloadSelector,

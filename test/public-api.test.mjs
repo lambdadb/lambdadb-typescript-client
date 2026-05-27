@@ -391,6 +391,7 @@ test("collection docs helpers paginate through the user-facing scoped API", asyn
   const { calls, client } = createClient((call, index) => {
     assert.equal(call.method, "GET");
     assert.equal(call.url.pathname, "/projects/project-one/collections/items/docs");
+    assert.equal(call.url.searchParams.get("includeVectors"), "false");
 
     if (index === 0) {
       return jsonResponse({
@@ -420,6 +421,56 @@ test("collection docs helpers paginate through the user-facing scoped API", asyn
     { collection: "items", doc: { id: "a" } },
     { collection: "items", doc: { id: "b" } },
   ]);
+});
+
+test("collection docs list supports includeVectors and extended list options", async () => {
+  const { calls, client } = createClient((call, index) => {
+    if (index === 0) {
+      assert.equal(call.method, "GET");
+      assert.equal(call.url.pathname, "/projects/project-one/collections/items/docs");
+      assert.equal(call.url.searchParams.get("size"), "10");
+      assert.equal(call.url.searchParams.get("includeVectors"), "true");
+      return jsonResponse({
+        total: 1,
+        docs: [{ collection: "items", doc: { id: "a", embedding: [0.1, 0.2] } }],
+        nextPageToken: null,
+        isDocsInline: true,
+        docsUrl: null,
+      });
+    }
+
+    assert.equal(call.method, "POST");
+    assert.equal(call.url.pathname, "/projects/project-one/collections/items/docs/list");
+    assert.deepEqual(JSON.parse(call.body), {
+      size: 10,
+      filter: { queryString: { query: "category:docs" } },
+      partitionFilter: { field: "tenant", in: ["acme"] },
+      fields: { include: ["id", "title"] },
+      includeVectors: false,
+    });
+    return jsonResponse({
+      total: 1,
+      docs: [{ collection: "items", doc: { id: "a", title: "LambdaDB" } }],
+      nextPageToken: null,
+      isDocsInline: true,
+      docsUrl: null,
+    });
+  });
+
+  const listResult = await client.collection("items").docs.list({
+    size: 10,
+    includeVectors: true,
+  });
+  const extendedResult = await client.collection("items").docs.list({
+    size: 10,
+    filter: { queryString: { query: "category:docs" } },
+    partitionFilter: { field: "tenant", in: ["acme"] },
+    fields: { include: ["id", "title"] },
+  });
+
+  assert.equal(calls.length, 2);
+  assert.deepEqual(listResult.docs[0].doc.embedding, [0.1, 0.2]);
+  assert.deepEqual(extendedResult.docs[0].doc, { id: "a", title: "LambdaDB" });
 });
 
 test("collection query fetches docsUrl and returns inline docs through the public API", async () => {
