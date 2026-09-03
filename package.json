@@ -9,6 +9,14 @@
     "url": "git+https://github.com/lambdadb/lambdadb-typescript-client.git"
   },
   "type": "module",
+  "files": [
+    "dist/",
+    "src/",
+    "FUNCTIONS.md",
+    "RUNTIMES.md",
+    "USAGE.md",
+    "jsr.json"
+  ],
   "tshy": {
     "sourceDialects": [
       "@functional-systems/lambdadb/source"
