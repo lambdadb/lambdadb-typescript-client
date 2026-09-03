@@ -10,6 +10,8 @@ export type UpdateDocsRequestBody = {
    * A list of documents to update. Each document must contain 'id' field to be updated. For managed embedding vector fields, omit the managed vector field and update only the configured source text field.
    */
   docs: Array<{ [k: string]: any }>;
+  /** Write target Branch. Omitting it writes to main. */
+  branch?: string | undefined;
 };
 
 export type UpdateDocsRequest = {
@@ -23,6 +25,7 @@ export type UpdateDocsRequest = {
 /** @internal */
 export type UpdateDocsRequestBody$Outbound = {
   docs: Array<{ [k: string]: any }>;
+  branch?: string | undefined;
 };
 
 /** @internal */
@@ -32,6 +35,7 @@ export const UpdateDocsRequestBody$outboundSchema: z.ZodType<
   UpdateDocsRequestBody
 > = z.object({
   docs: z.array(z.record(z.any())),
+  branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
 });
 
 export function updateDocsRequestBodyToJSON(

@@ -8,6 +8,7 @@
     "./models/errors": "./src/models/errors/index.ts",    
     "./models": "./src/models/index.ts",    
     "./models/operations": "./src/models/operations/index.ts",
+    "./versioning": "./src/versioning.ts",
     "./compat/qdrant": "./src/compat/qdrant.ts",
     "./compat/qdrant/models": "./src/compat/qdrant/models.ts",
     "./lib/config": "./src/lib/config.ts",
@@ -19,6 +20,7 @@
   "publish": {
     "include": [
       "LICENSE",
+      "CHANGELOG.md",
       "README.md",
       "RUNTIMES.md",
       "USAGE.md",

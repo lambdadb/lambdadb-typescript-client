@@ -105,6 +105,8 @@ async function $do(
   const query = encodeFormQuery({
     "includeVectors": payload.includeVectors,
     "pageToken": payload.pageToken,
+    "refKind": payload.refKind,
+    "refName": payload.refName,
     "size": payload.size,
   });
 

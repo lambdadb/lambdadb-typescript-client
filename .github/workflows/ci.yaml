@@ -1,4 +1,4 @@
-# CI: lint and build on every push and pull request.
+# CI: lint, typecheck, build, and test on every push and pull request.
 # No secrets required.
 name: CI
 
@@ -21,5 +21,6 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm run build
       - run: npm test

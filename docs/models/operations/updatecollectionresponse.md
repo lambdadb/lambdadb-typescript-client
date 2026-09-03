@@ -16,9 +16,14 @@ let value: UpdateCollectionResponse = {
         type: "sparseVector",
       },
     },
+    description: "Product catalog",
+    tags: { environment: "production" },
     numPartitions: 191337,
     numDocs: 249788,
-    collectionStatus: "ACTIVE",
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 30,
+    createdAt: 1788336000000,
+    updatedAt: 1788336000000,
   },
 };
 ```

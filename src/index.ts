@@ -12,11 +12,28 @@ export * from "./sdk/sdk.js";
 export {
   LambdaDBClient,
   CollectionHandle,
+  CollectionDocs,
   DEFAULT_BASE_URL,
   DEFAULT_PROJECT_NAME,
   type RequestOptions as ClientRequestOptions,
   type LambdaDBClientOptions,
 } from "./client.js";
+
+/** Data Versioning lifecycle clients and validated ref/source/target helpers. */
+export {
+  CollectionAliases,
+  CollectionBranches,
+  CollectionTags,
+  DATA_VERSIONING_CONTRACT_REVISION,
+  aliasRef,
+  branchRef,
+  branchSource,
+  branchTarget,
+  tagRef,
+  tagSource,
+  tagTarget,
+} from "./versioning.js";
+export type { VersioningError } from "./versioning.js";
 
 /** Public API types (inputs and responses for the collection-scoped client). */
 export type * from "./types/public.js";

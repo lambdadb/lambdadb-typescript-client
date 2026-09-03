@@ -1,24 +1,15 @@
 # GetBulkUpsertDocsResponse
 
-Required info to upload documents.
+Required information for a presigned document upload.
 
-## Example Usage
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `url` | `string` | Yes | Presigned upload URL. |
+| `type` | `"application/json"` | Yes | Value to use for `Content-Type`. |
+| `httpMethod` | `"PUT"` | Yes | Upload method. |
+| `objectKey` | `string` | Yes | Object key for the completion call. |
+| `sizeLimitBytes` | `number` | Yes | Maximum object size. |
+| `headers` | `Record<string, string>` | Yes | Signed headers to forward unchanged to the presigned PUT. |
 
-```typescript
-import { GetBulkUpsertDocsResponse } from "@functional-systems/lambdadb/models/operations";
-
-let value: GetBulkUpsertDocsResponse = {
-  url: "https://inborn-technician.biz/",
-  objectKey: "<value>",
-};
-```
-
-## Fields
-
-| Field                                                          | Type                                                           | Required                                                       | Description                                                    |
-| -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| `url`                                                          | *string*                                                       | :heavy_check_mark:                                             | Presigned URL.                                                 |
-| `type`                                                         | [operations.Type](../../models/operations/type.md)             | :heavy_minus_sign:                                             | Content type that must be specified when uploading documents.  |
-| `httpMethod`                                                   | [operations.HttpMethod](../../models/operations/httpmethod.md) | :heavy_minus_sign:                                             | HTTP method that must be specified when uploading documents.   |
-| `objectKey`                                                    | *string*                                                       | :heavy_check_mark:                                             | Object key that must be specified when uploading documents.    |
-| `sizeLimitBytes`                                               | *number*                                                       | :heavy_minus_sign:                                             | Object size limit in bytes.                                    |
+Do not forward LambdaDB API authentication or API-only custom headers to the
+presigned URL.

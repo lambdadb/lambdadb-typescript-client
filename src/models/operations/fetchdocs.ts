@@ -27,6 +27,8 @@ export type FetchDocsRequestBody = {
    */
   fields?: models.FieldsSelectorUnion | undefined;
   partitionFilter?: models.PartitionFilter | undefined;
+  /** Read target. Omitting it reads from main. */
+  ref?: models.ReadRef | undefined;
 };
 
 export type FetchDocsRequest = {
@@ -72,6 +74,7 @@ export type FetchDocsRequestBody$Outbound = {
   includeVectors: boolean;
   fields?: models.FieldsSelectorUnion$Outbound | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
+  ref?: models.ReadRef | undefined;
 };
 
 /** @internal */
@@ -85,6 +88,15 @@ export const FetchDocsRequestBody$outboundSchema: z.ZodType<
   includeVectors: z.boolean().default(false),
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
+  ref: models.ReadRef$schema.optional(),
+}).superRefine((value, context) => {
+  if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "consistentRead is supported only for direct Branch reads",
+      path: ["consistentRead"],
+    });
+  }
 });
 
 export function fetchDocsRequestBodyToJSON(

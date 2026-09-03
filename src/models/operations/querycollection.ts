@@ -35,6 +35,8 @@ export type QueryCollectionRequestBody = {
    */
   fields?: models.FieldsSelectorUnion | undefined;
   partitionFilter?: models.PartitionFilter | undefined;
+  /** Read target. Omitting it reads from main. */
+  ref?: models.ReadRef | undefined;
 };
 
 export type QueryCollectionRequest = {
@@ -96,6 +98,7 @@ export type QueryCollectionRequestBody$Outbound = {
   sort?: Array<{ [k: string]: any }> | undefined;
   fields?: models.FieldsSelectorUnion$Outbound | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
+  ref?: models.ReadRef | undefined;
 };
 
 /** @internal */
@@ -111,6 +114,15 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   sort: z.array(z.record(z.any())).optional(),
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
+  ref: models.ReadRef$schema.optional(),
+}).superRefine((value, context) => {
+  if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "consistentRead is supported only for direct Branch reads",
+      path: ["consistentRead"],
+    });
+  }
 });
 
 export function queryCollectionRequestBodyToJSON(

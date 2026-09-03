@@ -16,6 +16,8 @@ export type DeleteDocsRequestBody = {
    */
   filter?: { [k: string]: any } | undefined;
   partitionFilter?: models.PartitionFilter | undefined;
+  /** Write target Branch. Omitting it writes to main. */
+  branch?: string | undefined;
 };
 
 export type DeleteDocsRequest = {
@@ -31,6 +33,7 @@ export type DeleteDocsRequestBody$Outbound = {
   ids?: Array<string> | undefined;
   filter?: { [k: string]: any } | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
+  branch?: string | undefined;
 };
 
 /** @internal */
@@ -42,6 +45,7 @@ export const DeleteDocsRequestBody$outboundSchema: z.ZodType<
   ids: z.array(z.string()).optional(),
   filter: z.record(z.any()).optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
+  branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
 });
 
 export function deleteDocsRequestBodyToJSON(

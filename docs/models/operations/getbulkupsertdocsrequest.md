@@ -15,3 +15,4 @@ let value: GetBulkUpsertDocsRequest = {
 | Field              | Type               | Required           | Description        |
 | ------------------ | ------------------ | ------------------ | ------------------ |
 | `collectionName`   | *string*           | :heavy_check_mark: | Collection name.   |
+| `branch`           | *string*           | :heavy_minus_sign: | Write target Branch; defaults to `main`. |

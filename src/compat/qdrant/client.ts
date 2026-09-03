@@ -1,6 +1,10 @@
 import { LambdaDBClient, type LambdaDBClientOptions } from "../../client.js";
 import { ResourceNotFoundError } from "../../models/errors/index.js";
-import type { CreateCollectionInput, ListDocsInput } from "../../types/public.js";
+import type {
+  CreateCollectionInput,
+  ListDocsInput,
+  UpdateCollectionInput,
+} from "../../types/public.js";
 import {
   ORIGINAL_ID_FIELD,
   mergeIndexConfigs,
@@ -28,7 +32,7 @@ type ListDocsBody = ListDocsInput;
 
 type CollectionLike = {
   get(): Promise<{ collection: JsonObject }>;
-  update(body: { indexConfigs: IndexConfigs }): Promise<unknown>;
+  update(body: UpdateCollectionInput): Promise<unknown>;
   delete(): Promise<unknown>;
   query(body: JsonObject): Promise<{ docs: unknown[] }>;
   docs: {
@@ -184,7 +188,7 @@ export class QdrantCompatClient {
       collectionName,
       indexConfigs: indexConfigs as CreateCollectionInput["indexConfigs"],
     });
-    await this.waitForCollectionActive(collectionName, body.timeout);
+    await this.waitForCollectionAvailable(collectionName, body.timeout);
     return true;
   }
 
@@ -255,9 +259,12 @@ export class QdrantCompatClient {
     }
 
     await this.client.collection(collectionName).update({
-      indexConfigs: mergeIndexConfigs(existingIndexConfigs, payloadIndexConfig),
+      indexConfigs: mergeIndexConfigs(
+        existingIndexConfigs,
+        payloadIndexConfig,
+      ) as UpdateCollectionInput["indexConfigs"],
     });
-    await this.waitForCollectionActive(collectionName, timeout);
+    await this.waitForCollectionAvailable(collectionName, timeout);
     return true;
   }
 
@@ -690,24 +697,25 @@ export class QdrantCompatClient {
     return response.collection;
   }
 
-  private async waitForCollectionActive(
+  private async waitForCollectionAvailable(
     collectionName: string,
     timeoutSeconds: unknown,
   ): Promise<void> {
     const timeout = typeof timeoutSeconds === "number" ? timeoutSeconds : 60;
     const deadline = Date.now() + timeout * 1000;
-    let lastStatus = "unknown";
     while (true) {
-      const collection = await this.currentCollection(collectionName);
-      const status = collection["collectionStatus"];
-      if (status === undefined || status === "ACTIVE") return;
-      lastStatus = String(status);
-      if (Date.now() >= deadline) {
-        throw new QdrantCompatError(
-          `Collection ${collectionName} did not become ACTIVE within ${timeout}s; last status=${lastStatus}`,
-        );
+      try {
+        await this.currentCollection(collectionName);
+        return;
+      } catch (error) {
+        if (!isNotFoundError(error)) throw error;
+        if (Date.now() >= deadline) {
+          throw new QdrantCompatError(
+            `Collection ${collectionName} was not available within ${timeout}s`,
+          );
+        }
+        await sleep(500);
       }
-      await sleep(500);
     }
   }
 }

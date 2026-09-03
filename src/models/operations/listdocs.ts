@@ -26,6 +26,10 @@ export type ListDocsRequest = {
    * Set to true to include vector values in the response. Defaults to false.
    */
   includeVectors?: boolean | undefined;
+  /** Read ref kind. Must be supplied together with refName. */
+  refKind?: models.ReadRef["kind"] | undefined;
+  /** Read ref name. Must be supplied together with refKind. */
+  refName?: string | undefined;
 };
 
 export type ListDocsDoc = {
@@ -59,6 +63,8 @@ export type ListDocsRequest$Outbound = {
   size?: number | undefined;
   pageToken?: string | undefined;
   includeVectors: boolean;
+  refKind?: models.ReadRef["kind"] | undefined;
+  refName?: string | undefined;
 };
 
 /** @internal */
@@ -71,6 +77,16 @@ export const ListDocsRequest$outboundSchema: z.ZodType<
   size: z.number().int().optional(),
   pageToken: z.string().optional(),
   includeVectors: z.boolean().default(false),
+  refKind: z.enum(["branch", "tag", "alias"]).optional(),
+  refName: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
+}).superRefine((value, context) => {
+  if ((value.refKind == null) !== (value.refName == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "refKind and refName must be supplied together",
+      path: [value.refKind == null ? "refKind" : "refName"],
+    });
+  }
 });
 
 export function listDocsRequestToJSON(
@@ -101,6 +117,8 @@ export type ListDocsExtendedRequestBody = {
    * Set to true to include vector values in the response. Defaults to false.
    */
   includeVectors?: boolean | undefined;
+  /** Read target. Omitting it reads from main. */
+  ref?: models.ReadRef | undefined;
 };
 
 export type ListDocsExtendedRequest = {
@@ -119,6 +137,7 @@ export type ListDocsExtendedRequestBody$Outbound = {
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
   fields?: models.FieldsSelectorUnion$Outbound | undefined;
   includeVectors: boolean;
+  ref?: models.ReadRef | undefined;
 };
 
 /** @internal */
@@ -133,6 +152,7 @@ export const ListDocsExtendedRequestBody$outboundSchema: z.ZodType<
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   includeVectors: z.boolean().default(false),
+  ref: models.ReadRef$schema.optional(),
 });
 
 export function listDocsExtendedRequestBodyToJSON(
