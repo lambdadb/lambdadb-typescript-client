@@ -840,9 +840,10 @@ export class CollectionDocs {
     inputOrOptions?: GetBulkUpsertInput | RequestOptions,
     options?: RequestOptions,
   ): Promise<GetBulkUpsertDocsResponse> {
-    const hasBranch = inputOrOptions != null && "branch" in inputOrOptions;
-    const input = hasBranch ? inputOrOptions as GetBulkUpsertInput : {};
-    const requestOptions = hasBranch
+    const hasInput = options !== undefined
+      || (inputOrOptions != null && "branch" in inputOrOptions);
+    const input = hasInput ? inputOrOptions as GetBulkUpsertInput : {};
+    const requestOptions = hasInput
       ? options
       : inputOrOptions as RequestOptions | undefined;
     return unwrapAsync(
@@ -868,9 +869,10 @@ export class CollectionDocs {
     inputOrOptions?: GetBulkUpsertInput | RequestOptions,
     options?: RequestOptions,
   ): Promise<Result<GetBulkUpsertDocsResponse, GetBulkUpsertDocsError>> {
-    const hasBranch = inputOrOptions != null && "branch" in inputOrOptions;
-    const input = hasBranch ? inputOrOptions as GetBulkUpsertInput : {};
-    const requestOptions = hasBranch
+    const hasInput = options !== undefined
+      || (inputOrOptions != null && "branch" in inputOrOptions);
+    const input = hasInput ? inputOrOptions as GetBulkUpsertInput : {};
+    const requestOptions = hasInput
       ? options
       : inputOrOptions as RequestOptions | undefined;
     return await collectionsDocsGetBulkUpsert(

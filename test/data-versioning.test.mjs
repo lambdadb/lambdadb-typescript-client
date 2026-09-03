@@ -449,6 +449,31 @@ test("uses one Branch for both bulk control calls and forwards only signed trans
   assert.deepEqual(JSON.parse(transferCalls[0].body), { docs: [{ id: "a" }] });
 });
 
+test("preserves request options with an empty bulk-upload input", async () => {
+  const { apiCalls, client } = createClient(() =>
+    jsonResponse({
+      url: "https://upload.test/object",
+      type: "application/json",
+      httpMethod: "PUT",
+      objectKey: "object-key",
+      sizeLimitBytes: 1024,
+      headers: {},
+    }));
+  const docs = client.collection(COLLECTION_NAME).docs;
+
+  await docs.getBulkUpsert({}, { headers: { "x-request-option": "throwing" } });
+  const safeResult = await docs.getBulkUpsertSafe(
+    {},
+    { headers: { "x-request-option": "safe" } },
+  );
+
+  assert.equal(safeResult.ok, true);
+  assert.equal(apiCalls[0].headers["x-request-option"], "throwing");
+  assert.equal(apiCalls[1].headers["x-request-option"], "safe");
+  assert.equal(apiCalls[0].url.searchParams.has("branch"), false);
+  assert.equal(apiCalls[1].url.searchParams.has("branch"), false);
+});
+
 test("uses the separate transfer client for out-of-line downloads without API headers", async () => {
   const { client, transferCalls } = createClient(() =>
     jsonResponse({
