@@ -745,6 +745,7 @@ function normalizeConstructorOptions(
     "timeoutMs",
     "retryConfig",
     "httpClient",
+    "transferClient",
     "serverURL",
     "projectHost",
     "path",
@@ -787,6 +788,9 @@ function normalizeConstructorOptions(
   if (timeoutMs !== undefined) normalized.timeoutMs = timeoutMs;
   if (options.retryConfig !== undefined) normalized.retryConfig = options.retryConfig;
   if (options.httpClient !== undefined) normalized.httpClient = options.httpClient;
+  if (options.transferClient !== undefined) {
+    normalized.transferClient = options.transferClient;
+  }
   if (options.serverURL !== undefined) normalized.serverURL = options.serverURL;
   if (options.projectHost !== undefined) normalized.projectHost = options.projectHost;
   return normalized;
