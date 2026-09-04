@@ -16,6 +16,10 @@ Every build must use the same canonical SemVer version in all four locations:
 - root package version at `packages[""]` in `package-lock.json`
 - `version` in `jsr.json`
 
+The local package entry at `packages[".."].version` in
+`examples/package-lock.json` and both the `sdkVersion` and embedded User-Agent
+version in `src/lib/config.ts` must match those four version sources.
+
 Release tags add a leading `v` to the same package version.
 
 | Channel | Package version | Git tag | npm dist-tag |
@@ -62,10 +66,21 @@ Then update `version` in `jsr.json` to the same value. Confirm all sources:
 node -e '
 const p = require("./package.json");
 const l = require("./package-lock.json");
+const e = require("./examples/package-lock.json");
 const j = require("./jsr.json");
-console.log(p.version, l.version, l.packages[""].version, j.version);
+console.log(
+  p.version,
+  l.version,
+  l.packages[""].version,
+  j.version,
+  e.packages[".."].version,
+);
 '
 ```
+
+Also update `SDK_METADATA.sdkVersion` and the embedded version in
+`SDK_METADATA.userAgent` in `src/lib/config.ts`. The publish workflow and test
+suite reject a mismatch.
 
 Commit the version update before creating the tag. The publish workflow
 validates committed versions and never rewrites them.
