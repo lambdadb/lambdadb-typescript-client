@@ -34,6 +34,17 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+function responseWithBodyError(error, status = 200) {
+  return new Response(new ReadableStream({
+    start(controller) {
+      controller.error(error);
+    },
+  }), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
 async function capturedCall(request) {
   return {
     body: await request.clone().text(),
@@ -578,6 +589,26 @@ test("preserves transfer abort, timeout, and connection error classes", async ()
   }
 });
 
+test("classifies transfer errors raised while reading download bodies", async () => {
+  const transferError = new DOMException("timed out", "TimeoutError");
+  const { client } = createClient(() =>
+    jsonResponse({
+      took: 1,
+      total: 1,
+      docs: [],
+      isDocsInline: false,
+      docsUrl: "https://download.test/query.json",
+    }), () => responseWithBodyError(transferError));
+
+  const result = await client.collection(COLLECTION_NAME).querySafe({
+    query: { matchAll: {} },
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof RequestTimeoutError);
+  assert.equal(result.error.cause, transferError);
+});
+
 test("preserves classified transfer errors for safe bulk uploads", async () => {
   const transferError = new DOMException("timed out", "TimeoutError");
   const { client } = createClient(() =>
@@ -598,5 +629,26 @@ test("preserves classified transfer errors for safe bulk uploads", async () => {
 
   assert.equal(result.ok, false);
   assert.ok(result.error instanceof RequestTimeoutError);
+  assert.equal(result.error.cause, transferError);
+});
+
+test("classifies body errors from failed safe bulk upload responses", async () => {
+  const transferError = new DOMException("cancelled", "AbortError");
+  const { client } = createClient(() =>
+    jsonResponse({
+      url: "https://upload.test/object",
+      type: "application/json",
+      httpMethod: "PUT",
+      objectKey: "object-key",
+      sizeLimitBytes: 1024,
+      headers: {},
+    }), () => responseWithBodyError(transferError, 500));
+
+  const result = await client.collection(COLLECTION_NAME).docs.bulkUpsertDocsSafe({
+    docs: [{ id: "a" }],
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof RequestAbortedError);
   assert.equal(result.error.cause, transferError);
 });

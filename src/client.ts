@@ -143,7 +143,10 @@ function serializeBulkUpsertPayload(
   }
 }
 
-function classifyTransferError(message: string, cause: unknown): Error {
+function classifyTransferError(
+  message: string,
+  cause: unknown,
+): ConnectionError | RequestAbortedError | RequestTimeoutError | UnexpectedClientError {
   if (isAbortError(cause)) {
     return new RequestAbortedError("Request aborted by client", { cause });
   }
@@ -154,6 +157,17 @@ function classifyTransferError(message: string, cause: unknown): Error {
     return new ConnectionError("Unable to make request", { cause });
   }
   return new UnexpectedClientError(message, { cause });
+}
+
+async function readTransferText(
+  response: Response,
+  errorMessage: string,
+): Promise<string> {
+  try {
+    return await response.text();
+  } catch (cause) {
+    throw classifyTransferError(errorMessage, cause);
+  }
 }
 
 async function fetchDocsFromUrl<T>(
@@ -172,13 +186,15 @@ async function fetchDocsFromUrl<T>(
   } catch (cause) {
     throw classifyTransferError("Failed to fetch documents from URL", cause);
   }
+  const text = await readTransferText(
+    res,
+    "Failed to read documents from URL",
+  );
   if (!res.ok) {
-    const text = await res.text();
     throw new UnexpectedClientError(
       `Failed to fetch documents from URL: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
     );
   }
-  const text = await res.text();
   if (text.trim() === "") {
     return [];
   }
@@ -994,7 +1010,10 @@ export class CollectionDocs {
     }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      const text = await readTransferText(
+        putResponse,
+        "Failed to read bulk upsert upload response",
+      );
       throw new Error(
         `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
       );
@@ -1065,7 +1084,22 @@ export class CollectionDocs {
     }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      let text: string;
+      try {
+        text = await readTransferText(
+          putResponse,
+          "Failed to read bulk upsert upload response",
+        );
+      } catch (cause) {
+        return ERR(
+          cause instanceof Error
+            ? cause
+            : new UnexpectedClientError(
+              "Failed to read bulk upsert upload response",
+              { cause },
+            ),
+        );
+      }
       return ERR(
         new Error(
           `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
