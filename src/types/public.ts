@@ -6,15 +6,39 @@
 // ---- Input types (RequestBody / Request aliased as XxxInput) ----
 export type { CreateCollectionRequest as CreateCollectionInput } from "../models/operations/createcollection.js";
 export type { UpdateCollectionRequestBody as UpdateCollectionInput } from "../models/operations/updatecollection.js";
-export type { QueryCollectionRequestBody as QueryCollectionInput } from "../models/operations/querycollection.js";
 export type { UpsertDocsRequestBody as UpsertDocsInput } from "../models/operations/upsertdocs.js";
 export type { UpdateDocsRequestBody as UpdateDocsInput } from "../models/operations/updatedocs.js";
 export type { DeleteDocsRequestBody as DeleteDocsInput } from "../models/operations/deletedocs.js";
-export type { FetchDocsRequestBody as FetchDocsInput } from "../models/operations/fetchdocs.js";
 export type { BulkUpsertDocsRequestBody as BulkUpsertInput } from "../models/operations/bulkupsertdocs.js";
 
 import type { ListDocsRequest } from "../models/operations/listdocs.js";
 import type { ListCollectionsRequest } from "../models/operations/listcollections.js";
+import type { QueryCollectionRequestBody } from "../models/operations/querycollection.js";
+import type { FetchDocsRequestBody } from "../models/operations/fetchdocs.js";
+import type {
+  AliasDetails as AliasDetailsModel,
+  AliasRef,
+  BranchRef,
+  ReadRef,
+  RefDetails as RefDetailsModel,
+  TagRef,
+} from "../models/versioning.js";
+
+type ConsistentReadForRef =
+  | { ref?: BranchRef | undefined; consistentRead?: boolean | undefined }
+  | { ref: TagRef | AliasRef; consistentRead?: false | undefined };
+
+/** Query input with consistent reads restricted to direct Branch refs. */
+export type QueryCollectionInput = Omit<
+  QueryCollectionRequestBody,
+  "ref" | "consistentRead"
+> & ConsistentReadForRef;
+
+/** Fetch input with consistent reads restricted to direct Branch refs. */
+export type FetchDocsInput = Omit<
+  FetchDocsRequestBody,
+  "ref" | "consistentRead"
+> & ConsistentReadForRef;
 
 /** Parameters for listing documents, including extended list options. */
 export type ListDocsInput = Pick<
@@ -24,6 +48,8 @@ export type ListDocsInput = Pick<
   filter?: Record<string, unknown> | undefined;
   partitionFilter?: import("../models/index.js").PartitionFilter | undefined;
   fields?: import("../models/index.js").FieldsSelectorUnion | undefined;
+  /** Read target. Omitting it reads from main. */
+  ref?: ReadRef | undefined;
 };
 
 /** Parameters for listing collections (size, pageToken). */
@@ -46,11 +72,56 @@ export type {
   ListDocsDoc,
 } from "../models/operations/listdocs.js";
 export type { MessageResponse } from "../models/index.js";
-export type {
-  FetchDocsResponse,
-  FetchDocsDoc,
-} from "../models/operations/fetchdocs.js";
+export type { FetchDocsResponse, FetchDocsDoc } from "../models/operations/fetchdocs.js";
 export type { GetBulkUpsertDocsResponse } from "../models/operations/getbulkupsertdocs.js";
+
+export type {
+  AliasRef,
+  AliasTarget,
+  BranchRef,
+  BranchSource,
+  ReadRef,
+  RefSource,
+  TagRef,
+  TagSource,
+} from "../models/versioning.js";
+
+export type RefDetails = Omit<RefDetailsModel, "createdAt"> & {
+  createdAt: Date;
+};
+
+export type AliasDetails = Omit<AliasDetailsModel, "createdAt"> & {
+  createdAt: Date;
+};
+
+export type CreateBranchInput = {
+  branchName: string;
+  source?: import("../models/versioning.js").RefSource | undefined;
+};
+
+export type CreateBranchResponse = { branch: RefDetails };
+export type ListBranchesResponse = { branches: RefDetails[] };
+
+export type CreateTagInput = {
+  tagName: string;
+  source?: import("../models/versioning.js").RefSource | undefined;
+};
+
+export type CreateTagResponse = { tag: RefDetails };
+export type ListTagsResponse = { tags: RefDetails[] };
+
+export type CreateAliasInput = {
+  aliasName: string;
+  target: import("../models/versioning.js").AliasTarget;
+};
+
+export type RetargetAliasInput = {
+  target: import("../models/versioning.js").AliasTarget;
+};
+
+export type AliasResponse = { alias: AliasDetails };
+export type ListAliasesResponse = { aliases: AliasDetails[] };
+export type GetBulkUpsertInput = { branch?: string | undefined };
 
 // ---- Models referenced by request/response bodies ----
 export type {
@@ -64,8 +135,11 @@ export type {
   CollectionResponse,
 } from "../models/index.js";
 
-// ---- Timestamp helpers (Unix seconds → Date) ----
+// ---- Timestamp helpers (Unix epoch milliseconds → Date) ----
 import type { CollectionResponse as CollectionResponseModel } from "../models/index.js";
+import type {
+  CreateCollectionResponse as CreateCollectionResponseModel,
+} from "../models/operations/createcollection.js";
 
 /**
  * Collection response with timestamp fields as Date (for better DX).
@@ -75,8 +149,8 @@ export type CollectionResponseWithDates = Omit<
   CollectionResponseModel,
   "createdAt" | "updatedAt" | "dataUpdatedAt"
 > & {
-  createdAt?: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: Date;
+  updatedAt: Date;
   dataUpdatedAt?: Date | undefined;
 };
 
@@ -89,17 +163,19 @@ export type ListCollectionsResponseWithDates = {
 };
 
 /**
- * Converts Unix-second timestamp fields to Date. Safe to call on partial responses.
+ * Converts Unix-millisecond timestamp fields to Date. Safe to call on partial responses.
  */
 export function collectionResponseWithDates(
   c: CollectionResponseModel,
 ): CollectionResponseWithDates {
   const { createdAt, updatedAt, dataUpdatedAt, ...rest } = c;
-  const out: CollectionResponseWithDates = { ...rest };
-  if (createdAt != null) out.createdAt = new Date(createdAt * 1000);
-  if (updatedAt != null) out.updatedAt = new Date(updatedAt * 1000);
+  const out: CollectionResponseWithDates = {
+    ...rest,
+    createdAt: new Date(createdAt),
+    updatedAt: new Date(updatedAt),
+  };
   if (dataUpdatedAt != null)
-    out.dataUpdatedAt = new Date(dataUpdatedAt * 1000);
+    out.dataUpdatedAt = new Date(dataUpdatedAt);
   return out;
 }
 
@@ -125,4 +201,41 @@ export function getCollectionResponseWithDates(res: {
   collection: CollectionResponseModel;
 }): GetCollectionResponseWithDates {
   return { collection: collectionResponseWithDates(res.collection) };
+}
+
+/** Update response with timestamp fields converted to Date. */
+export type UpdateCollectionResponseWithDates = GetCollectionResponseWithDates;
+
+export function updateCollectionResponseWithDates(res: {
+  collection: CollectionResponseModel;
+}): UpdateCollectionResponseWithDates {
+  return getCollectionResponseWithDates(res);
+}
+
+/** Create response with its Unix-millisecond timestamp converted to Date. */
+export type CreateCollectionResponseWithDates = {
+  collection: Omit<CreateCollectionResponseModel["collection"], "createdAt"> & {
+    createdAt: Date;
+  };
+};
+
+export function createCollectionResponseWithDates(
+  response: CreateCollectionResponseModel,
+): CreateCollectionResponseWithDates {
+  return {
+    collection: {
+      ...response.collection,
+      createdAt: new Date(response.collection.createdAt),
+    },
+  };
+}
+
+/** @internal */
+export function refDetailsWithDate(details: RefDetailsModel): RefDetails {
+  return { ...details, createdAt: new Date(details.createdAt) };
+}
+
+/** @internal */
+export function aliasDetailsWithDate(details: AliasDetailsModel): AliasDetails {
+  return { ...details, createdAt: new Date(details.createdAt) };
 }

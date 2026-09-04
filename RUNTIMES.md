@@ -5,6 +5,7 @@ This SDK is intended to be used in JavaScript runtimes that support ECMAScript 2
 - [Web Fetch API][web-fetch]
 - [Web Streams API][web-streams] and in particular `ReadableStream`
 - [Async iterables][async-iter] using `Symbol.asyncIterator`
+- [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal)
 
 [web-fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
 [web-streams]: https://developer.mozilla.org/en-US/docs/Web/API/Streams_API
@@ -20,6 +21,12 @@ Runtime environments that are explicitly supported are:
   - Note that Deno does not currently have native support for streaming file uploads backed by the filesystem ([issue link][deno-file-streaming])
 
 [deno-file-streaming]: https://github.com/denoland/deno/issues/11018
+
+Data Versioning does not add Node-only runtime dependencies. Ref pagination,
+presigned bulk uploads, and out-of-line downloads use the same Fetch, Streams,
+`TextEncoder`, and `AbortSignal` web-platform APIs in Node and browsers. A
+separate `transferClient` can be supplied for storage transfers; LambdaDB API
+authentication headers are not forwarded to presigned URLs.
 
 ## Recommended TypeScript compiler options
 

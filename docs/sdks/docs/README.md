@@ -393,6 +393,7 @@ const client = new LambdaDBClient({
 async function run() {
   const collection = client.collection("my-collection");
   const result = await collection.docs.bulkUpsertDocs({
+    branch: "candidate",
     docs: [
       { id: "1", text: "First document" },
       { id: "2", text: "Second document" },
@@ -408,7 +409,7 @@ run();
 
 | Parameter | Type | Required | Description |
 | --------- | ---- | -------- | ----------- |
-| `body` | `{ docs: Array<Record<string, unknown>> }` | Yes | The documents to bulk upsert. |
+| `body` | `{ docs: Array<Record<string, unknown>>; branch?: string }` | Yes | Documents and optional write Branch. |
 | `options` | RequestOptions | No | Request options (e.g. retries, timeout). |
 
 ### Response
@@ -417,7 +418,10 @@ run();
 
 ### Errors
 
-Errors can be thrown from: getBulkUpsert (API errors), upload (e.g. payload exceeds size limit or S3 PUT failure), or bulkUpsert (API errors).
+The upload-info and completion calls use the same Branch. The presigned PUT
+receives `Content-Type` plus every signed response header, but not LambdaDB API
+authentication or API-only headers. Errors can be thrown from getBulkUpsert,
+the upload, or bulkUpsert.
 
 ## update
 

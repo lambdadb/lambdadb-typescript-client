@@ -10,6 +10,8 @@ export type UpsertDocsRequestBody = {
    * A list of documents to upsert. For managed embedding vector fields, omit the managed vector field and provide only the configured source text field.
    */
   docs: Array<{ [k: string]: any }>;
+  /** Write target Branch. Omitting it writes to main. */
+  branch?: string | undefined;
 };
 
 export type UpsertDocsRequest = {
@@ -23,6 +25,7 @@ export type UpsertDocsRequest = {
 /** @internal */
 export type UpsertDocsRequestBody$Outbound = {
   docs: Array<{ [k: string]: any }>;
+  branch?: string | undefined;
 };
 
 /** @internal */
@@ -32,6 +35,7 @@ export const UpsertDocsRequestBody$outboundSchema: z.ZodType<
   UpsertDocsRequestBody
 > = z.object({
   docs: z.array(z.record(z.any())),
+  branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
 });
 
 export function upsertDocsRequestBodyToJSON(

@@ -3,7 +3,7 @@
  */
 
 import { LambdaDBCore } from "../core.js";
-import { encodeSimple } from "../lib/encodings.js";
+import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
 import * as M from "../lib/matchers.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
@@ -104,6 +104,10 @@ async function $do(
     pathParams,
   );
 
+  const query = encodeFormQuery({
+    "branch": payload.branch,
+  });
+
   const headers = new Headers(compactMap({
     Accept: "application/json",
   }));
@@ -142,6 +146,7 @@ async function $do(
     method: "GET",
     baseURL: options?.serverURL,
     path: path,
+    query: query,
     headers: headers,
     body: body,
     userAgent: client._options.userAgent,

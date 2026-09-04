@@ -12,6 +12,12 @@
 
 import { LambdaDBCore } from "./core.js";
 import type { SDKOptions } from "./lib/config.js";
+import {
+  HTTPClient,
+  isAbortError,
+  isConnectionError,
+  isTimeoutError,
+} from "./lib/http.js";
 import { collectionsCreate } from "./funcs/collectionsCreate.js";
 import { collectionsDelete } from "./funcs/collectionsDelete.js";
 import { collectionsGet } from "./funcs/collectionsGet.js";
@@ -27,14 +33,26 @@ import { collectionsDocsListDocsExtended } from "./funcs/collectionsDocsListDocs
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
-import { UnexpectedClientError } from "./models/errors/httpclienterrors.js";
+import {
+  ConnectionError,
+  RequestAbortedError,
+  RequestTimeoutError,
+  UnexpectedClientError,
+} from "./models/errors/httpclienterrors.js";
+import {
+  CollectionAliases,
+  CollectionBranches,
+  CollectionTags,
+} from "./versioning.js";
 import { unwrapAsync, OK, ERR } from "./types/fp.js";
 import type { Result } from "./types/fp.js";
 import type * as operations from "./models/operations/index.js";
 import type * as models from "./models/index.js";
 import {
   listCollectionsResponseWithDates,
+  createCollectionResponseWithDates,
   getCollectionResponseWithDates,
+  updateCollectionResponseWithDates,
   type CreateCollectionInput,
   type UpdateCollectionInput,
   type QueryCollectionInput,
@@ -46,17 +64,18 @@ import {
   type ListCollectionsInput,
   type ListCollectionsResponseWithDates,
   type GetCollectionResponseWithDates,
-  UpsertDocsInput,
-  UpdateDocsInput,
-  DeleteDocsInput,
-  FetchDocsInput,
-  FetchDocsResponse,
-  FetchDocsDoc,
-  BulkUpsertInput,
-  MessageResponse,
-  CreateCollectionResponse,
-  UpdateCollectionResponse,
-  GetBulkUpsertDocsResponse,
+  type CreateCollectionResponseWithDates,
+  type UpdateCollectionResponseWithDates,
+  type GetBulkUpsertInput,
+  type UpsertDocsInput,
+  type UpdateDocsInput,
+  type DeleteDocsInput,
+  type FetchDocsInput,
+  type FetchDocsResponse,
+  type FetchDocsDoc,
+  type BulkUpsertInput,
+  type MessageResponse,
+  type GetBulkUpsertDocsResponse,
 } from "./types/public.js";
 import type {
   ListCollectionsError,
@@ -87,15 +106,95 @@ export type { operations, models };
 /**
  * Fetches documents from a presigned docsUrl. Response must be { docs: [...] }.
  */
-async function fetchDocsFromUrl<T>(docsUrl: string): Promise<T[]> {
-  const res = await fetch(docsUrl);
+function transferSignal(options?: RequestOptions): AbortSignal | undefined {
+  const signal = options?.signal ?? options?.fetchOptions?.signal;
+  if (signal != null) return signal;
+  if (options?.timeoutMs != null && options.timeoutMs > 0) {
+    return AbortSignal.timeout(options.timeoutMs);
+  }
+  return undefined;
+}
+
+function withTransferSignal(
+  init: RequestInit,
+  options?: RequestOptions,
+): RequestInit {
+  const signal = transferSignal(options);
+  return signal === undefined ? init : { ...init, signal };
+}
+
+function serializeBulkUpsertPayload(
+  docs: UpsertDocsInput["docs"],
+): { jsonString: string; sizeBytes: number } {
+  try {
+    const jsonString = JSON.stringify({ docs });
+    if (jsonString === undefined) {
+      throw new TypeError("JSON.stringify returned undefined");
+    }
+    return {
+      jsonString,
+      sizeBytes: new TextEncoder().encode(jsonString).length,
+    };
+  } catch (cause) {
+    throw new UnexpectedClientError(
+      "Failed to serialize bulk upsert payload",
+      { cause },
+    );
+  }
+}
+
+function classifyTransferError(
+  message: string,
+  cause: unknown,
+): ConnectionError | RequestAbortedError | RequestTimeoutError | UnexpectedClientError {
+  if (isAbortError(cause)) {
+    return new RequestAbortedError("Request aborted by client", { cause });
+  }
+  if (isTimeoutError(cause)) {
+    return new RequestTimeoutError("Request timed out", { cause });
+  }
+  if (isConnectionError(cause)) {
+    return new ConnectionError("Unable to make request", { cause });
+  }
+  return new UnexpectedClientError(message, { cause });
+}
+
+async function readTransferText(
+  response: Response,
+  errorMessage: string,
+): Promise<string> {
+  try {
+    return await response.text();
+  } catch (cause) {
+    throw classifyTransferError(errorMessage, cause);
+  }
+}
+
+async function fetchDocsFromUrl<T>(
+  transferClient: HTTPClient,
+  docsUrl: string,
+  options?: RequestOptions,
+): Promise<T[]> {
+  let res: Response;
+  try {
+    res = await transferClient.request(
+      new Request(
+        docsUrl,
+        withTransferSignal({ method: "GET" }, options),
+      ),
+    );
+  } catch (cause) {
+    throw classifyTransferError("Failed to fetch documents from URL", cause);
+  }
+  const text = await readTransferText(
+    res,
+    "Failed to read documents from URL",
+  );
   if (!res.ok) {
-    const text = await res.text();
     throw new UnexpectedClientError(
       `Failed to fetch documents from URL: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
     );
   }
-  const text = await res.text();
   if (text.trim() === "") {
     return [];
   }
@@ -146,6 +245,11 @@ export type LambdaDBClientOptions = SDKOptions & {
    * Project name (path segment under /projects/). Default: "playground"
    */
   projectName?: string;
+  /**
+   * Separate unauthenticated transport for presigned uploads and downloads.
+   * API authentication and API request headers are never copied to it.
+   */
+  transferClient?: HTTPClient;
 };
 
 function normalizeClientOptions(
@@ -156,8 +260,10 @@ function normalizeClientOptions(
     projectName = DEFAULT_PROJECT_NAME,
     serverURL,
     projectHost,
+    transferClient: _transferClient,
     ...rest
   } = options;
+  void _transferClient;
 
   if (serverURL !== undefined && serverURL !== null) {
     return { ...rest, serverURL };
@@ -176,8 +282,11 @@ function normalizeClientOptions(
  * `LambdaDB` when you want to avoid passing collectionName on every call.
  */
 export class LambdaDBClient extends LambdaDBCore {
-  constructor(options?: LambdaDBClientOptions) {
+  readonly #transferClient: HTTPClient;
+
+  constructor(options: LambdaDBClientOptions = {}) {
     super(normalizeClientOptions(options));
+    this.#transferClient = options.transferClient ?? new HTTPClient();
   }
 
   /**
@@ -185,7 +294,7 @@ export class LambdaDBClient extends LambdaDBCore {
    * use this collection name; you do not pass it again.
    */
   collection(collectionName: string): CollectionHandle {
-    return new CollectionHandle(this, collectionName);
+    return new CollectionHandle(this, collectionName, this.#transferClient);
   }
 
   /**
@@ -257,8 +366,10 @@ export class LambdaDBClient extends LambdaDBCore {
   async createCollection(
     request: CreateCollectionInput,
     options?: RequestOptions,
-  ) {
-    return unwrapAsync(collectionsCreate(this, request, options));
+  ): Promise<CreateCollectionResponseWithDates> {
+    return createCollectionResponseWithDates(
+      await unwrapAsync(collectionsCreate(this, request, options)),
+    );
   }
 
   /**
@@ -267,8 +378,10 @@ export class LambdaDBClient extends LambdaDBCore {
   async createCollectionSafe(
     request: CreateCollectionInput,
     options?: RequestOptions,
-  ): Promise<Result<CreateCollectionResponse, CreateCollectionError>> {
-    return await collectionsCreate(this, request, options);
+  ): Promise<Result<CreateCollectionResponseWithDates, CreateCollectionError>> {
+    const result = await collectionsCreate(this, request, options);
+    if (!result.ok) return result;
+    return OK(createCollectionResponseWithDates(result.value));
   }
 }
 
@@ -279,7 +392,12 @@ export class CollectionHandle {
   constructor(
     private readonly client: LambdaDBCore,
     readonly collectionName: string,
+    private readonly transferClient: HTTPClient = new HTTPClient(),
   ) {}
+
+  readonly branches = new CollectionBranches(this.client, this.collectionName);
+  readonly tags = new CollectionTags(this.client, this.collectionName);
+  readonly aliases = new CollectionAliases(this.client, this.collectionName);
 
   /**
    * Get metadata of this collection. Timestamp fields are returned as Date.
@@ -312,8 +430,8 @@ export class CollectionHandle {
   async update(
     requestBody: UpdateCollectionInput,
     options?: RequestOptions,
-  ) {
-    return unwrapAsync(
+  ): Promise<UpdateCollectionResponseWithDates> {
+    const response = await unwrapAsync(
       collectionsUpdate(
         this.client,
         {
@@ -323,6 +441,7 @@ export class CollectionHandle {
         options,
       ),
     );
+    return updateCollectionResponseWithDates(response);
   }
 
   /**
@@ -331,12 +450,14 @@ export class CollectionHandle {
   async updateSafe(
     requestBody: UpdateCollectionInput,
     options?: RequestOptions,
-  ): Promise<Result<UpdateCollectionResponse, UpdateCollectionError>> {
-    return await collectionsUpdate(
+  ): Promise<Result<UpdateCollectionResponseWithDates, UpdateCollectionError>> {
+    const result = await collectionsUpdate(
       this.client,
       { collectionName: this.collectionName, requestBody },
       options,
     );
+    if (!result.ok) return result;
+    return OK(updateCollectionResponseWithDates(result.value));
   }
 
   /**
@@ -386,7 +507,9 @@ export class CollectionHandle {
     );
     if (!result.isDocsInline && result.docsUrl) {
       const docs = await fetchDocsFromUrl<QueryCollectionDoc>(
+        this.transferClient,
         result.docsUrl,
+        options,
       );
       return { ...result, docs, isDocsInline: true };
     }
@@ -409,7 +532,11 @@ export class CollectionHandle {
     if (!result.ok) return result;
     if (!result.value.isDocsInline && result.value.docsUrl) {
       try {
-        const docs = await fetchDocsFromUrl<QueryCollectionDoc>(result.value.docsUrl);
+        const docs = await fetchDocsFromUrl<QueryCollectionDoc>(
+          this.transferClient,
+          result.value.docsUrl,
+          options,
+        );
         return OK({ ...result.value, docs, isDocsInline: true });
       } catch (e) {
         return ERR(e as QueryCollectionError);
@@ -418,16 +545,21 @@ export class CollectionHandle {
     return result;
   }
 
-  readonly docs: CollectionDocs = new CollectionDocs(this.client, this.collectionName);
+  readonly docs: CollectionDocs = new CollectionDocs(
+    this.client,
+    this.collectionName,
+    this.transferClient,
+  );
 }
 
 /**
  * Document operations scoped to a collection.
  */
-class CollectionDocs {
+export class CollectionDocs {
   constructor(
     private readonly client: LambdaDBCore,
     private readonly collectionName: string,
+    private readonly transferClient: HTTPClient,
   ) {}
 
   /**
@@ -455,6 +587,7 @@ class CollectionDocs {
               partitionFilter: params?.partitionFilter,
               fields: params?.fields,
               includeVectors: params?.includeVectors,
+              ref: params?.ref,
             },
           },
           options,
@@ -466,12 +599,18 @@ class CollectionDocs {
             size: params?.size,
             pageToken: params?.pageToken,
             includeVectors: params?.includeVectors,
+            refKind: params?.ref?.kind,
+            refName: params?.ref?.name,
           },
           options,
         ),
     );
     if (!result.isDocsInline && result.docsUrl) {
-      const docs = await fetchDocsFromUrl<ListDocsDoc>(result.docsUrl);
+      const docs = await fetchDocsFromUrl<ListDocsDoc>(
+        this.transferClient,
+        result.docsUrl,
+        options,
+      );
       return { ...result, docs, isDocsInline: true };
     }
     return result;
@@ -500,6 +639,7 @@ class CollectionDocs {
             partitionFilter: params?.partitionFilter,
             fields: params?.fields,
             includeVectors: params?.includeVectors,
+            ref: params?.ref,
           },
         },
         options,
@@ -511,13 +651,19 @@ class CollectionDocs {
           size: params?.size,
           pageToken: params?.pageToken,
           includeVectors: params?.includeVectors,
+          refKind: params?.ref?.kind,
+          refName: params?.ref?.name,
         },
         options,
       );
     if (!result.ok) return result;
     if (!result.value.isDocsInline && result.value.docsUrl) {
       try {
-        const docs = await fetchDocsFromUrl<ListDocsDoc>(result.value.docsUrl);
+        const docs = await fetchDocsFromUrl<ListDocsDoc>(
+          this.transferClient,
+          result.value.docsUrl,
+          options,
+        );
         return OK({ ...result.value, docs, isDocsInline: true });
       } catch (e) {
         return ERR(e as ListDocsError);
@@ -550,6 +696,7 @@ class CollectionDocs {
       partitionFilter: params?.partitionFilter,
       fields: params?.fields,
       includeVectors: params?.includeVectors,
+      ref: params?.ref,
     };
     while (true) {
       const page = await this.list({ ...baseParams, pageToken }, options);
@@ -698,7 +845,9 @@ class CollectionDocs {
     );
     if (!result.isDocsInline && result.docsUrl) {
       const docs = await fetchDocsFromUrl<FetchDocsDoc>(
+        this.transferClient,
         result.docsUrl,
+        options,
       );
       return { ...result, docs, isDocsInline: true };
     }
@@ -721,7 +870,11 @@ class CollectionDocs {
     if (!result.ok) return result;
     if (!result.value.isDocsInline && result.value.docsUrl) {
       try {
-        const docs = await fetchDocsFromUrl<FetchDocsDoc>(result.value.docsUrl);
+        const docs = await fetchDocsFromUrl<FetchDocsDoc>(
+          this.transferClient,
+          result.value.docsUrl,
+          options,
+        );
         return OK({ ...result.value, docs, isDocsInline: true });
       } catch (e) {
         return ERR(e as FetchDocsError);
@@ -733,12 +886,28 @@ class CollectionDocs {
   /**
    * Get presigned URL and metadata for bulk upload (up to 200MB). Not supported for collections with managed embedding vector fields.
    */
-  async getBulkUpsert(options?: RequestOptions) {
+  async getBulkUpsert(
+    options?: RequestOptions,
+  ): Promise<GetBulkUpsertDocsResponse>;
+  async getBulkUpsert(
+    input: GetBulkUpsertInput,
+    options?: RequestOptions,
+  ): Promise<GetBulkUpsertDocsResponse>;
+  async getBulkUpsert(
+    inputOrOptions?: GetBulkUpsertInput | RequestOptions,
+    options?: RequestOptions,
+  ): Promise<GetBulkUpsertDocsResponse> {
+    const hasInput = options !== undefined
+      || (inputOrOptions != null && "branch" in inputOrOptions);
+    const input = hasInput ? inputOrOptions as GetBulkUpsertInput : {};
+    const requestOptions = hasInput
+      ? options
+      : inputOrOptions as RequestOptions | undefined;
     return unwrapAsync(
       collectionsDocsGetBulkUpsert(
         this.client,
-        { collectionName: this.collectionName },
-        options,
+        { collectionName: this.collectionName, branch: input.branch },
+        requestOptions,
       ),
     );
   }
@@ -748,11 +917,25 @@ class CollectionDocs {
    */
   async getBulkUpsertSafe(
     options?: RequestOptions,
+  ): Promise<Result<GetBulkUpsertDocsResponse, GetBulkUpsertDocsError>>;
+  async getBulkUpsertSafe(
+    input: GetBulkUpsertInput,
+    options?: RequestOptions,
+  ): Promise<Result<GetBulkUpsertDocsResponse, GetBulkUpsertDocsError>>;
+  async getBulkUpsertSafe(
+    inputOrOptions?: GetBulkUpsertInput | RequestOptions,
+    options?: RequestOptions,
   ): Promise<Result<GetBulkUpsertDocsResponse, GetBulkUpsertDocsError>> {
+    const hasInput = options !== undefined
+      || (inputOrOptions != null && "branch" in inputOrOptions);
+    const input = hasInput ? inputOrOptions as GetBulkUpsertInput : {};
+    const requestOptions = hasInput
+      ? options
+      : inputOrOptions as RequestOptions | undefined;
     return await collectionsDocsGetBulkUpsert(
       this.client,
-      { collectionName: this.collectionName },
-      options,
+      { collectionName: this.collectionName, branch: input.branch },
+      requestOptions,
     );
   }
 
@@ -798,36 +981,50 @@ class CollectionDocs {
     body: UpsertDocsInput,
     options?: RequestOptions,
   ): Promise<MessageResponse> {
-    const { url, type, httpMethod, objectKey, sizeLimitBytes } = await this.getBulkUpsert(options);
+    const { url, type, httpMethod, objectKey, sizeLimitBytes, headers } =
+      await this.getBulkUpsert({ branch: body.branch }, options);
 
-    const payload = { docs: body.docs };
-    const jsonString = JSON.stringify(payload);
-    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    const { jsonString, sizeBytes } = serializeBulkUpsertPayload(body.docs);
     if (sizeBytes > sizeLimitBytes) {
       throw new Error(
         `Bulk upsert payload size (${sizeBytes} bytes) exceeds limit (${sizeLimitBytes} bytes)`,
       );
     }
 
-    const putResponse = await fetch(url, {
-      method: httpMethod,
-      headers: { "Content-Type": type },
-      body: jsonString,
-    });
+    const uploadHeaders = new Headers(headers);
+    uploadHeaders.set("Content-Type", type);
+    let putResponse: Response;
+    try {
+      putResponse = await this.transferClient.request(
+        new Request(
+          url,
+          withTransferSignal({
+            method: httpMethod,
+            headers: uploadHeaders,
+            body: jsonString,
+          }, options),
+        ),
+      );
+    } catch (cause) {
+      throw classifyTransferError("Bulk upsert upload failed", cause);
+    }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      const text = await readTransferText(
+        putResponse,
+        "Failed to read bulk upsert upload response",
+      );
       throw new Error(
         `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
       );
     }
 
-    return this.bulkUpsert({ objectKey }, options);
+    return this.bulkUpsert({ objectKey, type, branch: body.branch }, options);
   }
 
   /**
    * Bulk upsert documents in one call (Safe: returns Result instead of throwing). Not supported for collections with managed embedding vector fields.
-   * May return Error for local failures (payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
+   * May return Error for local failures (serialization, payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
    */
   async bulkUpsertDocsSafe(
     body: UpsertDocsInput,
@@ -838,13 +1035,28 @@ class CollectionDocs {
       GetBulkUpsertDocsError | BulkUpsertDocsError | Error
     >
   > {
-    const getResult = await this.getBulkUpsertSafe(options);
+    const getResult = await this.getBulkUpsertSafe(
+      { branch: body.branch },
+      options,
+    );
     if (!getResult.ok) return getResult;
-    const { url, type, httpMethod, objectKey, sizeLimitBytes } = getResult.value;
+    const { url, type, httpMethod, objectKey, sizeLimitBytes, headers } =
+      getResult.value;
 
-    const payload = { docs: body.docs };
-    const jsonString = JSON.stringify(payload);
-    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    let jsonString: string;
+    let sizeBytes: number;
+    try {
+      ({ jsonString, sizeBytes } = serializeBulkUpsertPayload(body.docs));
+    } catch (cause) {
+      return ERR(
+        cause instanceof Error
+          ? cause
+          : new UnexpectedClientError(
+            "Failed to serialize bulk upsert payload",
+            { cause },
+          ),
+      );
+    }
     if (sizeBytes > sizeLimitBytes) {
       return ERR(
         new Error(
@@ -853,14 +1065,41 @@ class CollectionDocs {
       );
     }
 
-    const putResponse = await fetch(url, {
-      method: httpMethod,
-      headers: { "Content-Type": type },
-      body: jsonString,
-    });
+    let putResponse: Response;
+    try {
+      const uploadHeaders = new Headers(headers);
+      uploadHeaders.set("Content-Type", type);
+      putResponse = await this.transferClient.request(
+        new Request(
+          url,
+          withTransferSignal({
+            method: httpMethod,
+            headers: uploadHeaders,
+            body: jsonString,
+          }, options),
+        ),
+      );
+    } catch (cause) {
+      return ERR(classifyTransferError("Bulk upsert upload failed", cause));
+    }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      let text: string;
+      try {
+        text = await readTransferText(
+          putResponse,
+          "Failed to read bulk upsert upload response",
+        );
+      } catch (cause) {
+        return ERR(
+          cause instanceof Error
+            ? cause
+            : new UnexpectedClientError(
+              "Failed to read bulk upsert upload response",
+              { cause },
+            ),
+        );
+      }
       return ERR(
         new Error(
           `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
@@ -868,6 +1107,6 @@ class CollectionDocs {
       );
     }
 
-    return this.bulkUpsertSafe({ objectKey }, options);
+    return this.bulkUpsertSafe({ objectKey, type, branch: body.branch }, options);
   }
 }

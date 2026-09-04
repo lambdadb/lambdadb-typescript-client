@@ -5,11 +5,19 @@ import {
   BadRequestError,
   HTTPClient,
   LambdaDBClient,
+  SDK_METADATA,
   SDKValidationError,
 } from "../dist/esm/index.js";
 
+import packageJson from "../package.json" with { type: "json" };
+
 const BASE_URL = "https://api.test";
 const PROJECT_NAME = "project-one";
+
+test("runtime SDK metadata matches the package version", () => {
+  assert.equal(SDK_METADATA.sdkVersion, packageJson.version);
+  assert.ok(SDK_METADATA.userAgent.includes(` ${packageJson.version} `));
+});
 
 function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), {
@@ -24,16 +32,27 @@ function collectionFixture(collectionName, overrides = {}) {
     projectName: PROJECT_NAME,
     collectionName,
     indexConfigs: {},
+    description: "Test collection",
+    tags: { environment: "test" },
     numPartitions: 1,
     numDocs: 2,
-    sourceProjectName: null,
-    sourceCollectionName: null,
-    sourceCollectionVersionId: null,
-    collectionStatus: "ACTIVE",
-    createdAt: 1700000000,
-    updatedAt: 1700000100,
-    dataUpdatedAt: 1700000200,
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 30,
+    createdAt: 1700000000000,
+    updatedAt: 1700000100000,
+    dataUpdatedAt: 1700000200000,
     ...overrides,
+  };
+}
+
+function createdCollectionFixture(collectionName) {
+  return {
+    collectionName,
+    description: "",
+    tags: {},
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 30,
+    createdAt: 1700000000000,
   };
 }
 
@@ -125,21 +144,9 @@ test("public client supports managed embedding vector index configs", async () =
 
     return jsonResponse(
       {
-        collection: collectionFixture("semantic-items", {
-          indexConfigs: {
-            ...managedIndexConfigs,
-            bodyEmbedding: {
-              ...managedIndexConfigs.bodyEmbedding,
-              embedding: {
-                ...managedIndexConfigs.bodyEmbedding.embedding,
-                dimensions: 1536,
-                similarity: "cosine",
-              },
-            },
-          },
-        }),
+        collection: createdCollectionFixture("semantic-items"),
       },
-      { status: 202 },
+      { status: 201 },
     );
   });
 
@@ -149,14 +156,8 @@ test("public client supports managed embedding vector index configs", async () =
   });
 
   assert.equal(calls.length, 1);
-  assert.deepEqual(
-    result.collection.indexConfigs.bodyEmbedding.embedding,
-    {
-      ...managedIndexConfigs.bodyEmbedding.embedding,
-      dimensions: 1536,
-      similarity: "cosine",
-    },
-  );
+  assert.equal(result.collection.collectionName, "semantic-items");
+  assert.ok(result.collection.createdAt instanceof Date);
 });
 
 test("managed embedding vector config supports optional embedding dimensions and similarity", async () => {
@@ -181,23 +182,9 @@ test("managed embedding vector config supports optional embedding dimensions and
 
     return jsonResponse(
       {
-        collection: collectionFixture("semantic-items", {
-          indexConfigs: {
-            bodyEmbedding: {
-              type: "vector",
-              managedEmbedding: true,
-              embedding: {
-                provider: "openai",
-                model: "text-embedding-3-small",
-                sourceField: "body",
-                dimensions: 1536,
-                similarity: "cosine",
-              },
-            },
-          },
-        }),
+        collection: createdCollectionFixture("semantic-items"),
       },
-      { status: 202 },
+      { status: 201 },
     );
   });
 
@@ -219,10 +206,7 @@ test("managed embedding vector config supports optional embedding dimensions and
   });
 
   assert.equal(calls.length, 1);
-  assert.equal(
-    result.collection.indexConfigs.bodyEmbedding.embedding.dimensions,
-    1536,
-  );
+  assert.equal(result.collection.collectionName, "semantic-items");
 });
 
 test("managed embedding vector config rejects invalid Java contract shapes", async () => {
@@ -477,7 +461,7 @@ test("collection query fetches docsUrl and returns inline docs through the publi
   const originalFetch = globalThis.fetch;
   const docsUrlCalls = [];
   globalThis.fetch = async (input) => {
-    docsUrlCalls.push(String(input));
+    docsUrlCalls.push(input instanceof Request ? input.url : String(input));
     return jsonResponse({
       docs: [{ collection: "items", score: 0.9, doc: { id: "a" } }],
     });
@@ -530,7 +514,10 @@ test("public safe methods expose typed API errors", async () => {
     );
   });
 
-  const result = await client.createCollectionSafe({ collectionName: "items" });
+  const result = await client.createCollectionSafe({
+    collectionName: "items",
+    indexConfigs: {},
+  });
 
   assert.equal(result.ok, false);
   assert.ok(result.error instanceof BadRequestError);

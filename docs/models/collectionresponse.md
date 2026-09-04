@@ -1,43 +1,40 @@
 # CollectionResponse
 
-## Example Usage
+## Example usage
 
 ```typescript
-import { CollectionResponse } from "@functional-systems/lambdadb/models";
+import type { CollectionResponse } from "@functional-systems/lambdadb/models";
 
-let value: CollectionResponse = {
-  projectName: "<value>",
-  collectionName: "<value>",
-  indexConfigs: {
-    "key": {
-      type: "vector",
-      dimensions: 135607,
-      similarity: "cosine",
-    },
-  },
-  numPartitions: 506700,
-  numDocs: 731542,
-  collectionStatus: "DELETING",
-  createdAt: 0,
-  updatedAt: 0,
-  dataUpdatedAt: 0,
+const value: CollectionResponse = {
+  projectName: "project-name",
+  collectionName: "collection-name",
+  indexConfigs: {},
+  description: "Product catalog",
+  tags: { environment: "production" },
+  numPartitions: 1,
+  numDocs: 1000,
+  defaultBranchName: "main",
+  snapshotRetentionInDays: 30,
+  createdAt: 1788336000000,
+  updatedAt: 1788336000000,
+  dataUpdatedAt: 1788336060000,
 };
 ```
 
 ## Fields
 
-| Field                                                       | Type                                                        | Required                                                    | Description                                                 |
-| ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
-| `projectName`                                               | *string*                                                    | :heavy_check_mark:                                          | Project name.                                               |
-| `collectionName`                                            | *string*                                                    | :heavy_check_mark:                                          | Collection name.                                            |
-| `indexConfigs`                                              | Record<string, *models.IndexConfigsUnion*>                  | :heavy_check_mark:                                          | N/A                                                         |
-| `partitionConfig`                                           | [models.PartitionConfig](../models/partitionconfig.md)      | :heavy_minus_sign:                                          | N/A                                                         |
-| `numPartitions`                                             | *number*                                                    | :heavy_check_mark:                                          | Total number of partitions including the default partition. |
-| `numDocs`                                                   | *number*                                                    | :heavy_check_mark:                                          | Total number of documents.                                  |
-| `sourceProjectName`                                         | *string*                                                    | :heavy_minus_sign:                                          | Source project name.                                        |
-| `sourceCollectionName`                                      | *string*                                                    | :heavy_minus_sign:                                          | Source collection name.                                     |
-| `sourceCollectionVersionId`                                 | *string*                                                    | :heavy_minus_sign:                                          | Source collection version.                                  |
-| `collectionStatus`                                          | [models.Status](../models/status.md)                        | :heavy_check_mark:                                          | Status                                                      |
-| `createdAt`                                                 | *number*                                                    | :heavy_check_mark:                                          | Collection creation time in seconds since the Unix epoch.     |
-| `updatedAt`                                                 | *number*                                                    | :heavy_check_mark:                                          | Collection last update time in seconds since the Unix epoch. |
-| `dataUpdatedAt`                                             | *number*                                                    | :heavy_check_mark:                                          | Collection data last update time in seconds since the Unix epoch. |
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `projectName` | `string` | Yes | Project name. |
+| `collectionName` | `string` | Yes | Collection name. |
+| `indexConfigs` | `Record<string, IndexConfigsUnion>` | Yes | Index configurations. |
+| `description` | `string` | Yes | Collection description. |
+| `tags` | `Record<string, string>` | Yes | Up to five metadata tags. |
+| `partitionConfig` | `PartitionConfig` | No | Partition configuration. |
+| `numPartitions` | `number` | Yes | Total partitions, including the default partition. |
+| `numDocs` | `number` | Yes | Total documents. |
+| `defaultBranchName` | `"main"` | Yes | Default writable Branch. |
+| `snapshotRetentionInDays` | `number` | Yes | Snapshot retention from 1 through 31 days. |
+| `createdAt` | `number` | Yes | Creation time as Unix epoch milliseconds. |
+| `updatedAt` | `number` | Yes | Last metadata update time as Unix epoch milliseconds. |
+| `dataUpdatedAt` | `number` | No | Last data update time as Unix epoch milliseconds. |

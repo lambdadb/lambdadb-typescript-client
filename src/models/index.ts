@@ -10,3 +10,4 @@ export * from "./partitionconfig.js";
 export * from "./partitionfilter.js";
 export * from "./security.js";
 export * from "./status.js";
+export * from "./versioning.js";

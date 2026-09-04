@@ -13,30 +13,38 @@ export type CreateCollectionRequest = {
    * Collection name must be unique within a project and the supported maximum length is 52.
    */
   collectionName: string;
-  indexConfigs?: { [k: string]: models.IndexConfigsUnion } | undefined;
+  indexConfigs: { [k: string]: models.IndexConfigsUnion };
+  description?: string | undefined;
+  tags?: Record<string, string> | undefined;
   partitionConfig?: models.PartitionConfig | undefined;
-  sourceProjectName?: string | undefined;
-  sourceCollectionName?: string | undefined;
-  sourceDatetime?: string | undefined;
-  sourceProjectApiKey?: string | undefined;
+  snapshotRetentionInDays?: number | undefined;
+};
+
+export type CreatedCollection = {
+  collectionName: string;
+  description: string;
+  tags: Record<string, string>;
+  defaultBranchName: "main";
+  snapshotRetentionInDays: number;
+  /** Collection creation time as Unix epoch milliseconds. */
+  createdAt: number;
 };
 
 /**
  * Created collection
  */
 export type CreateCollectionResponse = {
-  collection: models.CollectionResponse;
+  collection: CreatedCollection;
 };
 
 /** @internal */
 export type CreateCollectionRequest$Outbound = {
   collectionName: string;
-  indexConfigs?: { [k: string]: models.IndexConfigsUnion$Outbound } | undefined;
+  indexConfigs: { [k: string]: models.IndexConfigsUnion$Outbound };
+  description?: string | undefined;
+  tags?: Record<string, string> | undefined;
   partitionConfig?: models.PartitionConfig$Outbound | undefined;
-  sourceProjectName?: string | undefined;
-  sourceCollectionName?: string | undefined;
-  sourceDatetime?: string | undefined;
-  sourceProjectApiKey?: string | undefined;
+  snapshotRetentionInDays?: number | undefined;
 };
 
 /** @internal */
@@ -45,13 +53,19 @@ export const CreateCollectionRequest$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   CreateCollectionRequest
 > = z.object({
-  collectionName: z.string(),
-  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).optional(),
+  collectionName: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/),
+  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema),
+  description: z.string().max(255).optional(),
+  tags: z.record(
+    z.string().min(1).max(127).regex(/^[^:#,]+$/),
+  ).refine((value) => Object.keys(value).length <= 5, {
+    message: "Collection tags support at most five entries",
+  }).refine(
+    (value) => Object.keys(value).every((key) => /^[A-Za-z0-9_.-]{1,63}$/.test(key)),
+    { message: "Invalid collection tag key" },
+  ).optional(),
   partitionConfig: models.PartitionConfig$outboundSchema.optional(),
-  sourceProjectName: z.string().optional(),
-  sourceCollectionName: z.string().optional(),
-  sourceDatetime: z.string().optional(),
-  sourceProjectApiKey: z.string().optional(),
+  snapshotRetentionInDays: z.number().int().min(1).max(31).optional(),
 });
 
 export function createCollectionRequestToJSON(
@@ -68,7 +82,14 @@ export const CreateCollectionResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  collection: models.CollectionResponse$inboundSchema,
+  collection: z.object({
+    collectionName: z.string(),
+    description: z.string(),
+    tags: z.record(z.string()),
+    defaultBranchName: z.literal("main"),
+    snapshotRetentionInDays: z.number().int().min(1).max(31),
+    createdAt: z.number().int(),
+  }),
 });
 
 export function createCollectionResponseFromJSON(

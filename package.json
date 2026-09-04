@@ -1,6 +1,6 @@
 {
   "name": "@functional-systems/lambdadb",
-  "version": "0.4.3",
+  "version": "0.5.0-rc.1",
   "author": "Functional Systems, Inc.",
   "homepage": "https://github.com/lambdadb/lambdadb-typescript-client#readme",
   "license": "Apache-2.0",
@@ -9,6 +9,15 @@
     "url": "git+https://github.com/lambdadb/lambdadb-typescript-client.git"
   },
   "type": "module",
+  "files": [
+    "dist/",
+    "src/",
+    "CHANGELOG.md",
+    "FUNCTIONS.md",
+    "RUNTIMES.md",
+    "USAGE.md",
+    "jsr.json"
+  ],
   "tshy": {
     "sourceDialects": [
       "@functional-systems/lambdadb/source"
@@ -29,10 +38,13 @@
   "sideEffects": false,
   "scripts": {
     "lint": "eslint --cache --max-warnings=0 src",
+    "typecheck": "tsc --noEmit",
     "build": "tshy",
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && npm run test:types && node --test test/*.test.mjs",
+    "test:types": "tsc -p test/types/tsconfig.json",
     "test:external:qdrant": "npm run build && LAMBDADB_RUN_EXTERNAL_INTEGRATION_TESTS=1 node --test test/integration/qdrant-compat-external.test.mjs",
     "test:live:qdrant": "npm run build && node --env-file-if-exists=.env --test test/integration/qdrant-compat-live.test.mjs",
+    "test:live:data-versioning": "npm run build && node --env-file-if-exists=.env.local --test test/integration/data-versioning-live.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {

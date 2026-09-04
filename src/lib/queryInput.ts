@@ -2,20 +2,13 @@
  * Helper to build QueryCollectionInput for collection.query() / collection.querySafe().
  */
 
-import type { FieldsSelectorUnion, PartitionFilter } from "../models/index.js";
 import type { QueryCollectionInput } from "../types/public.js";
 
 /**
  * Options for createQueryInput (all optional except query).
  */
-export type CreateQueryInputOptions = {
-  size?: number;
-  consistentRead?: boolean;
-  includeVectors?: boolean;
-  sort?: Array<{ [k: string]: unknown }>;
-  fields?: FieldsSelectorUnion;
-  partitionFilter?: PartitionFilter;
-};
+type WithoutQuery<T> = T extends unknown ? Omit<T, "query"> : never;
+export type CreateQueryInputOptions = WithoutQuery<QueryCollectionInput>;
 
 /**
  * Build a query input object for collection.query() or collection.querySafe().
@@ -29,5 +22,5 @@ export function createQueryInput(
   query: { [k: string]: unknown },
   options?: CreateQueryInputOptions,
 ): QueryCollectionInput {
-  return { query, ...options };
+  return { query, ...options } as QueryCollectionInput;
 }

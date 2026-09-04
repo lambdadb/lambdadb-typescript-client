@@ -1,30 +1,22 @@
 # CreateCollectionResponse
 
-Created collection
-
-## Example Usage
+Collection creation succeeds with HTTP `201`.
 
 ```typescript
-import { CreateCollectionResponse } from "@functional-systems/lambdadb/models/operations";
+import type { CreateCollectionResponse } from "@functional-systems/lambdadb/models/operations";
 
-let value: CreateCollectionResponse = {
+const value: CreateCollectionResponse = {
   collection: {
-    projectName: "<value>",
-    collectionName: "<value>",
-    indexConfigs: {
-      "key": {
-        type: "sparseVector",
-      },
-    },
-    numPartitions: 191337,
-    numDocs: 249788,
-    collectionStatus: "ACTIVE",
+    collectionName: "product-catalog",
+    description: "Product catalog",
+    tags: { environment: "production" },
+    defaultBranchName: "main",
+    snapshotRetentionInDays: 30,
+    createdAt: 1788336000000,
   },
 };
 ```
 
-## Fields
-
-| Field                                                           | Type                                                            | Required                                                        | Description                                                     |
-| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
-| `collection`                                                    | [models.CollectionResponse](../../models/collectionresponse.md) | :heavy_check_mark:                                              | N/A                                                             |
+The model subpath exposes the wire timestamp in Unix epoch milliseconds. The
+collection-scoped `LambdaDBClient.createCollection()` facade returns
+`createdAt` as `Date`.

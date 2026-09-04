@@ -14,7 +14,6 @@ import {
   PartitionConfig,
   PartitionConfig$inboundSchema,
 } from "./partitionconfig.js";
-import { Status, Status$inboundSchema } from "./status.js";
 
 export type CollectionResponse = {
   /**
@@ -26,6 +25,10 @@ export type CollectionResponse = {
    */
   collectionName: string;
   indexConfigs: { [k: string]: IndexConfigsUnion };
+  /** Collection description. */
+  description: string;
+  /** Collection metadata tags. */
+  tags: Record<string, string>;
   partitionConfig?: PartitionConfig | undefined;
   /**
    * Total number of partitions including the default partition.
@@ -35,34 +38,22 @@ export type CollectionResponse = {
    * Total number of documents.
    */
   numDocs: number;
+  /** Default writable Branch. */
+  defaultBranchName: "main";
+  /** Number of days that committed snapshots are retained. */
+  snapshotRetentionInDays: number;
   /**
-   * Source project name.
-   */
-  sourceProjectName?: string | undefined;
-  /**
-   * Source collection name.
-   */
-  sourceCollectionName?: string | undefined;
-  /**
-   * Source collection version.
-   */
-  sourceCollectionVersionId?: string | undefined;
-  /**
-   * Status
-   */
-  collectionStatus: Status;
-  /**
-   * Collection creation time in seconds since the Unix epoch.
+   * Collection creation time in milliseconds since the Unix epoch.
    */
   createdAt: number;
   /**
-   * Collection last update time in seconds since the Unix epoch.
+   * Collection last update time in milliseconds since the Unix epoch.
    */
   updatedAt: number;
   /**
-   * Collection data last update time in seconds since the Unix epoch.
+   * Collection data last update time in milliseconds since the Unix epoch.
    */
-  dataUpdatedAt: number;
+  dataUpdatedAt?: number | undefined;
 };
 
 /** @internal */
@@ -74,16 +65,16 @@ export const CollectionResponse$inboundSchema: z.ZodType<
   projectName: z.string(),
   collectionName: z.string(),
   indexConfigs: z.record(IndexConfigsUnion$inboundSchema),
+  description: z.string(),
+  tags: z.record(z.string()),
   partitionConfig: nullToUndefined(PartitionConfig$inboundSchema.optional()),
   numPartitions: z.number().int(),
   numDocs: z.number().int(),
-  sourceProjectName: nullToUndefined(z.string().optional()),
-  sourceCollectionName: nullToUndefined(z.string().optional()),
-  sourceCollectionVersionId: nullToUndefined(z.string().optional()),
-  collectionStatus: Status$inboundSchema,
+  defaultBranchName: z.literal("main"),
+  snapshotRetentionInDays: z.number().int().min(1).max(31),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
-  dataUpdatedAt: z.number().int(),
+  dataUpdatedAt: nullToUndefined(z.number().int().optional()),
 });
 
 export function collectionResponseFromJSON(
