@@ -113,6 +113,26 @@ function withTransferSignal(
   return signal === undefined ? init : { ...init, signal };
 }
 
+function serializeBulkUpsertPayload(
+  docs: UpsertDocsInput["docs"],
+): { jsonString: string; sizeBytes: number } {
+  try {
+    const jsonString = JSON.stringify({ docs });
+    if (jsonString === undefined) {
+      throw new TypeError("JSON.stringify returned undefined");
+    }
+    return {
+      jsonString,
+      sizeBytes: new TextEncoder().encode(jsonString).length,
+    };
+  } catch (cause) {
+    throw new UnexpectedClientError(
+      "Failed to serialize bulk upsert payload",
+      { cause },
+    );
+  }
+}
+
 async function fetchDocsFromUrl<T>(
   transferClient: HTTPClient,
   docsUrl: string,
@@ -927,9 +947,7 @@ export class CollectionDocs {
     const { url, type, httpMethod, objectKey, sizeLimitBytes, headers } =
       await this.getBulkUpsert({ branch: body.branch }, options);
 
-    const payload = { docs: body.docs };
-    const jsonString = JSON.stringify(payload);
-    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    const { jsonString, sizeBytes } = serializeBulkUpsertPayload(body.docs);
     if (sizeBytes > sizeLimitBytes) {
       throw new Error(
         `Bulk upsert payload size (${sizeBytes} bytes) exceeds limit (${sizeLimitBytes} bytes)`,
@@ -966,7 +984,7 @@ export class CollectionDocs {
 
   /**
    * Bulk upsert documents in one call (Safe: returns Result instead of throwing). Not supported for collections with managed embedding vector fields.
-   * May return Error for local failures (payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
+   * May return Error for local failures (serialization, payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
    */
   async bulkUpsertDocsSafe(
     body: UpsertDocsInput,
@@ -985,9 +1003,20 @@ export class CollectionDocs {
     const { url, type, httpMethod, objectKey, sizeLimitBytes, headers } =
       getResult.value;
 
-    const payload = { docs: body.docs };
-    const jsonString = JSON.stringify(payload);
-    const sizeBytes = new TextEncoder().encode(jsonString).length;
+    let jsonString: string;
+    let sizeBytes: number;
+    try {
+      ({ jsonString, sizeBytes } = serializeBulkUpsertPayload(body.docs));
+    } catch (cause) {
+      return ERR(
+        cause instanceof Error
+          ? cause
+          : new UnexpectedClientError(
+            "Failed to serialize bulk upsert payload",
+            { cause },
+          ),
+      );
+    }
     if (sizeBytes > sizeLimitBytes) {
       return ERR(
         new Error(

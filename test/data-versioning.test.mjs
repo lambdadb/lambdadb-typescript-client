@@ -10,6 +10,7 @@ import {
   ResourceAlreadyExistsError,
   ResourceNotFoundError,
   SDKValidationError,
+  UnexpectedClientError,
   aliasRef,
   branchRef,
   branchSource,
@@ -471,6 +472,28 @@ test("uses one Branch for both bulk control calls and forwards only signed trans
   assert.equal(transferCalls[0].headers["x-api-key"], undefined);
   assert.equal(transferCalls[0].headers["x-api-only"], undefined);
   assert.deepEqual(JSON.parse(transferCalls[0].body), { docs: [{ id: "a" }] });
+});
+
+test("safe bulk upload returns serialization failures as Result errors", async () => {
+  const { apiCalls, client, transferCalls } = createClient(() =>
+    jsonResponse({
+      url: "https://upload.test/object",
+      type: "application/json",
+      httpMethod: "PUT",
+      objectKey: "object-key",
+      sizeLimitBytes: 1024,
+      headers: {},
+    }));
+
+  const result = await client.collection(COLLECTION_NAME).docs.bulkUpsertDocsSafe({
+    docs: [{ id: "a", unsupported: 1n }],
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof UnexpectedClientError);
+  assert.match(result.error.message, /serialize bulk upsert payload/);
+  assert.equal(apiCalls.length, 1);
+  assert.equal(transferCalls.length, 0);
 });
 
 test("preserves request options with an empty bulk-upload input", async () => {

@@ -19,7 +19,8 @@ revision is implementation evidence, not deployment evidence.
 - Collection description, metadata tags, default Branch, and snapshot
   retention fields.
 - Server-signed bulk-upload header forwarding and a separate `transferClient`
-  for unauthenticated presigned uploads and out-of-line result downloads.
+  for unauthenticated presigned uploads and out-of-line result downloads. Safe
+  bulk uploads return payload serialization failures through `Result`.
 - Package-root exports for Data Versioning types, helpers, lifecycle clients,
   and the pinned `DATA_VERSIONING_CONTRACT_REVISION`.
 - Concrete read-ref error mapping: a dangling Alias target returns
