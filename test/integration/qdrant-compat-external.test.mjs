@@ -87,7 +87,6 @@ class InMemoryCollection {
           collectionName: this.name,
           indexConfigs: this.indexConfigs,
           numDocs: this.docs.size,
-          collectionStatus: "ACTIVE",
         },
       }),
       update: async (body) => {

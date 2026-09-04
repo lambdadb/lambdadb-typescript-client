@@ -24,3 +24,4 @@ let value: UpsertDocsRequestBody = {
 | Field                          | Type                           | Required                       | Description                    |
 | ------------------------------ | ------------------------------ | ------------------------------ | ------------------------------ |
 | `docs`                         | Record<string, *any*>[]        | :heavy_check_mark:             | A list of documents to upsert. For managed embedding vector fields, omit the managed vector field and provide only the configured source text field. |
+| `branch`                       | *string*                       | :heavy_minus_sign:             | Write target Branch; defaults to `main`. |

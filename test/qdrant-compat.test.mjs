@@ -82,7 +82,6 @@ class FakeCollection {
         collectionName: this.name,
         indexConfigs: this.owner.indexConfigs,
         numDocs: this.owner.numDocs,
-        collectionStatus: "ACTIVE",
       },
     };
   }

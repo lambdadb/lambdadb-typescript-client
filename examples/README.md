@@ -38,9 +38,9 @@ npm run build && npx tsx collectionsList.example.ts
 |------|-------------|
 | `collectionsList.example.ts` | List all collections in the project (`client.listCollections()`, optional `listCollectionsPages()` / `listAllCollections()`) |
 | `collectionScoped.example.ts` | Use a collection handle to get metadata and list docs (`client.collection(name)`) |
+| `dataVersioning.example.ts` | Create Branches, Tags, and Aliases and read through a ref |
 
 ## Creating new examples
 
 Duplicate an existing example file and replace the logic. Use `LambdaDBClient` and `client.collection(name)` for the recommended API.
-
 

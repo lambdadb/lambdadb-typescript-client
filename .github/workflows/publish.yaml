@@ -1,57 +1,139 @@
-# Publish to npm. No longer uses Speakeasy; SDK is maintained manually.
-# Trigger: push tag v* (e.g. v0.3.0 or v0.3.0-dev.1) or workflow_dispatch.
-# - On tag push: package version is set from the tag (e.g. v0.3.0-dev.1 → 0.3.0-dev.1).
-# - Use unique versions for each publish: 0.3.0-dev.1, 0.3.0-dev.2, 0.3.0-rc.1, 0.3.0-rc.2 (npm does not allow overwriting).
-# - Pre-release versions (contain '-') are published with dist-tag "dev" or "rc"; stable with "latest".
-# npm Trusted Publisher must be configured for this repo/workflow on npmjs.com (OIDC — no NPM_TOKEN).
+# Publish an immutable package from a published GitHub Release.
 name: Publish to npm
 
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: npm-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      # When triggered by a tag, set package version from tag (e.g. v0.3.0-dev → 0.3.0-dev)
-      - name: Set version from tag
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Validate release metadata
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          VERSION="${VERSION#v}"
-          npm pkg set version="$VERSION"
-          echo "Publishing version: $VERSION"
+          node <<'NODE'
+          const fs = require("node:fs");
 
-      - run: npm ci
-      - run: npm run build
+          const packageJson = require("./package.json");
+          const packageLock = require("./package-lock.json");
+          const jsrJson = require("./jsr.json");
+          const version = packageJson.version;
+          const versions = {
+            "package.json": version,
+            "package-lock.json": packageLock.version,
+            "package-lock.json root package": packageLock.packages?.[""]?.version,
+            "jsr.json": jsrJson.version,
+          };
 
-      # npm Trusted Publishing (OIDC) requires Node 22.14.0+ and npm 11.5.1+.
-      # Node 24 ships with a compatible npm, avoiding a fragile self-upgrade in CI.
+          const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(dev|rc)\.(0|[1-9]\d*))?$/;
+          const match = pattern.exec(version);
+          if (!match) {
+            throw new Error(`Unsupported release version: ${version}`);
+          }
+
+          for (const [source, sourceVersion] of Object.entries(versions)) {
+            if (sourceVersion !== version) {
+              throw new Error(`${source} has version ${sourceVersion}; expected ${version}`);
+            }
+          }
+
+          const expectedTag = `v${version}`;
+          if (process.env.RELEASE_TAG !== expectedTag) {
+            throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match ${expectedTag}`);
+          }
+
+          const channel = match[4] ?? "stable";
+          const prerelease = process.env.RELEASE_PRERELEASE === "true";
+          if ((channel !== "stable") !== prerelease) {
+            throw new Error(
+              `${channel} version ${version} requires GitHub prerelease=${channel !== "stable"}`,
+            );
+          }
+
+          const distTag = channel === "stable" ? "latest" : channel;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
+          console.log(`Validated ${version}; npm dist-tag=${distTag}`);
+          NODE
+
+      - name: Verify release commit belongs to main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "Release commit $(git rev-parse HEAD) is not contained in origin/main" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build package tarball
+        id: pack
+        run: |
+          npm pack --json > npm-pack.json
+          TARBALL=$(node -p "require('./npm-pack.json')[0].filename")
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          npm pack --dry-run
+
+      - name: Verify packed package
+        env:
+          EXPECTED_VERSION: ${{ steps.release.outputs.version }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: |
+          PACKAGE_DIR=$(mktemp -d)
+          npm install --prefix "$PACKAGE_DIR" "$GITHUB_WORKSPACE/$TARBALL"
+          cd "$PACKAGE_DIR"
+          node --input-type=module -e \
+            "import('@functional-systems/lambdadb').then(() => console.log('ESM import passed'))"
+          node -e \
+            "require('@functional-systems/lambdadb'); console.log('CommonJS require passed')"
+          INSTALLED_VERSION=$(node -p \
+            "require('@functional-systems/lambdadb/package.json').version")
+          test "$INSTALLED_VERSION" = "$EXPECTED_VERSION"
+
       - name: Verify publish toolchain
         run: |
           node --version
           npm --version
 
-      # Pre-release: 0.3.0-dev.* → tag "dev", 0.3.0-rc.* → tag "rc"; stable → "latest"
-      - name: Publish to npm
+      - name: Publish tested tarball
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          DIST_TAG: ${{ steps.release.outputs.dist_tag }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if [[ "$VERSION" == *-rc.* ]] || [[ "$VERSION" == *-rc ]]; then TAG=rc
-          elif [[ "$VERSION" == *-* ]]; then TAG=dev
-          else TAG=latest; fi
-          echo "Publishing @functional-systems/lambdadb@$VERSION with tag $TAG"
-          npm publish --access public --tag "$TAG"
+          echo "Publishing $TARBALL with npm dist-tag $DIST_TAG"
+          npm publish "$TARBALL" --access public --tag "$DIST_TAG" --provenance

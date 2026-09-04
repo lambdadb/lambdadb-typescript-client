@@ -175,7 +175,7 @@ async function $do(
     | UnexpectedClientError
     | SDKValidationError
   >(
-    M.json(202, operations.CreateCollectionResponse$inboundSchema),
+    M.json(201, operations.CreateCollectionResponse$inboundSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(409, errors.ResourceAlreadyExistsError$inboundSchema),

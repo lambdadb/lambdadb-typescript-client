@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v3";
-import { nullToUndefined, safeParse } from "../../lib/schemas.js";
+import { safeParse } from "../../lib/schemas.js";
 import { ClosedEnum } from "../../types/enums.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
@@ -13,6 +13,8 @@ export type GetBulkUpsertDocsRequest = {
    * Collection name.
    */
   collectionName: string;
+  /** Write target Branch. Omitting it writes to main. */
+  branch?: string | undefined;
 };
 
 /**
@@ -61,11 +63,14 @@ export type GetBulkUpsertDocsResponse = {
    * Object size limit in bytes.
    */
   sizeLimitBytes: number;
+  /** Signed headers to forward unchanged to the presigned upload URL. */
+  headers: Record<string, string>;
 };
 
 /** @internal */
 export type GetBulkUpsertDocsRequest$Outbound = {
   collectionName: string;
+  branch?: string | undefined;
 };
 
 /** @internal */
@@ -75,6 +80,7 @@ export const GetBulkUpsertDocsRequest$outboundSchema: z.ZodType<
   GetBulkUpsertDocsRequest
 > = z.object({
   collectionName: z.string(),
+  branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
 });
 
 export function getBulkUpsertDocsRequestToJSON(
@@ -101,10 +107,11 @@ export const GetBulkUpsertDocsResponse$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   url: z.string(),
-  type: nullToUndefined(Type$inboundSchema.default("application/json")),
-  httpMethod: nullToUndefined(HttpMethod$inboundSchema.default("PUT")),
+  type: Type$inboundSchema,
+  httpMethod: HttpMethod$inboundSchema,
   objectKey: z.string(),
-  sizeLimitBytes: nullToUndefined(z.number().int().default(209715200)),
+  sizeLimitBytes: z.number().int(),
+  headers: z.record(z.string()),
 });
 
 export function getBulkUpsertDocsResponseFromJSON(

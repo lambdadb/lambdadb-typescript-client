@@ -23,6 +23,7 @@ LambdaDB API: LambdaDB Open API Spec
   * [SDK Installation](#sdk-installation)
   * [Requirements](#requirements)
   * [SDK Example Usage](#sdk-example-usage)
+  * [Data Versioning](#data-versioning)
   * [Qdrant Compatibility](#qdrant-compatibility)
   * [Authentication](#authentication)
   * [Available Resources and Operations](#available-resources-and-operations)
@@ -141,7 +142,57 @@ const queryBody: QueryCollectionInput = {
 const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
-Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection list/get responses expose timestamp fields (`createdAt`, `updatedAt`, `dataUpdatedAt`) as `Date`. All are exported from the main package.
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; Data Versioning types such as `ReadRef`, `RefSource`, `AliasTarget`, and `RefDetails`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection create/list/get/update and ref lifecycle responses expose timestamps as `Date`. All are exported from the main package.
+
+## Data Versioning
+
+Create Collection-scoped Branches, Tags, and Aliases, then select a ref for
+reads or a Branch for writes:
+
+```typescript
+import {
+  LambdaDBClient,
+  aliasRef,
+  branchSource,
+  tagTarget,
+} from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({ projectApiKey: "..." });
+const collection = client.collection("knowledge-base");
+
+await collection.branches.create({
+  branchName: "candidate",
+  source: branchSource("main"),
+});
+await collection.tags.create({
+  tagName: "release-001",
+  source: branchSource("candidate"),
+});
+await collection.aliases.create({
+  aliasName: "production",
+  target: tagTarget("release-001"),
+});
+
+await collection.docs.upsert({
+  branch: "candidate",
+  docs: [{ id: "doc-1", text: "candidate content" }],
+});
+
+for await (const page of collection.docs.listPages({
+  size: 50,
+  ref: aliasRef("production"),
+})) {
+  console.log(page.docs);
+}
+```
+
+Omitting a read ref or write Branch preserves the existing `main` behavior.
+See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
+errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
+configuration. The SDK contract is pinned at
+`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa`. Reads through an Alias whose
+target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
+ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 
 ### Pagination
 
@@ -534,6 +585,9 @@ if (result.ok) {
 
 Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collection.getSafe`, `collection.updateSafe`, `collection.deleteSafe`, `collection.querySafe`, `collection.docs.listSafe`, `collection.docs.upsertSafe`, `collection.docs.updateSafe`, `collection.docs.deleteSafe`, `collection.docs.fetchSafe`, `collection.docs.getBulkUpsertSafe`, `collection.docs.bulkUpsertSafe`, `collection.docs.bulkUpsertDocsSafe`. The `Result` type and `OK` / `ERR` helpers are exported from the package.
 
+Data Versioning lifecycle handles also provide `createSafe`, `listSafe`,
+`deleteSafe`, and `aliases.retargetSafe`.
+
 ### Error Classes
 **Primary errors:**
 * [`LambdaDBError`](./src/models/errors/lambdadberror.ts): The base class for HTTP error responses.
@@ -619,7 +673,7 @@ The `HTTPClient` constructor takes an optional `fetcher` argument that can be
 used to integrate a third-party HTTP client or when writing tests to mock out
 the HTTP client and feed in fixtures.
 
-The following example shows how to use the `"beforeRequest"` hook to to add a
+The following example shows how to use the `"beforeRequest"` hook to add a
 custom header and a timeout to requests and how to use the `"requestError"` hook
 to log errors:
 
@@ -653,6 +707,10 @@ httpClient.addHook("requestError", (error, request) => {
 
 const client = new LambdaDBClient({ httpClient, projectApiKey: "<YOUR_PROJECT_API_KEY>" });
 ```
+
+Pass a separate `transferClient` for presigned uploads and out-of-line result
+downloads. API authentication and API-only headers are never copied to this
+transport. Per-call `signal` and `timeoutMs` still apply to transfer requests.
 <!-- End Custom HTTP Client [http-client] -->
 
 <!-- Start Debugging [debug] -->

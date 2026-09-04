@@ -10,7 +10,10 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
 export type UpdateCollectionRequestBody = {
-  indexConfigs: { [k: string]: models.IndexConfigsUnion };
+  indexConfigs?: { [k: string]: models.IndexConfigsUnion } | undefined;
+  description?: string | undefined;
+  tags?: Record<string, string> | undefined;
+  snapshotRetentionInDays?: number | undefined;
 };
 
 export type UpdateCollectionRequest = {
@@ -30,7 +33,10 @@ export type UpdateCollectionResponse = {
 
 /** @internal */
 export type UpdateCollectionRequestBody$Outbound = {
-  indexConfigs: { [k: string]: models.IndexConfigsUnion$Outbound };
+  indexConfigs?: { [k: string]: models.IndexConfigsUnion$Outbound } | undefined;
+  description?: string | undefined;
+  tags?: Record<string, string> | undefined;
+  snapshotRetentionInDays?: number | undefined;
 };
 
 /** @internal */
@@ -39,7 +45,19 @@ export const UpdateCollectionRequestBody$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   UpdateCollectionRequestBody
 > = z.object({
-  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema),
+  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).optional(),
+  description: z.string().max(255).optional(),
+  tags: z.record(
+    z.string().min(1).max(127).regex(/^[^:#,]+$/),
+  ).refine((value) => Object.keys(value).length <= 5, {
+    message: "Collection tags support at most five entries",
+  }).refine(
+    (value) => Object.keys(value).every((key) => /^[A-Za-z0-9_.-]{1,63}$/.test(key)),
+    { message: "Invalid collection tag key" },
+  ).optional(),
+  snapshotRetentionInDays: z.number().int().min(1).max(31).optional(),
+}).refine((value) => Object.values(value).some((item) => item !== undefined), {
+  message: "At least one collection field must be provided",
 });
 
 export function updateCollectionRequestBodyToJSON(
