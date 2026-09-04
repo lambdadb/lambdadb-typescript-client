@@ -12,7 +12,12 @@
 
 import { LambdaDBCore } from "./core.js";
 import type { SDKOptions } from "./lib/config.js";
-import { HTTPClient } from "./lib/http.js";
+import {
+  HTTPClient,
+  isAbortError,
+  isConnectionError,
+  isTimeoutError,
+} from "./lib/http.js";
 import { collectionsCreate } from "./funcs/collectionsCreate.js";
 import { collectionsDelete } from "./funcs/collectionsDelete.js";
 import { collectionsGet } from "./funcs/collectionsGet.js";
@@ -28,7 +33,12 @@ import { collectionsDocsListDocsExtended } from "./funcs/collectionsDocsListDocs
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
-import { UnexpectedClientError } from "./models/errors/httpclienterrors.js";
+import {
+  ConnectionError,
+  RequestAbortedError,
+  RequestTimeoutError,
+  UnexpectedClientError,
+} from "./models/errors/httpclienterrors.js";
 import {
   CollectionAliases,
   CollectionBranches,
@@ -133,6 +143,19 @@ function serializeBulkUpsertPayload(
   }
 }
 
+function classifyTransferError(message: string, cause: unknown): Error {
+  if (isAbortError(cause)) {
+    return new RequestAbortedError("Request aborted by client", { cause });
+  }
+  if (isTimeoutError(cause)) {
+    return new RequestTimeoutError("Request timed out", { cause });
+  }
+  if (isConnectionError(cause)) {
+    return new ConnectionError("Unable to make request", { cause });
+  }
+  return new UnexpectedClientError(message, { cause });
+}
+
 async function fetchDocsFromUrl<T>(
   transferClient: HTTPClient,
   docsUrl: string,
@@ -147,9 +170,7 @@ async function fetchDocsFromUrl<T>(
       ),
     );
   } catch (cause) {
-    throw new UnexpectedClientError("Failed to fetch documents from URL", {
-      cause,
-    });
+    throw classifyTransferError("Failed to fetch documents from URL", cause);
   }
   if (!res.ok) {
     const text = await res.text();
@@ -969,7 +990,7 @@ export class CollectionDocs {
         ),
       );
     } catch (cause) {
-      throw new UnexpectedClientError("Bulk upsert upload failed", { cause });
+      throw classifyTransferError("Bulk upsert upload failed", cause);
     }
 
     if (!putResponse.ok) {
@@ -1040,7 +1061,7 @@ export class CollectionDocs {
         ),
       );
     } catch (cause) {
-      return ERR(new UnexpectedClientError("Bulk upsert upload failed", { cause }));
+      return ERR(classifyTransferError("Bulk upsert upload failed", cause));
     }
 
     if (!putResponse.ok) {

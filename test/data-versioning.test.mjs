@@ -3,12 +3,15 @@ import test from "node:test";
 
 import {
   BadRequestError,
+  ConnectionError,
   DATA_VERSIONING_CONTRACT_REVISION,
   HTTPClient,
   LambdaDBClient,
   LambdaDBDefaultError,
   ResourceAlreadyExistsError,
   ResourceNotFoundError,
+  RequestAbortedError,
+  RequestTimeoutError,
   SDKValidationError,
   UnexpectedClientError,
   aliasRef,
@@ -545,4 +548,55 @@ test("uses the separate transfer client for out-of-line downloads without API he
   assert.equal(transferCalls[0].url.href, "https://download.test/query.json");
   assert.equal(transferCalls[0].headers["x-api-key"], undefined);
   assert.equal(transferCalls[0].headers["x-api-only"], undefined);
+});
+
+test("preserves transfer abort, timeout, and connection error classes", async () => {
+  const cases = [
+    [new DOMException("cancelled", "AbortError"), RequestAbortedError],
+    [new DOMException("timed out", "TimeoutError"), RequestTimeoutError],
+    [new TypeError("fetch failed"), ConnectionError],
+  ];
+
+  for (const [transferError, ExpectedError] of cases) {
+    const { client } = createClient(() =>
+      jsonResponse({
+        took: 1,
+        total: 1,
+        docs: [],
+        isDocsInline: false,
+        docsUrl: "https://download.test/query.json",
+      }), () => {
+      throw transferError;
+    });
+
+    const result = await client.collection(COLLECTION_NAME).querySafe({
+      query: { matchAll: {} },
+    });
+    assert.equal(result.ok, false);
+    assert.ok(result.error instanceof ExpectedError);
+    assert.equal(result.error.cause, transferError);
+  }
+});
+
+test("preserves classified transfer errors for safe bulk uploads", async () => {
+  const transferError = new DOMException("timed out", "TimeoutError");
+  const { client } = createClient(() =>
+    jsonResponse({
+      url: "https://upload.test/object",
+      type: "application/json",
+      httpMethod: "PUT",
+      objectKey: "object-key",
+      sizeLimitBytes: 1024,
+      headers: {},
+    }), () => {
+    throw transferError;
+  });
+
+  const result = await client.collection(COLLECTION_NAME).docs.bulkUpsertDocsSafe({
+    docs: [{ id: "a" }],
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof RequestTimeoutError);
+  assert.equal(result.error.cause, transferError);
 });
