@@ -22,6 +22,19 @@ const missingEnvironment = requiredEnvironment.filter((name) => !process.env[nam
 const delay = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
+function liveServerOptions(rawBaseUrl, projectName) {
+  const value = /^[a-z][a-z0-9+.-]*:\/\//i.test(rawBaseUrl)
+    ? rawBaseUrl
+    : `https://${rawBaseUrl}`;
+  const url = new URL(value);
+  const normalizedPath = url.pathname.replace(/\/+$/, "");
+  const projectPath = `/projects/${encodeURIComponent(projectName)}`;
+  if (normalizedPath === projectPath) {
+    return { serverURL: url.toString() };
+  }
+  return { baseUrl: url.toString(), projectName };
+}
+
 async function eventually(operation, description, timeoutMs = 90_000) {
   const deadline = Date.now() + timeoutMs;
   let lastError;
@@ -45,13 +58,16 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const collectionName = `ts-dv-${suffix}`.slice(0, 52);
   const client = new LambdaDBClient({
-    baseUrl: process.env.LAMBDADB_BASE_URL,
+    ...liveServerOptions(
+      process.env.LAMBDADB_BASE_URL,
+      process.env.LAMBDADB_PROJECT_NAME,
+    ),
     projectApiKey: process.env.LAMBDADB_PROJECT_API_KEY,
-    projectName: process.env.LAMBDADB_PROJECT_NAME,
   });
   const collection = client.collection(collectionName);
   let created = false;
   let primaryError;
+  let deploymentContractMismatch;
 
   try {
     const createResponse = await client.createCollection({
@@ -78,28 +94,84 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(metadata.collection.defaultBranchName, "main");
     assert.ok(metadata.collection.createdAt.getTime() > 1_000_000_000_000);
 
-    const main = await collection.docs.list({ size: 1 });
-    assert.equal(main.total, 0);
-
-    await collection.branches.create({ branchName: "candidate" });
     await collection.docs.upsert({
-      branch: "candidate",
       docs: [
         { id: "doc-1", title: "one" },
         { id: "doc-2", title: "two" },
         { id: "doc-3", title: "three" },
       ],
     });
-
     await eventually(async () => {
       const response = await collection.docs.fetch({
         ids: ["doc-1", "doc-2", "doc-3"],
-        ref: branchRef("candidate"),
         consistentRead: true,
       });
       assert.equal(response.total, 3);
       return response;
+    }, "main Branch snapshot");
+
+    await eventually(async () => {
+      const response = await collection.docs.listAll({ size: 1 });
+      assert.equal(response.docs.length, 3);
+      return response;
+    }, "main Branch list visibility");
+
+    await collection.branches.create({
+      branchName: "candidate",
+      source: branchSource("main"),
+    });
+    await collection.docs.upsert({
+      branch: "candidate",
+      docs: [{ id: "doc-4", title: "four" }],
+    });
+    await collection.docs.update({
+      branch: "candidate",
+      docs: [{ id: "doc-1", title: "one-candidate" }],
+    });
+    await collection.docs.delete({
+      branch: "candidate",
+      ids: ["doc-3"],
+    });
+
+    await eventually(async () => {
+      const response = await collection.docs.fetch({
+        ids: ["doc-1", "doc-2", "doc-3", "doc-4"],
+        ref: branchRef("candidate"),
+        consistentRead: true,
+      });
+      assert.equal(response.total, 3);
+      assert.equal(
+        response.docs.find((item) => item.doc.id === "doc-1")?.doc.title,
+        "one-candidate",
+      );
+      assert.equal(
+        response.docs.some((item) => item.doc.id === "doc-3"),
+        false,
+      );
+      assert.equal(
+        response.docs.some((item) => item.doc.id === "doc-4"),
+        true,
+      );
+      return response;
     }, "Branch write visibility");
+
+    const unchangedMain = await collection.docs.fetch({
+      ids: ["doc-1", "doc-3", "doc-4"],
+      consistentRead: true,
+    });
+    assert.equal(unchangedMain.total, 2);
+    assert.equal(
+      unchangedMain.docs.find((item) => item.doc.id === "doc-1")?.doc.title,
+      "one",
+    );
+    assert.equal(
+      unchangedMain.docs.some((item) => item.doc.id === "doc-3"),
+      true,
+    );
+    assert.equal(
+      unchangedMain.docs.some((item) => item.doc.id === "doc-4"),
+      false,
+    );
 
     await collection.tags.create({
       tagName: "release-001",
@@ -146,7 +218,11 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       ref: aliasRef("production"),
     });
     assert.equal(danglingRead.ok, false);
-    assert.ok(danglingRead.error instanceof ResourceNotFoundError);
+    if (!(danglingRead.error instanceof ResourceNotFoundError)) {
+      deploymentContractMismatch = new Error(
+        `Expected ResourceNotFoundError for dangling Alias read; received ${danglingRead.error?.constructor?.name ?? "unknown"} with status ${danglingRead.error?.statusCode ?? "unknown"}`,
+      );
+    }
 
     await collection.aliases.retarget("production", {
       target: { kind: "branch", name: "candidate" },
@@ -179,12 +255,22 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(updated.collection.snapshotRetentionInDays, 8);
     assert.equal(updated.collection.tags.state, "updated");
     assert.ok(updated.collection.updatedAt instanceof Date);
+
+    if (deploymentContractMismatch !== undefined) {
+      throw deploymentContractMismatch;
+    }
   } catch (error) {
     primaryError = error;
   } finally {
     if (created) {
       try {
         await collection.delete();
+        await eventually(async () => {
+          const result = await collection.getSafe();
+          if (result.ok) throw new Error("Collection still exists");
+          if (!(result.error instanceof ResourceNotFoundError)) throw result.error;
+          return result;
+        }, "Collection cleanup", 30_000);
       } catch (cleanupError) {
         console.error(`Cleanup failed for Collection ${collectionName}`);
         if (primaryError === undefined) primaryError = cleanupError;
