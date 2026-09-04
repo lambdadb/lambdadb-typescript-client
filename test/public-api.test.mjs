@@ -5,11 +5,19 @@ import {
   BadRequestError,
   HTTPClient,
   LambdaDBClient,
+  SDK_METADATA,
   SDKValidationError,
 } from "../dist/esm/index.js";
 
+import packageJson from "../package.json" with { type: "json" };
+
 const BASE_URL = "https://api.test";
 const PROJECT_NAME = "project-one";
+
+test("runtime SDK metadata matches the package version", () => {
+  assert.equal(SDK_METADATA.sdkVersion, packageJson.version);
+  assert.ok(SDK_METADATA.userAgent.includes(` ${packageJson.version} `));
+});
 
 function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), {

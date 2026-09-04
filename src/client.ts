@@ -12,7 +12,12 @@
 
 import { LambdaDBCore } from "./core.js";
 import type { SDKOptions } from "./lib/config.js";
-import { HTTPClient } from "./lib/http.js";
+import {
+  HTTPClient,
+  isAbortError,
+  isConnectionError,
+  isTimeoutError,
+} from "./lib/http.js";
 import { collectionsCreate } from "./funcs/collectionsCreate.js";
 import { collectionsDelete } from "./funcs/collectionsDelete.js";
 import { collectionsGet } from "./funcs/collectionsGet.js";
@@ -28,7 +33,12 @@ import { collectionsDocsListDocsExtended } from "./funcs/collectionsDocsListDocs
 import { collectionsDocsUpdate } from "./funcs/collectionsDocsUpdate.js";
 import { collectionsDocsUpsert } from "./funcs/collectionsDocsUpsert.js";
 import type { RequestOptions } from "./lib/sdks.js";
-import { UnexpectedClientError } from "./models/errors/httpclienterrors.js";
+import {
+  ConnectionError,
+  RequestAbortedError,
+  RequestTimeoutError,
+  UnexpectedClientError,
+} from "./models/errors/httpclienterrors.js";
 import {
   CollectionAliases,
   CollectionBranches,
@@ -133,6 +143,33 @@ function serializeBulkUpsertPayload(
   }
 }
 
+function classifyTransferError(
+  message: string,
+  cause: unknown,
+): ConnectionError | RequestAbortedError | RequestTimeoutError | UnexpectedClientError {
+  if (isAbortError(cause)) {
+    return new RequestAbortedError("Request aborted by client", { cause });
+  }
+  if (isTimeoutError(cause)) {
+    return new RequestTimeoutError("Request timed out", { cause });
+  }
+  if (isConnectionError(cause)) {
+    return new ConnectionError("Unable to make request", { cause });
+  }
+  return new UnexpectedClientError(message, { cause });
+}
+
+async function readTransferText(
+  response: Response,
+  errorMessage: string,
+): Promise<string> {
+  try {
+    return await response.text();
+  } catch (cause) {
+    throw classifyTransferError(errorMessage, cause);
+  }
+}
+
 async function fetchDocsFromUrl<T>(
   transferClient: HTTPClient,
   docsUrl: string,
@@ -147,17 +184,17 @@ async function fetchDocsFromUrl<T>(
       ),
     );
   } catch (cause) {
-    throw new UnexpectedClientError("Failed to fetch documents from URL", {
-      cause,
-    });
+    throw classifyTransferError("Failed to fetch documents from URL", cause);
   }
+  const text = await readTransferText(
+    res,
+    "Failed to read documents from URL",
+  );
   if (!res.ok) {
-    const text = await res.text();
     throw new UnexpectedClientError(
       `Failed to fetch documents from URL: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
     );
   }
-  const text = await res.text();
   if (text.trim() === "") {
     return [];
   }
@@ -969,11 +1006,14 @@ export class CollectionDocs {
         ),
       );
     } catch (cause) {
-      throw new UnexpectedClientError("Bulk upsert upload failed", { cause });
+      throw classifyTransferError("Bulk upsert upload failed", cause);
     }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      const text = await readTransferText(
+        putResponse,
+        "Failed to read bulk upsert upload response",
+      );
       throw new Error(
         `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,
       );
@@ -1040,11 +1080,26 @@ export class CollectionDocs {
         ),
       );
     } catch (cause) {
-      return ERR(new UnexpectedClientError("Bulk upsert upload failed", { cause }));
+      return ERR(classifyTransferError("Bulk upsert upload failed", cause));
     }
 
     if (!putResponse.ok) {
-      const text = await putResponse.text();
+      let text: string;
+      try {
+        text = await readTransferText(
+          putResponse,
+          "Failed to read bulk upsert upload response",
+        );
+      } catch (cause) {
+        return ERR(
+          cause instanceof Error
+            ? cause
+            : new UnexpectedClientError(
+              "Failed to read bulk upsert upload response",
+              { cause },
+            ),
+        );
+      }
       return ERR(
         new Error(
           `Bulk upsert upload failed: ${putResponse.status} ${putResponse.statusText}${text ? ` - ${text}` : ""}`,

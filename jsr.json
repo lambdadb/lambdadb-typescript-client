@@ -2,7 +2,7 @@
 
 {
   "name": "@functional-systems/lambdadb",
-  "version": "0.4.3",
+  "version": "0.5.0-rc.1",
   "exports": {
     ".": "./src/index.ts",    
     "./models/errors": "./src/models/errors/index.ts",    

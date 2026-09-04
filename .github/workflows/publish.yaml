@@ -41,13 +41,22 @@ jobs:
 
           const packageJson = require("./package.json");
           const packageLock = require("./package-lock.json");
+          const examplesPackageLock = require("./examples/package-lock.json");
           const jsrJson = require("./jsr.json");
+          const configSource = fs.readFileSync("./src/lib/config.ts", "utf8");
           const version = packageJson.version;
+          const sdkVersionMatch = /sdkVersion:\s*"([^"]+)"/.exec(configSource);
+          if (!sdkVersionMatch) {
+            throw new Error("Could not read SDK_METADATA.sdkVersion from src/lib/config.ts");
+          }
           const versions = {
             "package.json": version,
             "package-lock.json": packageLock.version,
             "package-lock.json root package": packageLock.packages?.[""]?.version,
             "jsr.json": jsrJson.version,
+            "examples/package-lock.json local package":
+              examplesPackageLock.packages?.[".."]?.version,
+            "src/lib/config.ts SDK_METADATA": sdkVersionMatch[1],
           };
 
           const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(dev|rc)\.(0|[1-9]\d*))?$/;
@@ -60,6 +69,9 @@ jobs:
             if (sourceVersion !== version) {
               throw new Error(`${source} has version ${sourceVersion}; expected ${version}`);
             }
+          }
+          if (!configSource.includes(`speakeasy-sdk/typescript ${version} `)) {
+            throw new Error(`src/lib/config.ts userAgent does not contain ${version}`);
           }
 
           const expectedTag = `v${version}`;

@@ -9,6 +9,7 @@ import {
   models,
 } from "../dist/esm/compat/qdrant.js";
 import { PointStruct } from "../dist/esm/compat/qdrant/models.js";
+import { HTTPClient } from "../dist/esm/index.js";
 
 class FakeDocs {
   constructor() {
@@ -149,6 +150,58 @@ test("qdrant compatibility exports public client and models", () => {
     payload: { tenant: "acme" },
   });
   assert.equal(point.id, 1);
+});
+
+test("constructor forwards the transfer client for out-of-line query results", async () => {
+  const transferRequests = [];
+  const client = new QdrantCompatClient({
+    baseUrl: "https://api.test",
+    projectName: "project-one",
+    httpClient: new HTTPClient({
+      fetcher: async () => new Response(JSON.stringify({
+        took: 1,
+        total: 1,
+        docs: [],
+        isDocsInline: false,
+        docsUrl: "https://download.test/qdrant-query.json",
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    }),
+    transferClient: new HTTPClient({
+      fetcher: async (request) => {
+        transferRequests.push(request);
+        return new Response(JSON.stringify({
+          docs: [{
+            collection: "docs",
+            score: 0.9,
+            doc: {
+              id: "1",
+              _qdrant_id: 1,
+              _qdrant_vector: [0.1, 0.2],
+              tenant: "acme",
+            },
+          }],
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    }),
+  });
+
+  const response = await client.queryPoints("docs", {
+    query: [0.1, 0.2],
+    limit: 1,
+  });
+
+  assert.equal(response.points[0].id, 1);
+  assert.equal(transferRequests.length, 1);
+  assert.equal(
+    transferRequests[0].url,
+    "https://download.test/qdrant-query.json",
+  );
 });
 
 test("createCollection maps vector params and payload schema", async () => {
