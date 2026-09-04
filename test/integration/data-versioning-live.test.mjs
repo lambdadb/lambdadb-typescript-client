@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  BadRequestError,
   LambdaDBClient,
   ResourceAlreadyExistsError,
   ResourceNotFoundError,
@@ -67,7 +68,6 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
   const collection = client.collection(collectionName);
   let created = false;
   let primaryError;
-  let deploymentContractMismatch;
 
   try {
     const createResponse = await client.createCollection({
@@ -218,11 +218,14 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       ref: aliasRef("production"),
     });
     assert.equal(danglingRead.ok, false);
-    if (!(danglingRead.error instanceof ResourceNotFoundError)) {
-      deploymentContractMismatch = new Error(
-        `Expected ResourceNotFoundError for dangling Alias read; received ${danglingRead.error?.constructor?.name ?? "unknown"} with status ${danglingRead.error?.statusCode ?? "unknown"}`,
-      );
-    }
+    assert.ok(danglingRead.error instanceof BadRequestError);
+
+    const missingRefRead = await collection.docs.fetchSafe({
+      ids: ["doc-1"],
+      ref: aliasRef("missing-alias"),
+    });
+    assert.equal(missingRefRead.ok, false);
+    assert.ok(missingRefRead.error instanceof ResourceNotFoundError);
 
     await collection.aliases.retarget("production", {
       target: { kind: "branch", name: "candidate" },
@@ -255,10 +258,6 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(updated.collection.snapshotRetentionInDays, 8);
     assert.equal(updated.collection.tags.state, "updated");
     assert.ok(updated.collection.updatedAt instanceof Date);
-
-    if (deploymentContractMismatch !== undefined) {
-      throw deploymentContractMismatch;
-    }
   } catch (error) {
     primaryError = error;
   } finally {

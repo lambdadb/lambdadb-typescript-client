@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  BadRequestError,
   DATA_VERSIONING_CONTRACT_REVISION,
   HTTPClient,
   LambdaDBClient,
@@ -69,7 +70,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "63e07d6b2e281704aa3367fbeb94f40f519241b8",
+    "a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -319,6 +320,29 @@ test("maps duplicate, not-found, and validation failures to concrete errors", as
   assert.equal(bad.ok, false);
   assert.ok(bad.error instanceof SDKValidationError);
   assert.equal(apiCalls.length, 2);
+});
+
+test("distinguishes dangling Alias reads from missing refs", async () => {
+  const { client } = createClient((_call, index) =>
+    index === 0
+      ? jsonResponse({ message: "Alias target is dangling" }, 400)
+      : jsonResponse({ message: "Ref not found" }, 404)
+  );
+  const collection = client.collection(COLLECTION_NAME);
+
+  const dangling = await collection.docs.fetchSafe({
+    ids: ["doc-1"],
+    ref: aliasRef("production"),
+  });
+  assert.equal(dangling.ok, false);
+  assert.ok(dangling.error instanceof BadRequestError);
+
+  const missing = await collection.docs.fetchSafe({
+    ids: ["doc-1"],
+    ref: aliasRef("missing-alias"),
+  });
+  assert.equal(missing.ok, false);
+  assert.ok(missing.error instanceof ResourceNotFoundError);
 });
 
 test("preserves Branch, Tag, and Alias refs across every list page", async () => {

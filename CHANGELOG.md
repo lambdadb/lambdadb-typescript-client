@@ -3,7 +3,7 @@
 ## Unreleased
 
 Implemented against LambdaDB docs PR #56 at contract revision
-`63e07d6b2e281704aa3367fbeb94f40f519241b8` (OpenAPI `1.1.1`). This source
+`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa` (OpenAPI `1.1.1`). This source
 revision is implementation evidence, not deployment evidence.
 
 ### Added
@@ -22,6 +22,9 @@ revision is implementation evidence, not deployment evidence.
   for unauthenticated presigned uploads and out-of-line result downloads.
 - Package-root exports for Data Versioning types, helpers, lifecycle clients,
   and the pinned `DATA_VERSIONING_CONTRACT_REVISION`.
+- Concrete read-ref error mapping: a dangling Alias target returns
+  `BadRequestError` (HTTP `400`), while a ref that does not exist returns
+  `ResourceNotFoundError` (HTTP `404`).
 
 ### Breaking changes from 0.4.3
 

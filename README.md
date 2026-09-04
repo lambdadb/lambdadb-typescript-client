@@ -190,7 +190,9 @@ Omitting a read ref or write Branch preserves the existing `main` behavior.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The SDK contract is pinned at
-`63e07d6b2e281704aa3367fbeb94f40f519241b8`.
+`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa`. Reads through an Alias whose
+target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
+ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 
 ### Pagination
 

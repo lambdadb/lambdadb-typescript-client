@@ -47,7 +47,7 @@ import type { Result } from "./types/fp.js";
 
 /** Exact public contract revision implemented by this SDK. */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "63e07d6b2e281704aa3367fbeb94f40f519241b8" as const;
+  "a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);

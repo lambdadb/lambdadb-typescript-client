@@ -1,7 +1,7 @@
 # Data Versioning
 
 This SDK implements the public LambdaDB Data Versioning contract pinned at
-[`63e07d6b2e281704aa3367fbeb94f40f519241b8`](https://github.com/lambdadb/docs/commit/63e07d6b2e281704aa3367fbeb94f40f519241b8).
+[`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa`](https://github.com/lambdadb/docs/commit/a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa).
 The source revision identifies the implementation contract; it does not by
 itself prove that a particular API environment has deployed that contract.
 
@@ -71,8 +71,9 @@ await collection.branches.delete("candidate");
 ```
 
 Deleting an Alias target leaves a dangling Alias. Its `dangling` field becomes
-`true`, and reads through it fail with `ResourceNotFoundError` until it is
-retargeted.
+`true`, and reads through it fail with `BadRequestError` (HTTP `400`) until it
+is retargeted. Selecting a ref that does not exist fails with
+`ResourceNotFoundError` (HTTP `404`).
 
 Every lifecycle method also has a `*Safe` form returning `Result`. HTTP `400`,
 `401`, `404`, `409`, `429`, and `500` responses map to the corresponding
