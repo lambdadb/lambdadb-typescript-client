@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0-rc.1 - 2026-09-04
+
 Implemented against LambdaDB docs PR #56 at contract revision
 `a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa` (OpenAPI `1.1.1`). This source
 revision is implementation evidence, not deployment evidence.
