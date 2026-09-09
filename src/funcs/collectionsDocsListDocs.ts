@@ -40,6 +40,10 @@ export function collectionsDocsListDocs(
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
+    | errors.PayloadTooLargeError
+    | errors.BadGatewayError
+    | errors.ServiceUnavailableError
+    | errors.GatewayTimeoutError
     | LambdaDBError
     | ResponseValidationError
     | ConnectionError
@@ -70,6 +74,10 @@ async function $do(
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
       | errors.InternalServerError
+      | errors.PayloadTooLargeError
+      | errors.BadGatewayError
+      | errors.ServiceUnavailableError
+      | errors.GatewayTimeoutError
       | LambdaDBError
       | ResponseValidationError
       | ConnectionError
@@ -181,6 +189,10 @@ async function $do(
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
+    | errors.PayloadTooLargeError
+    | errors.BadGatewayError
+    | errors.ServiceUnavailableError
+    | errors.GatewayTimeoutError
     | LambdaDBError
     | ResponseValidationError
     | ConnectionError
@@ -196,6 +208,7 @@ async function $do(
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),
     M.jsonErr(500, errors.InternalServerError$inboundSchema),
+    ...M.gatewayErrorMatchers(),
     M.fail("4XX"),
     M.fail("5XX"),
   )(response, req, { extraFields: responseFields });

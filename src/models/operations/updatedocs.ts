@@ -36,7 +36,7 @@ export const UpdateDocsRequestBody$outboundSchema: z.ZodType<
 > = z.object({
   docs: z.array(z.record(z.any())),
   branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
-});
+}).strict();
 
 export function updateDocsRequestBodyToJSON(
   updateDocsRequestBody: UpdateDocsRequestBody,

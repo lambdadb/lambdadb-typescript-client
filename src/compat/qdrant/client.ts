@@ -262,7 +262,7 @@ export class QdrantCompatClient {
       indexConfigs: mergeIndexConfigs(
         existingIndexConfigs,
         payloadIndexConfig,
-      ) as UpdateCollectionInput["indexConfigs"],
+      ) as NonNullable<UpdateCollectionInput["indexConfigs"]>,
     });
     await this.waitForCollectionAvailable(collectionName, timeout);
     return true;

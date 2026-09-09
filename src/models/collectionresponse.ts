@@ -35,7 +35,8 @@ export type CollectionResponse = {
    */
   numPartitions: number;
   /**
-   * Total number of documents.
+   * Document count in the default main Branch's committed head. This is not a
+   * sum across Branches or the count of a selected ref.
    */
   numDocs: number;
   /** Default writable Branch. */
@@ -51,7 +52,9 @@ export type CollectionResponse = {
    */
   updatedAt: number;
   /**
-   * Collection data last update time in milliseconds since the Unix epoch.
+   * Last data update recorded in the default main Branch's committed head, in
+   * milliseconds since the Unix epoch. Commits without data mutations retain
+   * the previous value. Absent before a committed head exists.
    */
   dataUpdatedAt?: number | undefined;
 };
@@ -64,7 +67,10 @@ export const CollectionResponse$inboundSchema: z.ZodType<
 > = z.object({
   projectName: z.string(),
   collectionName: z.string(),
-  indexConfigs: z.record(IndexConfigsUnion$inboundSchema),
+  indexConfigs: z.record(IndexConfigsUnion$inboundSchema).refine(
+    (value) => Object.keys(value).length > 0,
+    { message: "Collection indexConfigs must contain at least one field" },
+  ),
   description: z.string(),
   tags: z.record(z.string()),
   partitionConfig: nullToUndefined(PartitionConfig$inboundSchema.optional()),

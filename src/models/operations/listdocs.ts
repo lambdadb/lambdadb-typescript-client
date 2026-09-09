@@ -19,7 +19,7 @@ export type ListDocsRequest = {
    */
   size?: number | undefined;
   /**
-   * Next page token.
+   * Opaque search position, not a Snapshot pin. Use one immutable Tag throughout a stable export.
    */
   pageToken?: string | undefined;
   /**
@@ -101,7 +101,7 @@ export type ListDocsExtendedRequestBody = {
    */
   size?: number | undefined;
   /**
-   * Next page token.
+   * Opaque search position, not a Snapshot pin. Use one immutable Tag throughout a stable export.
    */
   pageToken?: string | undefined;
   /**
@@ -153,7 +153,7 @@ export const ListDocsExtendedRequestBody$outboundSchema: z.ZodType<
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   includeVectors: z.boolean().default(false),
   ref: models.ReadRef$schema.optional(),
-});
+}).strict();
 
 export function listDocsExtendedRequestBodyToJSON(
   listDocsExtendedRequestBody: ListDocsExtendedRequestBody,

@@ -1,7 +1,7 @@
 # Data Versioning
 
 This SDK implements the public LambdaDB Data Versioning contract pinned at
-[`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa`](https://github.com/lambdadb/docs/commit/a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa).
+[`b171ff0a408bbeb024535941b83b861d205a829f`](https://github.com/lambdadb/docs/commit/b171ff0a408bbeb024535941b83b861d205a829f).
 The source revision identifies the implementation contract; it does not by
 itself prove that a particular API environment has deployed that contract.
 
@@ -70,14 +70,25 @@ await collection.tags.delete("release-001");
 await collection.branches.delete("candidate");
 ```
 
+Branch creation copies the source's committed state, not pending writes. An
+empty source Branch can produce a valid Branch whose `snapshotId` is `null`.
+Tags require a committed Snapshot, so verify committed data before creating
+one. Data mutations are accepted asynchronously and are not necessarily
+committed when their request returns.
+
 Deleting an Alias target leaves a dangling Alias. Its `dangling` field becomes
 `true`, and reads through it fail with `BadRequestError` (HTTP `400`) until it
 is retargeted. Selecting a ref that does not exist fails with
 `ResourceNotFoundError` (HTTP `404`).
 
-Every lifecycle method also has a `*Safe` form returning `Result`. HTTP `400`,
-`401`, `404`, `409`, `429`, and `500` responses map to the corresponding
-exported LambdaDB error class.
+Every lifecycle method also has a `*Safe` form returning `Result`. Documented
+HTTP failures map to exported error classes, including
+`CatalogConflictError`, `PayloadTooLargeError`, `BadGatewayError`,
+`ServiceUnavailableError`, and `GatewayTimeoutError`. Create-name collisions
+remain `ResourceAlreadyExistsError`. All HTTP errors retain status, body,
+headers, and the raw `Response`; `retryAfter` exposes the optional header.
+After a write receives `BadGatewayError` or `GatewayTimeoutError`, treat its
+outcome as uncertain and verify state before retrying.
 
 ## Ref-scoped reads
 
@@ -100,7 +111,13 @@ lists use the GET endpoint with paired `refKind` and `refName` query
 parameters. Lists with filters, partition filters, or field selection use the
 extended POST endpoint and put `ref` in its body.
 
-Strongly consistent reads are supported only for a direct Branch ref. The
+A page token is an opaque search position, not a Snapshot pin. A Branch can
+advance and an Alias can move between page requests. Use the same immutable Tag
+and unchanged filters/projection throughout a stable multi-page export.
+
+`consistentRead: true` overlays eligible pending writes on committed data and
+is supported only for a direct Branch ref. Pending bulk imports are excluded,
+and an oversized pending overlay can return `TooManyRequestsError` (`429`). The
 public Query and Fetch input unions reject `consistentRead: true` with a Tag or
 Alias at compile time, and runtime validation protects JavaScript callers.
 
@@ -114,12 +131,22 @@ await collection.docs.upsert({
   branch: "candidate",
   docs: [{ id: "doc-1", title: "Candidate" }],
 });
+
+await collection.docs.delete({
+  branch: "candidate",
+  ids: ["doc-1"], // Use exactly one of ids or filter.
+});
 ```
 
 `bulkUpsertDocs` uses the same Branch for the upload-info and completion calls.
 It sends `Content-Type` from the server's `type` field and every server-returned
 signed header to the presigned PUT. API authentication and API-only request
 headers are not forwarded to the storage URL.
+
+The signed PUT is create-only and can return storage HTTP `412` if reused.
+`bulkUpsertDocs` does not retry that PUT or issue the completion request after
+an unsuccessful upload. Obtain a new upload URL for a new attempt and resolve
+an uncertain prior completion before resubmitting.
 
 Use a separate transfer transport for presigned uploads and out-of-line result
 downloads:
@@ -147,6 +174,24 @@ and `snapshotRetentionInDays` from 1 through 31. Responses include
 `defaultBranchName: "main"`. Wire timestamps use Unix epoch milliseconds; the
 collection-scoped facade converts them directly to `Date` without a seconds
 multiplier.
+
+`indexConfigs` must contain at least one field. Metadata tag values must contain
+a non-whitespace character under Java `String.isBlank` semantics. PATCH
+omission or `null` leaves a field unchanged, but at least one field must be
+non-null. Supplied tags replace the entire map (`{}` clears it), and `""`
+clears the description. Schema updates send the complete schema and preserve
+existing nested field definitions.
+
+At this pinned revision, adding a child under an existing object field is
+rejected because that field definition changes; adding a new top-level field
+while preserving the complete existing schema remains supported. The SDK
+cannot prevalidate this state-dependent rule without first reading the current
+Collection schema.
+
+Collection `numDocs` and optional `dataUpdatedAt` describe the default `main`
+Branch's committed head, not all Branches or a selected ref. A commit without a
+data mutation retains the earlier `dataUpdatedAt`; it is absent before a
+committed head exists.
 
 Collection create expects HTTP `201`; Collection delete expects HTTP `200`.
 

@@ -15,6 +15,11 @@ export class LambdaDBError extends Error {
   /** Raw response */
   public readonly rawResponse: Response;
 
+  /** Optional Retry-After response header, commonly returned with HTTP 429. */
+  public get retryAfter(): string | undefined {
+    return this.headers.get("retry-after") ?? undefined;
+  }
+
   constructor(
     message: string,
     httpMeta: {

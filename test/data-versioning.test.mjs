@@ -85,7 +85,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa",
+    "b171ff0a408bbeb024535941b83b861d205a829f",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -124,7 +124,7 @@ test("uses current Collection metadata, millisecond timestamps, and 201/200 stat
         collection: {
           projectName: PROJECT_NAME,
           collectionName: COLLECTION_NAME,
-          indexConfigs: {},
+          indexConfigs: { title: { type: "text" } },
           description: "Updated",
           tags: { environment: "production" },
           numPartitions: 1,
@@ -142,7 +142,7 @@ test("uses current Collection metadata, millisecond timestamps, and 201/200 stat
 
   const created = await client.createCollection({
     collectionName: COLLECTION_NAME,
-    indexConfigs: {},
+    indexConfigs: { title: { type: "text" } },
     description: "Initial",
     tags: { environment: "test" },
     snapshotRetentionInDays: 7,
@@ -161,7 +161,7 @@ test("uses current Collection metadata, millisecond timestamps, and 201/200 stat
   assert.equal(deleted.message, "Collection deletion requested");
   assert.deepEqual(JSON.parse(apiCalls[0].body), {
     collectionName: COLLECTION_NAME,
-    indexConfigs: {},
+    indexConfigs: { title: { type: "text" } },
     description: "Initial",
     tags: { environment: "test" },
     snapshotRetentionInDays: 7,
@@ -178,7 +178,7 @@ test("rejects obsolete Collection create/delete success statuses", async () => {
 
   const createResult = await client.createCollectionSafe({
     collectionName: COLLECTION_NAME,
-    indexConfigs: {},
+    indexConfigs: { title: { type: "text" } },
   });
   assert.equal(createResult.ok, false);
   assert.ok(createResult.error instanceof LambdaDBDefaultError);

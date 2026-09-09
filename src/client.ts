@@ -677,7 +677,8 @@ export class CollectionDocs {
    * Use this to process large result sets without loading everything into memory.
    *
    * Note: The API limits response size by payload, not by document count. The number of docs per page
-   * may be less than the requested `size` and can vary from page to page.
+   * may be less than the requested `size` and can vary from page to page. A page token is a search
+   * position, not a Snapshot pin; use one immutable Tag throughout a stable export.
    *
    * @example
    * for await (const page of collection.docs.listPages({ size: 50 })) {
@@ -792,7 +793,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Delete documents by ids and/or filter.
+   * Delete documents by exactly one of ids or filter. partitionFilter only narrows that selector.
    */
   async delete(
     body: DeleteDocsInput,
@@ -811,7 +812,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Delete documents by ids and/or filter (Safe: returns Result instead of throwing).
+   * Delete documents by exactly one of ids or filter (Safe: returns Result instead of throwing).
    */
   async deleteSafe(
     body: DeleteDocsInput,
@@ -975,7 +976,8 @@ export class CollectionDocs {
   /**
    * Bulk upsert documents in one call (up to 200MB). Not supported for collections with managed embedding vector fields. Abstracts getBulkUpsert,
    * S3 upload via presigned URL, and bulkUpsert. Use this for better DX when
-   * you have a document list; use getBulkUpsert + bulkUpsert for low-level control.
+   * you have a document list; use getBulkUpsert + bulkUpsert for low-level control. The create-only
+   * signed PUT is not retried, and a failed upload is not finalized.
    */
   async bulkUpsertDocs(
     body: UpsertDocsInput,

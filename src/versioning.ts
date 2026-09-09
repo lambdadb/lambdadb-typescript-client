@@ -47,7 +47,7 @@ import type { Result } from "./types/fp.js";
 
 /** Exact public contract revision implemented by this SDK. */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa" as const;
+  "b171ff0a408bbeb024535941b83b861d205a829f" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -112,8 +112,13 @@ export type VersioningError =
   | errors.UnauthenticatedError
   | errors.ResourceNotFoundError
   | errors.ResourceAlreadyExistsError
+  | errors.CatalogConflictError
+  | errors.PayloadTooLargeError
   | errors.TooManyRequestsError
   | errors.InternalServerError
+  | errors.BadGatewayError
+  | errors.ServiceUnavailableError
+  | errors.GatewayTimeoutError
   | LambdaDBError
   | ResponseValidationError
   | ConnectionError
@@ -130,6 +135,7 @@ type VersioningRequest<TInput, TOutput> = {
   path: string;
   responseSchema: z.ZodType<TOutput>;
   successStatus: 200 | 201;
+  conflict?: "already-exists" | "catalog" | undefined;
 };
 
 async function requestVersioning<TInput, TOutput>(
@@ -201,14 +207,20 @@ async function requestVersioning<TInput, TOutput>(
   if (!responseResult.ok) return responseResult;
 
   const response = responseResult.value;
+  const conflictMatchers = request.conflict === "already-exists"
+    ? [M.jsonErr(409, errors.ResourceAlreadyExistsError$inboundSchema)]
+    : request.conflict === "catalog"
+    ? [M.jsonErr(409, errors.CatalogConflictError$inboundSchema)]
+    : [];
   const [result] = await M.match<TOutput, VersioningError>(
     M.json(request.successStatus, request.responseSchema),
     M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
-    M.jsonErr(409, errors.ResourceAlreadyExistsError$inboundSchema),
+    ...conflictMatchers,
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),
     M.jsonErr(500, errors.InternalServerError$inboundSchema),
+    ...M.gatewayErrorMatchers(),
     M.fail("4XX"),
     M.fail("5XX"),
   )(response, httpRequest, {
@@ -269,6 +281,7 @@ export class CollectionBranches {
       path: pathFor(this.collectionName, "/branches"),
       responseSchema: createBranchResponseSchema,
       successStatus: 201,
+      conflict: "already-exists",
     }, options);
     if (!result.ok) return result;
     return { ok: true, value: { branch: refDetailsWithDate(result.value.branch) } };
@@ -312,6 +325,7 @@ export class CollectionBranches {
       path: pathFor(this.collectionName, `/branches/${encodeURIComponent(parsedName.value)}`),
       responseSchema: messageResponseSchema,
       successStatus: 200,
+      conflict: "catalog",
     }, options);
   }
 }
@@ -339,6 +353,7 @@ export class CollectionTags {
       path: pathFor(this.collectionName, "/tags"),
       responseSchema: createTagResponseSchema,
       successStatus: 201,
+      conflict: "already-exists",
     }, options);
     if (!result.ok) return result;
     return { ok: true, value: { tag: refDetailsWithDate(result.value.tag) } };
@@ -382,6 +397,7 @@ export class CollectionTags {
       path: pathFor(this.collectionName, `/tags/${encodeURIComponent(parsedName.value)}`),
       responseSchema: messageResponseSchema,
       successStatus: 200,
+      conflict: "catalog",
     }, options);
   }
 }
@@ -409,6 +425,7 @@ export class CollectionAliases {
       path: pathFor(this.collectionName, "/aliases"),
       responseSchema: aliasResponseSchema,
       successStatus: 201,
+      conflict: "already-exists",
     }, options);
     if (!result.ok) return result;
     return { ok: true, value: { alias: aliasDetailsWithDate(result.value.alias) } };
@@ -459,6 +476,7 @@ export class CollectionAliases {
       path: pathFor(this.collectionName, `/aliases/${encodeURIComponent(parsedName.value)}`),
       responseSchema: aliasResponseSchema,
       successStatus: 200,
+      conflict: "catalog",
     }, options);
     if (!result.ok) return result;
     return { ok: true, value: { alias: aliasDetailsWithDate(result.value.alias) } };
@@ -485,6 +503,7 @@ export class CollectionAliases {
       path: pathFor(this.collectionName, `/aliases/${encodeURIComponent(parsedName.value)}`),
       responseSchema: messageResponseSchema,
       successStatus: 200,
+      conflict: "catalog",
     }, options);
   }
 }
