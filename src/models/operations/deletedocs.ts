@@ -6,7 +6,7 @@ import * as z from "zod/v3";
 import { remap as remap$ } from "../../lib/primitives.js";
 import * as models from "../index.js";
 
-export type DeleteDocsRequestBody = {
+type DeleteDocsRequestFields = {
   /**
    * A list of document IDs.
    */
@@ -20,6 +20,17 @@ export type DeleteDocsRequestBody = {
   branch?: string | undefined;
 };
 
+/** Delete by exactly one selector. partitionFilter only narrows that selector. */
+export type DeleteDocsRequestBody =
+  | (DeleteDocsRequestFields & {
+    ids: Array<string>;
+    filter?: never;
+  })
+  | (DeleteDocsRequestFields & {
+    ids?: never;
+    filter: { [k: string]: any };
+  });
+
 export type DeleteDocsRequest = {
   /**
    * Collection name.
@@ -29,12 +40,23 @@ export type DeleteDocsRequest = {
 };
 
 /** @internal */
-export type DeleteDocsRequestBody$Outbound = {
+type DeleteDocsRequestFields$Outbound = {
   ids?: Array<string> | undefined;
   filter?: { [k: string]: any } | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
   branch?: string | undefined;
 };
+
+/** @internal */
+export type DeleteDocsRequestBody$Outbound =
+  | (DeleteDocsRequestFields$Outbound & {
+    ids: Array<string>;
+    filter?: never;
+  })
+  | (DeleteDocsRequestFields$Outbound & {
+    ids?: never;
+    filter: { [k: string]: any };
+  });
 
 /** @internal */
 export const DeleteDocsRequestBody$outboundSchema: z.ZodType<
@@ -46,7 +68,14 @@ export const DeleteDocsRequestBody$outboundSchema: z.ZodType<
   filter: z.record(z.any()).optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
-});
+}).strict().refine(
+  (value) => (value.ids === undefined) !== (value.filter === undefined),
+  { message: "Specify exactly one of ids or filter", path: ["ids"] },
+) as unknown as z.ZodType<
+  DeleteDocsRequestBody$Outbound,
+  z.ZodTypeDef,
+  DeleteDocsRequestBody
+>;
 
 export function deleteDocsRequestBodyToJSON(
   deleteDocsRequestBody: DeleteDocsRequestBody,

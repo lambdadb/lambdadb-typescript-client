@@ -16,11 +16,13 @@ import {
   tagTarget,
   type AliasTarget,
   type BranchSource,
+  type DeleteDocsInput,
   type FetchDocsInput,
   type QueryCollectionInput,
   type ReadRef,
   type RefSource,
   type UpsertDocsInput,
+  type UpdateCollectionInput,
   type VersioningError,
 } from "../../src/index.js";
 
@@ -52,6 +54,15 @@ const branchWrite: UpsertDocsInput = {
   docs: [{ id: "doc-1" }],
   branch: "candidate",
 };
+const deleteByIds: DeleteDocsInput = { ids: ["doc-1"], branch: "candidate" };
+const deleteByFilter: DeleteDocsInput = {
+  filter: { queryString: { query: "kind:test" } },
+  partitionFilter: { field: "tenant", in: ["acme"] },
+};
+const patchWithNullNoOps: UpdateCollectionInput = {
+  description: null,
+  tags: {},
+};
 const helperQuery = createQueryInput(
   { matchAll: {} },
   { ref: branchRef("candidate"), consistentRead: true },
@@ -67,6 +78,14 @@ const invalidAliasQuery: QueryCollectionInput = {
 };
 // @ts-expect-error Writes take a Branch name, not a read-ref object.
 const invalidWrite: UpsertDocsInput = { docs: [], branch: branchRef("candidate") };
+// @ts-expect-error Delete requires exactly one of ids or filter.
+const invalidDeleteBoth: DeleteDocsInput = { ids: ["doc-1"], filter: {} };
+// @ts-expect-error partitionFilter cannot be the only delete selector.
+const invalidDeletePartitionOnly: DeleteDocsInput = {
+  partitionFilter: { field: "tenant", in: ["acme"] },
+};
+// @ts-expect-error Collection PATCH requires at least one non-null field.
+const invalidNullOnlyPatch: UpdateCollectionInput = { description: null };
 const invalidHelperQuery = createQueryInput(
   { matchAll: {} },
   {
@@ -93,10 +112,16 @@ void targets;
 void branchQuery;
 void tagFetch;
 void branchWrite;
+void deleteByIds;
+void deleteByFilter;
+void patchWithNullNoOps;
 void helperQuery;
 void invalidTagSource;
 void invalidAliasQuery;
 void invalidWrite;
+void invalidDeleteBoth;
+void invalidDeletePartitionOnly;
+void invalidNullOnlyPatch;
 void invalidHelperQuery;
 void docs;
 void branches;

@@ -18,9 +18,14 @@ import type {
 // ---- Re-export error classes for instanceof checks and typing ----
 export {
   BadRequestError,
+  BadGatewayError,
+  CatalogConflictError,
+  GatewayTimeoutError,
   UnauthenticatedError,
+  PayloadTooLargeError,
   ResourceNotFoundError,
   ResourceAlreadyExistsError,
+  ServiceUnavailableError,
   TooManyRequestsError,
   InternalServerError,
   LambdaDBError,

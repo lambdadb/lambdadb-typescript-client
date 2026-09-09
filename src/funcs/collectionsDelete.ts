@@ -182,8 +182,10 @@ async function $do(
     M.json(200, models.MessageResponse$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
+    M.jsonErr(409, errors.CatalogConflictError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),
     M.jsonErr(500, errors.InternalServerError$inboundSchema),
+    ...M.gatewayErrorMatchers(),
     M.fail("4XX"),
     M.fail("5XX"),
   )(response, req, { extraFields: responseFields });

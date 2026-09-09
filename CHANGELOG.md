@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+Aligned with LambdaDB docs PR #56 at contract revision
+`b171ff0a408bbeb024535941b83b861d205a829f`
+(`reference/api/openapi.json`), reviewing `a52ce19..b171ff0`. This pins the
+source contract and does not establish deployment or general availability.
+
+### Added
+
+- Added `CatalogConflictError`, `PayloadTooLargeError`, `BadGatewayError`,
+  `ServiceUnavailableError`, and `GatewayTimeoutError` for the newly documented
+  `409`, `413`, `502`, `503`, and `504` responses. Every `LambdaDBError` exposes
+  the optional `retryAfter` response header; the existing retry engine honors
+  it when retrying `429` responses.
+
+### Changed
+
+- Collection create/update now reject empty `indexConfigs`. Metadata tag values
+  reject Unicode whitespace-only strings using the server's Java
+  `String.isBlank` character set.
+- Collection PATCH inputs may include `null` as an unchanged field only when at
+  least one other supported field is non-null. Supplied tags replace the map,
+  `{}` clears it, and `""` clears the description.
+- `DeleteDocsInput` now requires exactly one of `ids` or `filter`;
+  `partitionFilter` can only narrow one of those selectors. Unknown JSON body
+  fields are rejected before sending rather than silently discarded.
+- Clarified that Collection statistics describe the default `main` Branch,
+  consistent reads overlay eligible non-bulk pending writes, page tokens are
+  positions rather than Snapshot pins, and presigned create-only PUT failures
+  require a fresh upload URL instead of an automatic retry.
+- Documented the pinned server restriction that rejects additions below an
+  existing object schema field; the SDK leaves this state-dependent check to
+  the API while requiring a nonempty complete schema map.
+
 ## 0.5.0-rc.1 - 2026-09-04
 
 Implemented against LambdaDB docs PR #56 at contract revision

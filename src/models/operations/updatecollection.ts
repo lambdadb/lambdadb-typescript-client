@@ -3,18 +3,27 @@
  */
 
 import * as z from "zod/v3";
+import { collectionTagsSchema } from "../../lib/collectionContract.js";
 import { remap as remap$ } from "../../lib/primitives.js";
 import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
-export type UpdateCollectionRequestBody = {
-  indexConfigs?: { [k: string]: models.IndexConfigsUnion } | undefined;
-  description?: string | undefined;
-  tags?: Record<string, string> | undefined;
-  snapshotRetentionInDays?: number | undefined;
+type UpdateCollectionFields = {
+  indexConfigs?: { [k: string]: models.IndexConfigsUnion } | null | undefined;
+  description?: string | null | undefined;
+  tags?: Record<string, string> | null | undefined;
+  snapshotRetentionInDays?: number | null | undefined;
 };
+
+export type UpdateCollectionRequestBody =
+  | (UpdateCollectionFields & {
+    indexConfigs: { [k: string]: models.IndexConfigsUnion };
+  })
+  | (UpdateCollectionFields & { description: string })
+  | (UpdateCollectionFields & { tags: Record<string, string> })
+  | (UpdateCollectionFields & { snapshotRetentionInDays: number });
 
 export type UpdateCollectionRequest = {
   /**
@@ -32,12 +41,23 @@ export type UpdateCollectionResponse = {
 };
 
 /** @internal */
-export type UpdateCollectionRequestBody$Outbound = {
-  indexConfigs?: { [k: string]: models.IndexConfigsUnion$Outbound } | undefined;
-  description?: string | undefined;
-  tags?: Record<string, string> | undefined;
-  snapshotRetentionInDays?: number | undefined;
+type UpdateCollectionFields$Outbound = {
+  indexConfigs?:
+    | { [k: string]: models.IndexConfigsUnion$Outbound }
+    | null
+    | undefined;
+  description?: string | null | undefined;
+  tags?: Record<string, string> | null | undefined;
+  snapshotRetentionInDays?: number | null | undefined;
 };
+
+export type UpdateCollectionRequestBody$Outbound =
+  | (UpdateCollectionFields$Outbound & {
+    indexConfigs: { [k: string]: models.IndexConfigsUnion$Outbound };
+  })
+  | (UpdateCollectionFields$Outbound & { description: string })
+  | (UpdateCollectionFields$Outbound & { tags: Record<string, string> })
+  | (UpdateCollectionFields$Outbound & { snapshotRetentionInDays: number });
 
 /** @internal */
 export const UpdateCollectionRequestBody$outboundSchema: z.ZodType<
@@ -45,20 +65,21 @@ export const UpdateCollectionRequestBody$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   UpdateCollectionRequestBody
 > = z.object({
-  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).optional(),
-  description: z.string().max(255).optional(),
-  tags: z.record(
-    z.string().min(1).max(127).regex(/^[^:#,]+$/),
-  ).refine((value) => Object.keys(value).length <= 5, {
-    message: "Collection tags support at most five entries",
-  }).refine(
-    (value) => Object.keys(value).every((key) => /^[A-Za-z0-9_.-]{1,63}$/.test(key)),
-    { message: "Invalid collection tag key" },
-  ).optional(),
-  snapshotRetentionInDays: z.number().int().min(1).max(31).optional(),
-}).refine((value) => Object.values(value).some((item) => item !== undefined), {
-  message: "At least one collection field must be provided",
-});
+  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).refine(
+    (value) => Object.keys(value).length > 0,
+    { message: "Collection indexConfigs must contain at least one field" },
+  ).nullable().optional(),
+  description: z.string().max(255).nullable().optional(),
+  tags: collectionTagsSchema.nullable().optional(),
+  snapshotRetentionInDays: z.number().int().min(1).max(31).nullable().optional(),
+}).strict().refine(
+  (value) => Object.values(value).some((item) => item !== undefined && item !== null),
+  { message: "At least one non-null collection field must be provided" },
+) as z.ZodType<
+  UpdateCollectionRequestBody$Outbound,
+  z.ZodTypeDef,
+  UpdateCollectionRequestBody
+>;
 
 export function updateCollectionRequestBodyToJSON(
   updateCollectionRequestBody: UpdateCollectionRequestBody,
