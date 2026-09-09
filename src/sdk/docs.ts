@@ -89,7 +89,7 @@ export class Docs extends ClientSDK {
   }
 
   /**
-   * Delete documents by document IDs or query filter from a collection.
+   * Delete documents by exactly one of document IDs or query filter.
    */
   async delete(
     request: operations.DeleteDocsRequest,

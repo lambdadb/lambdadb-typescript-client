@@ -15,7 +15,7 @@ export type FetchDocsRequestBody = {
    */
   ids: Array<string>;
   /**
-   * If your application requires a strongly consistent read, set consistentRead to true. Although a strongly consistent read might take more time than an eventually consistent read, it always returns the last updated value.
+   * Overlay eligible pending writes on a directly selected Branch. Tag and Alias reads reject true, pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
    */
   consistentRead?: boolean | undefined;
   /**
@@ -89,7 +89,7 @@ export const FetchDocsRequestBody$outboundSchema: z.ZodType<
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   ref: models.ReadRef$schema.optional(),
-}).superRefine((value, context) => {
+}).strict().superRefine((value, context) => {
   if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
     context.addIssue({
       code: z.ZodIssueCode.custom,

@@ -190,13 +190,17 @@ Omitting a read ref or write Branch preserves the existing `main` behavior.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The SDK contract is pinned at
-`a52ce19f5a1ce5ad3a30a55a5560e4591f0be9fa`. Reads through an Alias whose
+`b171ff0a408bbeb024535941b83b861d205a829f`. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
 ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 
 ### Pagination
 
 **Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page. The methods `list()`, `query()`, and `fetch()` automatically resolve documents from the presigned URL when the API returns them via `docsUrl` (`isDocsInline: false`), so you always receive `docs` in the response.
+
+Page tokens are opaque search positions, not Snapshot pins. For a stable
+multi-page export, select the same immutable Tag and keep filters and field
+selection unchanged on every page.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
@@ -379,7 +383,7 @@ run();
 * [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
-* [delete](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
+* [delete](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 * [fetch](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
 
 </details>
@@ -417,7 +421,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`collectionsCreate`](docs/sdks/collections/README.md#create) - Create a collection.
 - [`collectionsDelete`](docs/sdks/collections/README.md#delete) - Delete an existing collection.
 - [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
-- [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by document IDs or query filter from a collection.
+- [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 - [`collectionsDocsFetch`](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
 - [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 - [`collectionsDocsListDocs`](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
@@ -435,6 +439,10 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 ## Retries
 
 Some of the endpoints in this SDK support retries.  If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API.  However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+
+For retryable `429` responses, the backoff implementation honors a valid
+`Retry-After` header when present. The API does not guarantee that every `429`
+contains this header.
 
 To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
 ```typescript
@@ -519,6 +527,7 @@ await client.listCollections(undefined, { timeoutMs: 10_000, retries: { strategy
 | `error.headers`     | `Headers`  | HTTP response headers                                                                   |
 | `error.body`        | `string`   | HTTP body. Can be empty string if no body is returned.                                  |
 | `error.rawResponse` | `Response` | Raw HTTP response                                                                       |
+| `error.retryAfter`  | `string \| undefined` | Optional `Retry-After` response header.                                      |
 | `error.data$`       |            | Optional. Some errors may contain structured data. [See Error Classes](#error-classes). |
 
 ### Default methods (throw on error)
@@ -595,6 +604,11 @@ Data Versioning lifecycle handles also provide `createSafe`, `listSafe`,
   * [`TooManyRequestsError`](./src/models/errors/toomanyrequestserror.ts): Too many requests. Status code `429`.
   * [`InternalServerError`](./src/models/errors/internalservererror.ts): Internal server error. Status code `500`.
   * [`ResourceNotFoundError`](./src/models/errors/resourcenotfounderror.ts): Resource not found. Status code `404`. *
+  * [`CatalogConflictError`](./src/models/errors/gatewayerrors.ts): Conditional catalog conflict. Status code `409`.
+  * [`PayloadTooLargeError`](./src/models/errors/gatewayerrors.ts): Gateway request limit exceeded. Status code `413`.
+  * [`BadGatewayError`](./src/models/errors/gatewayerrors.ts): Unexpected downstream failure. Status code `502`.
+  * [`ServiceUnavailableError`](./src/models/errors/gatewayerrors.ts): Transient dependency failure. Status code `503`.
+  * [`GatewayTimeoutError`](./src/models/errors/gatewayerrors.ts): Gateway deadline exceeded. Status code `504`.
 
 <details><summary>Less common errors (8)</summary>
 

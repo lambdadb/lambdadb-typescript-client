@@ -31,7 +31,7 @@ function collectionFixture(collectionName, overrides = {}) {
   return {
     projectName: PROJECT_NAME,
     collectionName,
-    indexConfigs: {},
+    indexConfigs: { title: { type: "text" } },
     description: "Test collection",
     tags: { environment: "test" },
     numPartitions: 1,
@@ -516,7 +516,7 @@ test("public safe methods expose typed API errors", async () => {
 
   const result = await client.createCollectionSafe({
     collectionName: "items",
-    indexConfigs: {},
+    indexConfigs: { title: { type: "text" } },
   });
 
   assert.equal(result.ok, false);

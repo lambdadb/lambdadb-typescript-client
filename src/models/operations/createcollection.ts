@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v3";
+import { collectionTagsSchema } from "../../lib/collectionContract.js";
 import { safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
@@ -54,19 +55,15 @@ export const CreateCollectionRequest$outboundSchema: z.ZodType<
   CreateCollectionRequest
 > = z.object({
   collectionName: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/),
-  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema),
+  indexConfigs: z.record(models.IndexConfigsUnion$outboundSchema).refine(
+    (value) => Object.keys(value).length > 0,
+    { message: "Collection indexConfigs must contain at least one field" },
+  ),
   description: z.string().max(255).optional(),
-  tags: z.record(
-    z.string().min(1).max(127).regex(/^[^:#,]+$/),
-  ).refine((value) => Object.keys(value).length <= 5, {
-    message: "Collection tags support at most five entries",
-  }).refine(
-    (value) => Object.keys(value).every((key) => /^[A-Za-z0-9_.-]{1,63}$/.test(key)),
-    { message: "Invalid collection tag key" },
-  ).optional(),
+  tags: collectionTagsSchema.optional(),
   partitionConfig: models.PartitionConfig$outboundSchema.optional(),
   snapshotRetentionInDays: z.number().int().min(1).max(31).optional(),
-});
+}).strict();
 
 export function createCollectionRequestToJSON(
   createCollectionRequest: CreateCollectionRequest,

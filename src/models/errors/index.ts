@@ -3,6 +3,7 @@
  */
 
 export * from "./badrequesterror.js";
+export * from "./gatewayerrors.js";
 export * from "./httpclienterrors.js";
 export * from "./internalservererror.js";
 export * from "./lambdadbdefaulterror.js";

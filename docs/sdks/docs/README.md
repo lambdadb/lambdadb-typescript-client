@@ -12,8 +12,14 @@
 * [getBulkUpsert](#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [bulkUpsert](#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
 * [update](#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
-* [delete](#delete) - Delete documents by document IDs or query filter from a collection.
+* [delete](#delete) - Delete documents by exactly one of document IDs or query filter.
 * [fetch](#fetch) - Lookup and return documents by document IDs from a collection.
+
+> **Contract note (`b171ff0`).** JSON Gateway `502`, `503`, and `504`
+> responses map to `BadGatewayError`, `ServiceUnavailableError`, and
+> `GatewayTimeoutError`. Body-carrying requests can also map `413` to
+> `PayloadTooLargeError`. The per-method `4XX`/`5XX` rows below remain the
+> fallback for other or non-JSON responses.
 
 ## listDocs
 
@@ -547,7 +553,8 @@ run();
 
 ## delete
 
-Delete documents by document IDs or query filter from a collection.
+Delete documents by exactly one of document IDs or query filter. A
+`partitionFilter` can narrow that selector but is invalid by itself.
 
 ### Example Usage
 

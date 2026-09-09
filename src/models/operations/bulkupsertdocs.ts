@@ -40,7 +40,7 @@ export const BulkUpsertDocsRequestBody$outboundSchema: z.ZodType<
   objectKey: z.string(),
   type: z.literal("application/json").default("application/json"),
   branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
-});
+}).strict();
 
 export function bulkUpsertDocsRequestBodyToJSON(
   bulkUpsertDocsRequestBody: BulkUpsertDocsRequestBody,

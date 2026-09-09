@@ -1,6 +1,73 @@
 # Changelog
 
-## Unreleased
+## 0.5.0-rc.2 (unreleased)
+
+Aligned with LambdaDB docs PR #56 at contract revision
+`b171ff0a408bbeb024535941b83b861d205a829f`
+(`reference/api/openapi.json`), reviewing `a52ce19..b171ff0`. This pins the
+source contract and does not establish deployment or general availability.
+
+### Added
+
+- Added `CatalogConflictError`, `PayloadTooLargeError`, `BadGatewayError`,
+  `ServiceUnavailableError`, and `GatewayTimeoutError` for the newly documented
+  `409`, `413`, `502`, `503`, and `504` responses. Every `LambdaDBError` exposes
+  the optional `retryAfter` response header; the existing retry engine honors
+  it when retrying `429` responses.
+
+### Changed
+
+- Public operation error unions and standalone function return types now
+  explicitly include the mapped Gateway error classes. Collection update/delete
+  declare `CatalogConflictError`; create retains `ResourceAlreadyExistsError`.
+- Collection create/update now reject empty `indexConfigs`. Metadata tag values
+  reject Unicode whitespace-only strings using the server's Java
+  `String.isBlank` character set.
+- Collection PATCH inputs may include `null` as an unchanged field only when at
+  least one other supported field is non-null. Supplied tags replace the map,
+  `{}` clears it, and `""` clears the description.
+- `DeleteDocsInput` now requires exactly one of `ids` or `filter`;
+  `partitionFilter` can only narrow one of those selectors. Unknown JSON body
+  fields are rejected before sending rather than silently discarded.
+- Clarified that Collection statistics describe the default `main` Branch,
+  consistent reads overlay eligible non-bulk pending writes, page tokens are
+  positions rather than Snapshot pins, and presigned create-only PUT failures
+  require a fresh upload URL instead of an automatic retry.
+- Documented the pinned server restriction that rejects additions below an
+  existing object schema field; the SDK leaves this state-dependent check to
+  the API while requiring a nonempty complete schema map.
+
+### Migration from 0.5.0-rc.1
+
+- Empty `indexConfigs` now fails validation on Collection create/update and
+  full Collection responses. Supply at least one indexed field; update mocks
+  returning an empty schema. On PATCH, omit `indexConfigs` to retain the schema.
+- Metadata tag values must not be blank under Java `String.isBlank` semantics.
+  Replace whitespace-only values with meaningful text or remove the tag.
+- PATCH fields now accept `null` as a no-op, but an empty or all-null PATCH is
+  invalid. Send at least one non-null field. Use `tags: {}` to clear tags and
+  `description: ""` to clear the description; `null` does not clear either.
+- Document delete types and runtime validation now require exactly one of
+  `ids` or `filter`. Split requests that supply both, and provide one selector
+  when using `partitionFilter`. An empty filter is an intentional broad delete.
+- Unknown top-level JSON request fields now fail validation instead of being
+  silently stripped. Remove unsupported fields from request envelopes; custom
+  document fields inside `docs` remain supported.
+- A bulk-upsert completion request that omits `type` now explicitly sends
+  `application/json`. For JSON Lines uploads, preserve the upload-info `type`.
+- Collection update/delete HTTP `409` now maps to `CatalogConflictError`.
+  Gateway `413`, `502`, `503`, and `504` map to the new concrete classes rather
+  than a generic fallback. Update exact-class or `error.name` checks;
+  `instanceof LambdaDBError` remains supported. Operation error unions now
+  explicitly include these alternatives; create `409` remains
+  `ResourceAlreadyExistsError`.
+
+No public method, model field, or package export path is removed in RC2.
+Timestamp types and successful HTTP statuses are unchanged from RC1.
+For migration from stable `0.4.3`, also apply the breaking changes below;
+RC2's nonempty-schema requirement supersedes RC1's allowance for `{}`.
+Branches and Tags remain Collection-scoped and do not replace cross-Collection
+source cloning.
 
 ## 0.5.0-rc.1 - 2026-09-04
 

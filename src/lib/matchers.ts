@@ -3,6 +3,16 @@
  */
 
 import { LambdaDBDefaultError } from "../models/errors/lambdadbdefaulterror.js";
+import {
+  BadGatewayError$inboundSchema,
+  GatewayTimeoutError$inboundSchema,
+  PayloadTooLargeError$inboundSchema,
+  ServiceUnavailableError$inboundSchema,
+  type BadGatewayError,
+  type GatewayTimeoutError,
+  type PayloadTooLargeError,
+  type ServiceUnavailableError,
+} from "../models/errors/gatewayerrors.js";
 import { ResponseValidationError } from "../models/errors/responsevalidationerror.js";
 import { ERR, OK, Result } from "../types/fp.js";
 import { matchResponse, matchStatusCode, StatusCodePredicate } from "./http.js";
@@ -165,6 +175,23 @@ export function nil<T>(
 
 export function fail(codes: StatusCodePredicate): FailMatcher {
   return { enc: "fail", codes };
+}
+
+/** Standard JSON Gateway failures shared by public API operations. */
+export function gatewayErrorMatchers(): Array<
+  ErrorMatcher<
+    | PayloadTooLargeError
+    | BadGatewayError
+    | ServiceUnavailableError
+    | GatewayTimeoutError
+  >
+> {
+  return [
+    jsonErr(413, PayloadTooLargeError$inboundSchema),
+    jsonErr(502, BadGatewayError$inboundSchema),
+    jsonErr(503, ServiceUnavailableError$inboundSchema),
+    jsonErr(504, GatewayTimeoutError$inboundSchema),
+  ];
 }
 
 export type MatchedValue<Matchers> = Matchers extends Matcher<infer T, any>[]

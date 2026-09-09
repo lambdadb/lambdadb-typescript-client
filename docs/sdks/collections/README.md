@@ -13,6 +13,13 @@
 * [update](#update) - Configure a collection.
 * [query](#query) - Search a collection with a query and return the most similar documents.
 
+> **Contract note (`b171ff0`).** JSON Gateway `502`, `503`, and `504`
+> responses map to `BadGatewayError`, `ServiceUnavailableError`, and
+> `GatewayTimeoutError`. Body-carrying requests can also map `413` to
+> `PayloadTooLargeError`; Collection update/delete conflicts map `409` to
+> `CatalogConflictError`. The per-method `4XX`/`5XX` rows below remain the
+> fallback for other or non-JSON responses.
+
 ## list
 
 List all collections in an existing project. Supports pagination via `size` (1–100) and `pageToken`; the response includes `collections` and optional `nextPageToken`.
