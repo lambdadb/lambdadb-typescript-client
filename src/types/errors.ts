@@ -55,12 +55,20 @@ export type LambdaDBClientError =
 
 // ---- API error unions (subset of errors.* per operation) ----
 
-/** Errors that can occur when listing collections, getting a collection, deleting a collection, or getting bulk upsert info. */
+/** Transport errors handled by the shared Gateway response matcher. */
+type GatewayResponseError =
+  | errors.PayloadTooLargeError
+  | errors.BadGatewayError
+  | errors.ServiceUnavailableError
+  | errors.GatewayTimeoutError;
+
+/** Errors that can occur when listing or getting collections. */
 export type ListCollectionsError =
   | errors.UnauthenticatedError
   | errors.ResourceNotFoundError
   | errors.TooManyRequestsError
   | errors.InternalServerError
+  | GatewayResponseError
   | LambdaDBClientError;
 
 /** Errors that can occur when creating a collection. */
@@ -70,6 +78,7 @@ export type CreateCollectionError =
   | errors.ResourceAlreadyExistsError
   | errors.TooManyRequestsError
   | errors.InternalServerError
+  | GatewayResponseError
   | LambdaDBClientError;
 
 /** Errors that can occur when getting a collection. */
@@ -77,26 +86,31 @@ export type GetCollectionError = ListCollectionsError;
 
 /** Errors that can occur when updating a collection. */
 export type UpdateCollectionError =
+  | errors.CatalogConflictError
+  | QueryCollectionError;
+
+/** Errors that can occur when deleting a collection. */
+export type DeleteCollectionError =
+  | errors.CatalogConflictError
+  | ListCollectionsError;
+
+/** Errors that can occur when querying a collection. */
+export type QueryCollectionError =
   | errors.BadRequestError
   | errors.UnauthenticatedError
   | errors.ResourceNotFoundError
   | errors.TooManyRequestsError
   | errors.InternalServerError
+  | GatewayResponseError
   | LambdaDBClientError;
 
-/** Errors that can occur when deleting a collection. */
-export type DeleteCollectionError = ListCollectionsError;
-
-/** Errors that can occur when querying a collection. */
-export type QueryCollectionError = UpdateCollectionError;
-
 /** Errors that can occur when listing, upserting, updating, deleting, or fetching docs, or when calling bulkUpsert. */
-export type ListDocsError = UpdateCollectionError;
-export type UpsertDocsError = UpdateCollectionError;
-export type UpdateDocsError = UpdateCollectionError;
-export type DeleteDocsError = UpdateCollectionError;
-export type FetchDocsError = UpdateCollectionError;
-export type BulkUpsertDocsError = UpdateCollectionError;
+export type ListDocsError = QueryCollectionError;
+export type UpsertDocsError = QueryCollectionError;
+export type UpdateDocsError = QueryCollectionError;
+export type DeleteDocsError = QueryCollectionError;
+export type FetchDocsError = QueryCollectionError;
+export type BulkUpsertDocsError = QueryCollectionError;
 
 /** Errors that can occur when getting bulk upsert docs info. */
 export type GetBulkUpsertDocsError =

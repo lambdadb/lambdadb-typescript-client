@@ -17,6 +17,9 @@ source contract and does not establish deployment or general availability.
 
 ### Changed
 
+- Public operation error unions and standalone function return types now
+  explicitly include the mapped Gateway error classes. Collection update/delete
+  declare `CatalogConflictError`; create retains `ResourceAlreadyExistsError`.
 - Collection create/update now reject empty `indexConfigs`. Metadata tag values
   reject Unicode whitespace-only strings using the server's Java
   `String.isBlank` character set.

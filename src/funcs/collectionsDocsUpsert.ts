@@ -41,6 +41,10 @@ export function collectionsDocsUpsert(
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
+    | errors.PayloadTooLargeError
+    | errors.BadGatewayError
+    | errors.ServiceUnavailableError
+    | errors.GatewayTimeoutError
     | LambdaDBError
     | ResponseValidationError
     | ConnectionError
@@ -71,6 +75,10 @@ async function $do(
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
       | errors.InternalServerError
+      | errors.PayloadTooLargeError
+      | errors.BadGatewayError
+      | errors.ServiceUnavailableError
+      | errors.GatewayTimeoutError
       | LambdaDBError
       | ResponseValidationError
       | ConnectionError
@@ -176,6 +184,10 @@ async function $do(
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
     | errors.InternalServerError
+    | errors.PayloadTooLargeError
+    | errors.BadGatewayError
+    | errors.ServiceUnavailableError
+    | errors.GatewayTimeoutError
     | LambdaDBError
     | ResponseValidationError
     | ConnectionError
