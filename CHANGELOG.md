@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0-rc.2 (unreleased)
 
 Aligned with LambdaDB docs PR #56 at contract revision
 `b171ff0a408bbeb024535941b83b861d205a829f`
@@ -36,6 +36,38 @@ source contract and does not establish deployment or general availability.
 - Documented the pinned server restriction that rejects additions below an
   existing object schema field; the SDK leaves this state-dependent check to
   the API while requiring a nonempty complete schema map.
+
+### Migration from 0.5.0-rc.1
+
+- Empty `indexConfigs` now fails validation on Collection create/update and
+  full Collection responses. Supply at least one indexed field; update mocks
+  returning an empty schema. On PATCH, omit `indexConfigs` to retain the schema.
+- Metadata tag values must not be blank under Java `String.isBlank` semantics.
+  Replace whitespace-only values with meaningful text or remove the tag.
+- PATCH fields now accept `null` as a no-op, but an empty or all-null PATCH is
+  invalid. Send at least one non-null field. Use `tags: {}` to clear tags and
+  `description: ""` to clear the description; `null` does not clear either.
+- Document delete types and runtime validation now require exactly one of
+  `ids` or `filter`. Split requests that supply both, and provide one selector
+  when using `partitionFilter`. An empty filter is an intentional broad delete.
+- Unknown top-level JSON request fields now fail validation instead of being
+  silently stripped. Remove unsupported fields from request envelopes; custom
+  document fields inside `docs` remain supported.
+- A bulk-upsert completion request that omits `type` now explicitly sends
+  `application/json`. For JSON Lines uploads, preserve the upload-info `type`.
+- Collection update/delete HTTP `409` now maps to `CatalogConflictError`.
+  Gateway `413`, `502`, `503`, and `504` map to the new concrete classes rather
+  than a generic fallback. Update exact-class or `error.name` checks;
+  `instanceof LambdaDBError` remains supported. Operation error unions now
+  explicitly include these alternatives; create `409` remains
+  `ResourceAlreadyExistsError`.
+
+No public method, model field, or package export path is removed in RC2.
+Timestamp types and successful HTTP statuses are unchanged from RC1.
+For migration from stable `0.4.3`, also apply the breaking changes below;
+RC2's nonempty-schema requirement supersedes RC1's allowance for `{}`.
+Branches and Tags remain Collection-scoped and do not replace cross-Collection
+source cloning.
 
 ## 0.5.0-rc.1 - 2026-09-04
 
