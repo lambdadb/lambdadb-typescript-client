@@ -10,7 +10,7 @@ dotenv.config();
 
 import {
   LambdaDBClient,
-  type ListCollectionsResponse,
+  type ListCollectionsResponseWithDates,
 } from "@functional-systems/lambdadb";
 
 const client = new LambdaDBClient({
@@ -18,7 +18,7 @@ const client = new LambdaDBClient({
 });
 
 async function main() {
-  const result: ListCollectionsResponse = await client.listCollections();
+  const result: ListCollectionsResponseWithDates = await client.listCollections();
   console.log(result);
 }
 

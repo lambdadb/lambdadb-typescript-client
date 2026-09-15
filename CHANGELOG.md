@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0-rc.3 (unreleased)
 
 Aligned with [the pinned OpenAPI contract](https://github.com/lambdadb/docs/blob/c8495bf47cd8918cfd546b4742823fd4cf3d0814/reference/api/openapi.json)
 at `c8495bf47cd8918cfd546b4742823fd4cf3d0814`, reviewing `b171ff0..c8495bf`.
@@ -23,8 +23,10 @@ This records the source contract, not deployment evidence.
   first. Existing error mapping and no automatic 409 retry remain unchanged.
 - Verified existing Query/Fetch validation: `consistentRead: true` accepts
   direct Branch refs and implicit main, and rejects Tag/Alias refs.
+- Updated development-only dependency resolutions through PR #21; runtime
+  dependency requirements are unchanged.
 
-## 0.5.0-rc.2 (unreleased)
+## 0.5.0-rc.2 - 2026-09-09
 
 Aligned with LambdaDB docs PR #56 at contract revision
 `b171ff0a408bbeb024535941b83b861d205a829f`
