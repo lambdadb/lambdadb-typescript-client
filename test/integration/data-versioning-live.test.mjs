@@ -21,6 +21,9 @@ const requiredEnvironment = [
 ];
 const missingEnvironment = requiredEnvironment.filter((name) => !process.env[name]);
 
+// List and ordinary Fetch wait for committed data; a commit can take over 90 seconds.
+const COMMIT_TIMEOUT_MS = 300_000;
+
 const delay = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -38,11 +41,14 @@ function liveServerOptions(rawBaseUrl, projectName) {
 }
 
 async function eventually(operation, description, timeoutMs = 90_000) {
-  const deadline = Date.now() + timeoutMs;
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutMs;
   let lastError;
   while (Date.now() < deadline) {
     try {
-      return await operation();
+      const result = await operation();
+      console.info(`[live] ${description}: passed after ${Date.now() - startedAt} ms`);
+      return result;
     } catch (error) {
       lastError = error;
       await delay(1_000);
@@ -55,7 +61,8 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
   skip: missingEnvironment.length === 0
     ? false
     : `Missing ${missingEnvironment.join(", ")} in .env.local`,
-  timeout: 240_000,
+  // Allow each committed-data phase and cleanup to finish within the test budget.
+  timeout: 1_200_000,
 }, async () => {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const collectionName = `ts-dv-${suffix}`.slice(0, 52);
@@ -109,13 +116,13 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       });
       assert.equal(response.total, 3);
       return response;
-    }, "main Branch snapshot");
+    }, "main Branch pending-write visibility");
 
     await eventually(async () => {
       const response = await collection.docs.listAll({ size: 1 });
       assert.equal(response.docs.length, 3);
       return response;
-    }, "main Branch list visibility");
+    }, "main Branch committed list visibility", COMMIT_TIMEOUT_MS);
 
     await collection.branches.create({
       branchName: "candidate",
@@ -185,7 +192,7 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       assert.equal(response.docs.find((item) => item.doc.id === "doc-1")?.doc.title, "one-candidate");
       assert.equal(response.docs.some((item) => item.doc.id === "doc-3"), false);
       assert.equal(response.docs.some((item) => item.doc.id === "doc-4"), true);
-    }, "committed Branch data before tagging");
+    }, "committed Branch data before tagging", COMMIT_TIMEOUT_MS);
 
     const { tag } = await collection.tags.create({
       tagName: "release-001",
@@ -267,11 +274,11 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       const response = await collection.docs.fetch({
         ids: ["bulk-1"],
         ref: branchRef("candidate"),
-        consistentRead: true,
+        consistentRead: false,
       });
       assert.equal(response.total, 1);
       return response;
-    }, "signed bulk upload visibility");
+    }, "signed bulk upload committed visibility", COMMIT_TIMEOUT_MS);
 
     const updated = await collection.update({
       description: "Updated by TypeScript Data Versioning smoke",
