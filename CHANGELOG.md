@@ -1,6 +1,32 @@
 # Changelog
 
-## 0.5.0-rc.2 (unreleased)
+## 0.5.0-rc.3 (unreleased)
+
+Aligned with [the pinned OpenAPI contract](https://github.com/lambdadb/docs/blob/c8495bf47cd8918cfd546b4742823fd4cf3d0814/reference/api/openapi.json)
+at `c8495bf47cd8918cfd546b4742823fd4cf3d0814`, reviewing `b171ff0..c8495bf`.
+This records the source contract, not deployment evidence.
+
+- Replaced `RefDetails` with separate `BranchDetails`, `TagDetails`, and
+  `SnapshotDetails`. Branches expose required nullable `headSnapshot` and
+  `parentSnapshot`; migrate `branch.snapshotId` to
+  `branch.headSnapshot?.snapshotId`. The parent is fixed fork metadata. Tags
+  retain a non-null `snapshotId` and add `snapshotCommittedAt`. All facade
+  timestamps are `Date`, including nested snapshot commit times; wire model
+  timestamps remain numeric milliseconds. Update response mocks accordingly.
+- Bulk completion `type` is now an optional string and stays omitted when not
+  supplied. Automatic uploads retain the required JSON Content-Type header,
+  signed headers, and completion type from the upload-info response.
+- Corrected schema-update guidance to allow nested additions at any depth while
+  preserving existing fields and settings. Existing serialization is unchanged.
+- Corrected Alias deletion guidance and live tests: referenced Branch/Tag
+  deletion returns `CatalogConflictError` (409); delete or retarget all Aliases
+  first. Existing error mapping and no automatic 409 retry remain unchanged.
+- Verified existing Query/Fetch validation: `consistentRead: true` accepts
+  direct Branch refs and implicit main, and rejects Tag/Alias refs.
+- Updated development-only dependency resolutions through PR #21; runtime
+  dependency requirements are unchanged.
+
+## 0.5.0-rc.2 - 2026-09-09
 
 Aligned with LambdaDB docs PR #56 at contract revision
 `b171ff0a408bbeb024535941b83b861d205a829f`

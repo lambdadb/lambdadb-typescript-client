@@ -13,7 +13,8 @@ import type { SDKValidationError } from "./models/errors/sdkvalidationerror.js";
 import {
   AliasDetails$inboundSchema,
   AliasTarget$schema,
-  RefDetails$inboundSchema,
+  BranchDetails$inboundSchema,
+  TagDetails$inboundSchema,
   RefSource$schema,
   type AliasRef,
   type BranchRef,
@@ -30,7 +31,8 @@ import type {
 } from "./models/errors/httpclienterrors.js";
 import {
   aliasDetailsWithDate,
-  refDetailsWithDate,
+  branchDetailsWithDates,
+  tagDetailsWithDates,
   type AliasResponse,
   type CreateAliasInput,
   type CreateBranchInput,
@@ -47,7 +49,7 @@ import type { Result } from "./types/fp.js";
 
 /** Exact public contract revision implemented by this SDK. */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "b171ff0a408bbeb024535941b83b861d205a829f" as const;
+  "c8495bf47cd8918cfd546b4742823fd4cf3d0814" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -237,15 +239,15 @@ const createBranchSchema: z.ZodType<CreateBranchInput> = z.object({
   branchName: z.string().regex(refNamePattern),
   source: RefSource$schema.optional(),
 }).strict();
-const createBranchResponseSchema = z.object({ branch: RefDetails$inboundSchema });
-const listBranchesResponseSchema = z.object({ branches: z.array(RefDetails$inboundSchema) });
+const createBranchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
+const listBranchesResponseSchema = z.object({ branches: z.array(BranchDetails$inboundSchema) });
 
 const createTagSchema: z.ZodType<CreateTagInput> = z.object({
   tagName: z.string().regex(refNamePattern),
   source: RefSource$schema.optional(),
 }).strict();
-const createTagResponseSchema = z.object({ tag: RefDetails$inboundSchema });
-const listTagsResponseSchema = z.object({ tags: z.array(RefDetails$inboundSchema) });
+const createTagResponseSchema = z.object({ tag: TagDetails$inboundSchema });
+const listTagsResponseSchema = z.object({ tags: z.array(TagDetails$inboundSchema) });
 
 const createAliasSchema: z.ZodType<CreateAliasInput> = z.object({
   aliasName: z.string().regex(refNamePattern),
@@ -284,7 +286,7 @@ export class CollectionBranches {
       conflict: "already-exists",
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { branch: refDetailsWithDate(result.value.branch) } };
+    return { ok: true, value: { branch: branchDetailsWithDates(result.value.branch) } };
   }
 
   async list(options?: RequestOptions): Promise<ListBranchesResponse> {
@@ -301,7 +303,7 @@ export class CollectionBranches {
       successStatus: 200,
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { branches: result.value.branches.map(refDetailsWithDate) } };
+    return { ok: true, value: { branches: result.value.branches.map(branchDetailsWithDates) } };
   }
 
   async delete(branchName: string, options?: RequestOptions): Promise<MessageResponse> {
@@ -356,7 +358,7 @@ export class CollectionTags {
       conflict: "already-exists",
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { tag: refDetailsWithDate(result.value.tag) } };
+    return { ok: true, value: { tag: tagDetailsWithDates(result.value.tag) } };
   }
 
   async list(options?: RequestOptions): Promise<ListTagsResponse> {
@@ -373,7 +375,7 @@ export class CollectionTags {
       successStatus: 200,
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { tags: result.value.tags.map(refDetailsWithDate) } };
+    return { ok: true, value: { tags: result.value.tags.map(tagDetailsWithDates) } };
   }
 
   async delete(tagName: string, options?: RequestOptions): Promise<MessageResponse> {

@@ -20,7 +20,9 @@ import type {
   AliasRef,
   BranchRef,
   ReadRef,
-  RefDetails as RefDetailsModel,
+  BranchDetails as BranchDetailsModel,
+  SnapshotDetails as SnapshotDetailsModel,
+  TagDetails as TagDetailsModel,
   TagRef,
 } from "../models/versioning.js";
 
@@ -86,7 +88,18 @@ export type {
   TagSource,
 } from "../models/versioning.js";
 
-export type RefDetails = Omit<RefDetailsModel, "createdAt"> & {
+export type SnapshotDetails = Omit<SnapshotDetailsModel, "snapshotCommittedAt"> & {
+  snapshotCommittedAt: Date;
+};
+
+export type BranchDetails = Omit<BranchDetailsModel, "createdAt" | "headSnapshot" | "parentSnapshot"> & {
+  headSnapshot: SnapshotDetails | null;
+  parentSnapshot: SnapshotDetails | null;
+  createdAt: Date;
+};
+
+export type TagDetails = Omit<TagDetailsModel, "createdAt" | "snapshotCommittedAt"> & {
+  snapshotCommittedAt: Date;
   createdAt: Date;
 };
 
@@ -99,16 +112,16 @@ export type CreateBranchInput = {
   source?: import("../models/versioning.js").RefSource | undefined;
 };
 
-export type CreateBranchResponse = { branch: RefDetails };
-export type ListBranchesResponse = { branches: RefDetails[] };
+export type CreateBranchResponse = { branch: BranchDetails };
+export type ListBranchesResponse = { branches: BranchDetails[] };
 
 export type CreateTagInput = {
   tagName: string;
   source?: import("../models/versioning.js").RefSource | undefined;
 };
 
-export type CreateTagResponse = { tag: RefDetails };
-export type ListTagsResponse = { tags: RefDetails[] };
+export type CreateTagResponse = { tag: TagDetails };
+export type ListTagsResponse = { tags: TagDetails[] };
 
 export type CreateAliasInput = {
   aliasName: string;
@@ -231,8 +244,27 @@ export function createCollectionResponseWithDates(
 }
 
 /** @internal */
-export function refDetailsWithDate(details: RefDetailsModel): RefDetails {
-  return { ...details, createdAt: new Date(details.createdAt) };
+export function snapshotDetailsWithDate(details: SnapshotDetailsModel): SnapshotDetails {
+  return { ...details, snapshotCommittedAt: new Date(details.snapshotCommittedAt) };
+}
+
+/** @internal */
+export function branchDetailsWithDates(details: BranchDetailsModel): BranchDetails {
+  return {
+    ...details,
+    headSnapshot: details.headSnapshot === null ? null : snapshotDetailsWithDate(details.headSnapshot),
+    parentSnapshot: details.parentSnapshot === null ? null : snapshotDetailsWithDate(details.parentSnapshot),
+    createdAt: new Date(details.createdAt),
+  };
+}
+
+/** @internal */
+export function tagDetailsWithDates(details: TagDetailsModel): TagDetails {
+  return {
+    ...snapshotDetailsWithDate(details),
+    name: details.name,
+    createdAt: new Date(details.createdAt),
+  };
 }
 
 /** @internal */
