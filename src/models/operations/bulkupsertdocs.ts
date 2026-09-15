@@ -10,8 +10,8 @@ export type BulkUpsertDocsRequestBody = {
    * Object key uploaded based on bulk upsert info.
    */
   objectKey: string;
-  /** Content type supplied by the bulk-upload info response. */
-  type?: "application/json" | undefined;
+  /** Optional completion metadata. The uploaded object must have Content-Type application/json. */
+  type?: string | undefined;
   /** Write target Branch. Must match the bulk-upload info request. */
   branch?: string | undefined;
 };
@@ -27,7 +27,7 @@ export type BulkUpsertDocsRequest = {
 /** @internal */
 export type BulkUpsertDocsRequestBody$Outbound = {
   objectKey: string;
-  type: "application/json";
+  type?: string | undefined;
   branch?: string | undefined;
 };
 
@@ -38,7 +38,7 @@ export const BulkUpsertDocsRequestBody$outboundSchema: z.ZodType<
   BulkUpsertDocsRequestBody
 > = z.object({
   objectKey: z.string(),
-  type: z.literal("application/json").default("application/json"),
+  type: z.string().optional(),
   branch: z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/).optional(),
 }).strict();
 

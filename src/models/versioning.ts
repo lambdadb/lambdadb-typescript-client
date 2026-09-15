@@ -33,10 +33,28 @@ export type RefSource = BranchSource | TagSource;
 /** A Branch or Tag used as the target of an Alias. */
 export type AliasTarget = BranchRef | TagRef;
 
-export type RefDetails = {
+export type SnapshotDetails = {
+  snapshotId: string;
+  /** Snapshot commit time as Unix epoch milliseconds. */
+  snapshotCommittedAt: number;
+};
+
+export type BranchDetails = {
   name: string;
-  snapshotId: string | null;
-  /** Ref creation time as Unix epoch milliseconds. */
+  /** Current committed head; null for an empty branch. */
+  headSnapshot: SnapshotDetails | null;
+  /**
+   * Fixed fork snapshot, not the previous head. Null for main or an empty source.
+   * This metadata does not extend snapshot retention.
+   */
+  parentSnapshot: SnapshotDetails | null;
+  /** Branch creation time as Unix epoch milliseconds. */
+  createdAt: number;
+};
+
+export type TagDetails = SnapshotDetails & {
+  name: string;
+  /** Tag creation time, independent of the pinned snapshot commit time. */
   createdAt: number;
 };
 
@@ -99,9 +117,24 @@ export const AliasTarget$schema: z.ZodType<AliasTarget> = z.union([
 ]);
 
 /** @internal */
-export const RefDetails$inboundSchema: z.ZodType<RefDetails> = z.object({
+export const SnapshotDetails$inboundSchema: z.ZodType<SnapshotDetails> = z.object({
+  snapshotId: z.string(),
+  snapshotCommittedAt: z.number().int(),
+});
+
+/** @internal */
+export const BranchDetails$inboundSchema: z.ZodType<BranchDetails> = z.object({
   name: z.string(),
-  snapshotId: z.string().nullable(),
+  headSnapshot: SnapshotDetails$inboundSchema.nullable(),
+  parentSnapshot: SnapshotDetails$inboundSchema.nullable(),
+  createdAt: z.number().int(),
+});
+
+/** @internal */
+export const TagDetails$inboundSchema: z.ZodType<TagDetails> = z.object({
+  name: z.string(),
+  snapshotId: z.string(),
+  snapshotCommittedAt: z.number().int(),
   createdAt: z.number().int(),
 });
 

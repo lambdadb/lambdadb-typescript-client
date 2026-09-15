@@ -101,10 +101,10 @@ function collectionResponse() {
   };
 }
 
-test("pins the final b171ff0 OpenAPI contract", () => {
+test("pins the final c8495bf OpenAPI contract", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "b171ff0a408bbeb024535941b83b861d205a829f",
+    "c8495bf47cd8918cfd546b4742823fd4cf3d0814",
   );
 });
 
@@ -204,7 +204,7 @@ test("enforces Collection PATCH and document delete selector semantics", async (
   assert.equal(apiCalls.length, 3);
 });
 
-test("rejects unknown JSON request fields and explicitly sends bulk type", async () => {
+test("rejects unknown JSON request fields and preserves omitted bulk completion type", async () => {
   const { apiCalls, client } = createClient((call) => {
     if (call.url.pathname.endsWith("/bulk-upsert")) {
       return jsonResponse({ message: "Accepted" }, 202);
@@ -228,7 +228,6 @@ test("rejects unknown JSON request fields and explicitly sends bulk type", async
   assert.equal(completed.ok, true);
   assert.deepEqual(JSON.parse(apiCalls[0].body), {
     objectKey: "uploads/docs.json",
-    type: "application/json",
     branch: "candidate",
   });
 });
@@ -317,4 +316,45 @@ test("reports storage 412 without retrying PUT or finalizing the import", async 
   assert.equal(apiCalls.length, 1);
   assert.equal(transferCalls.length, 1);
   assert.equal(transferCalls[0].headers["if-none-match"], "*");
+});
+
+test("bulk completion accepts optional string metadata without changing caller input", async () => {
+  const { apiCalls, client } = createClient(() => jsonResponse({ message: "Accepted" }, 202));
+  const docs = client.collection(COLLECTION_NAME).docs;
+  for (const type of [undefined, "application/json", "ignored-metadata", ""]) {
+    const input = Object.freeze({ objectKey: "uploads/docs.json", type, branch: "candidate" });
+    await docs.bulkUpsert(input);
+    assert.deepEqual(JSON.parse(apiCalls.at(-1).body), JSON.parse(JSON.stringify(input)));
+  }
+  for (const type of [null, 1, true]) {
+    const result = await docs.bulkUpsertSafe({ objectKey: "uploads/docs.json", type });
+    assert.equal(result.ok, false);
+    assert.ok(result.error instanceof SDKValidationError);
+  }
+  assert.equal(apiCalls.length, 4);
+});
+
+test("Collection PATCH preserves a full schema with new children at multiple object depths", async () => {
+  const indexConfigs = {
+    title: { type: "text", analyzers: ["english"] },
+    profile: { type: "object", objectIndexConfigs: {
+      name: { type: "text", analyzers: ["korean"] },
+      city: { type: "keyword" },
+      address: { type: "object", objectIndexConfigs: {
+        street: { type: "keyword" },
+        postalCode: { type: "keyword" },
+      } },
+    } },
+    active: { type: "boolean" },
+  };
+  const { apiCalls, client } = createClient(() => {
+    const response = collectionResponse();
+    response.collection.indexConfigs = indexConfigs;
+    return jsonResponse(response);
+  });
+  const updated = await client.collection(COLLECTION_NAME).update({ indexConfigs });
+  assert.equal(apiCalls.length, 1);
+  assert.equal(apiCalls[0].method, "PATCH");
+  assert.deepEqual(JSON.parse(apiCalls[0].body), { indexConfigs });
+  assert.deepEqual(updated.collection.indexConfigs, indexConfigs);
 });
