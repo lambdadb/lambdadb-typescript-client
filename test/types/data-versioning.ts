@@ -1,3 +1,6 @@
+import type { BranchDetails, TagDetails, SnapshotDetails, BulkUpsertInput } from "../../src/index.js";
+import type { BranchDetails as WireBranchDetails, TagDetails as WireTagDetails } from "../../src/models/index.js";
+
 import {
   CollectionAliases,
   CollectionBranches,
@@ -130,3 +133,40 @@ void aliases;
 void revision;
 void (null as VersioningError | null);
 void (null as BranchSource | null);
+
+// Facade timestamps are Dates; wire model timestamps remain milliseconds.
+const snapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: new Date() };
+const branch: BranchDetails = { name: "candidate", headSnapshot: snapshot, parentSnapshot: null, createdAt: new Date() };
+const tag: TagDetails = { name: "release-001", ...snapshot, createdAt: new Date() };
+const wireBranch: WireBranchDetails = { name: "main", headSnapshot: null, parentSnapshot: null, createdAt: 1 };
+const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", snapshotCommittedAt: 1, createdAt: 2 };
+// @ts-expect-error Branch responses no longer expose a top-level snapshotId.
+const obsoleteSnapshotId = branch.snapshotId;
+// @ts-expect-error Tag snapshots cannot be null.
+const nullTag: TagDetails = { ...tag, snapshotId: null };
+// @ts-expect-error Both nullable Branch snapshot fields are required.
+const missingParent: BranchDetails = { name: "main", headSnapshot: null, createdAt: new Date() };
+// @ts-expect-error Snapshot commit times use Date in the facade.
+const numericSnapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: 1 };
+
+const reads: (QueryCollectionInput | FetchDocsInput)[] = [
+  { query: {}, consistentRead: true },
+  { ids: [], consistentRead: true },
+  { ids: [], ref: branchRef("main"), consistentRead: true },
+  { query: {}, ref: aliasRef("production"), consistentRead: false },
+  { ids: [], ref: aliasRef("production") },
+];
+// @ts-expect-error Tag Query cannot request consistentRead true.
+const tagQuery: QueryCollectionInput = { query: {}, ref: tagRef("release-001"), consistentRead: true };
+// @ts-expect-error Tag Fetch cannot request consistentRead true.
+const invalidTagFetch: FetchDocsInput = { ids: [], ref: tagRef("release-001"), consistentRead: true };
+// @ts-expect-error Alias Fetch cannot request consistentRead true.
+const aliasFetch: FetchDocsInput = { ids: [], ref: aliasRef("production"), consistentRead: true };
+const completions: BulkUpsertInput[] = [
+  { objectKey: "key" },
+  { objectKey: "key", type: "application/json" },
+  { objectKey: "key", type: "ignored-metadata" },
+];
+
+void [branch, tag, wireBranch, wireTag, obsoleteSnapshotId, nullTag, missingParent, numericSnapshot,
+  reads, tagQuery, invalidTagFetch, aliasFetch, completions];

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   BadRequestError,
+  CatalogConflictError,
   LambdaDBClient,
   ResourceAlreadyExistsError,
   ResourceNotFoundError,
@@ -173,10 +174,32 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       false,
     );
 
-    await collection.tags.create({
+    // Tag creation pins committed data, so pending-write visibility is insufficient.
+    await eventually(async () => {
+      const response = await collection.docs.fetch({
+        ids: ["doc-1", "doc-2", "doc-3", "doc-4"],
+        ref: branchRef("candidate"),
+        consistentRead: false,
+      });
+      assert.equal(response.total, 3);
+      assert.equal(response.docs.find((item) => item.doc.id === "doc-1")?.doc.title, "one-candidate");
+      assert.equal(response.docs.some((item) => item.doc.id === "doc-3"), false);
+      assert.equal(response.docs.some((item) => item.doc.id === "doc-4"), true);
+    }, "committed Branch data before tagging");
+
+    const { tag } = await collection.tags.create({
       tagName: "release-001",
       source: branchSource("candidate"),
     });
+    assert.equal(typeof tag.snapshotId, "string");
+    assert.ok(tag.snapshotCommittedAt instanceof Date);
+    assert.ok(tag.createdAt instanceof Date);
+    const { branches } = await collection.branches.list();
+    const candidate = branches.find((branch) => branch.name === "candidate");
+    assert.ok(candidate.headSnapshot.snapshotCommittedAt instanceof Date);
+    assert.ok(candidate.parentSnapshot.snapshotCommittedAt instanceof Date);
+    assert.equal(branches.find((branch) => branch.name === "main").parentSnapshot, null);
+
     await collection.aliases.create({
       aliasName: "production",
       target: tagTarget("release-001"),
@@ -205,20 +228,13 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(duplicate.ok, false);
     assert.ok(duplicate.error instanceof ResourceAlreadyExistsError);
 
-    await collection.tags.delete("release-001");
-    await eventually(async () => {
-      const response = await collection.aliases.list();
-      const alias = response.aliases.find((item) => item.aliasName === "production");
-      assert.equal(alias?.dangling, true);
-      return alias;
-    }, "dangling Alias state");
-
-    const danglingRead = await collection.docs.fetchSafe({
-      ids: ["doc-1"],
-      ref: aliasRef("production"),
-    });
-    assert.equal(danglingRead.ok, false);
-    assert.ok(danglingRead.error instanceof BadRequestError);
+    const referencedTag = await collection.tags.deleteSafe("release-001");
+    assert.equal(referencedTag.ok, false);
+    assert.ok(referencedTag.error instanceof CatalogConflictError);
+    const aliases = await collection.aliases.list();
+    assert.equal(aliases.aliases.find((item) => item.aliasName === "production")?.dangling, false);
+    const aliasRead = await collection.docs.fetch({ ids: ["doc-1"], ref: aliasRef("production") });
+    assert.equal(aliasRead.total, 1);
 
     const missingRefRead = await collection.docs.fetchSafe({
       ids: ["doc-1"],
@@ -230,6 +246,13 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     await collection.aliases.retarget("production", {
       target: { kind: "branch", name: "candidate" },
     });
+    await collection.tags.delete("release-001");
+    const referencedBranch = await collection.branches.deleteSafe("candidate");
+    assert.equal(referencedBranch.ok, false);
+    assert.ok(referencedBranch.error instanceof CatalogConflictError);
+    const defaultBranch = await collection.branches.deleteSafe("main");
+    assert.equal(defaultBranch.ok, false);
+    assert.ok(defaultBranch.error instanceof BadRequestError);
     const restoredRead = await collection.docs.fetch({
       ids: ["doc-1"],
       ref: aliasRef("production"),

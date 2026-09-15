@@ -142,7 +142,7 @@ const queryBody: QueryCollectionInput = {
 const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
-Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; Data Versioning types such as `ReadRef`, `RefSource`, `AliasTarget`, and `RefDetails`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection create/list/get/update and ref lifecycle responses expose timestamps as `Date`. All are exported from the main package.
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; Data Versioning types such as `ReadRef`, `RefSource`, `AliasTarget`, `SnapshotDetails`, `BranchDetails`, and `TagDetails`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection create/list/get/update and ref lifecycle responses expose timestamps as `Date`. All are exported from the main package.
 
 ## Data Versioning
 
@@ -190,7 +190,9 @@ Omitting a read ref or write Branch preserves the existing `main` behavior.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The SDK contract is pinned at
-`b171ff0a408bbeb024535941b83b861d205a829f`. Reads through an Alias whose
+`c8495bf47cd8918cfd546b4742823fd4cf3d0814`. Deleting a Branch or Tag referenced
+by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
+all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
 ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 
