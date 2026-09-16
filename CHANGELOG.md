@@ -1,6 +1,34 @@
 # Changelog
 
-## 0.5.0-rc.3 (unreleased)
+## 0.5.0
+
+Aligned with [docs c441804](https://github.com/lambdadb/docs/blob/c44180406c05b1a9043d8516e7c7f60df91fc9a7/reference/api/openapi.json)
+and [server PR #405](https://github.com/lambdadb/lambdadb/pull/405), merged as
+`d1a76659884a9ed09283a0b2e2989897dc799247`. The pinned contract is
+`c44180406c05b1a9043d8516e7c7f60df91fc9a7`, reviewing `c8495bf..c441804`.
+These source revisions do not establish deployment in a target environment.
+
+- **Breaking:** Branch creation accepts only `BranchSource`, in both TypeScript
+  inputs and runtime validation (`create` / `createSafe`). Replace Tag sources
+  with the intended source Branch. Omitting source still selects `main`, and
+  Branch `asOf` support is unchanged. Tag creation continues to accept Branch
+  or Tag sources; Alias sources and Tag `asOf` remain invalid.
+- Branch create/list responses now require nullable `parentBranch`, with
+  exported `ParentBranchDetails` containing `branchId` and `name`. Update mocks
+  to include this field. It records the direct source even for empty Branches
+  or ancestor snapshots selected by `asOf`; `main` and records without a parent
+  return `null`. Parent deletion or name reuse does not alter this metadata.
+- Existing nullable snapshot fields, Date conversion, synchronous ref/source
+  helpers, and Promise-based ordinary / Safe lifecycle paths are preserved.
+  There is no synchronous network API.
+- Promotes the RC1–RC3 Data Versioning work to the stable `0.5.0` package:
+  ref lifecycle, ref-scoped reads, Branch writes, retention, signed bulk uploads,
+  collection metadata, and typed HTTP errors. See the RC entries below for the
+  cumulative changes from stable `0.4.3`.
+- Updated the Qdrant live smoke test to exercise supported filtered scrolling
+  after data commits; numeric point offsets remain unsupported.
+
+## 0.5.0-rc.3 - 2026-09-15
 
 Aligned with [the pinned OpenAPI contract](https://github.com/lambdadb/docs/blob/c8495bf47cd8918cfd546b4742823fd4cf3d0814/reference/api/openapi.json)
 at `c8495bf47cd8918cfd546b4742823fd4cf3d0814`, reviewing `b171ff0..c8495bf`.

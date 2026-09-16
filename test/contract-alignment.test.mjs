@@ -101,10 +101,10 @@ function collectionResponse() {
   };
 }
 
-test("pins the final c8495bf OpenAPI contract", () => {
+test("pins the c441804 OpenAPI contract", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "c8495bf47cd8918cfd546b4742823fd4cf3d0814",
+    "c44180406c05b1a9043d8516e7c7f60df91fc9a7",
   );
 });
 

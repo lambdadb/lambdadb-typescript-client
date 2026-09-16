@@ -1,4 +1,4 @@
-import type { BranchDetails, TagDetails, SnapshotDetails, BulkUpsertInput } from "../../src/index.js";
+import type { BranchDetails, TagDetails, SnapshotDetails, ParentBranchDetails, CreateBranchInput, CreateTagInput, BulkUpsertInput } from "../../src/index.js";
 import type { BranchDetails as WireBranchDetails, TagDetails as WireTagDetails } from "../../src/models/index.js";
 
 import {
@@ -136,16 +136,17 @@ void (null as BranchSource | null);
 
 // Facade timestamps are Dates; wire model timestamps remain milliseconds.
 const snapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: new Date() };
-const branch: BranchDetails = { name: "candidate", headSnapshot: snapshot, parentSnapshot: null, createdAt: new Date() };
+const parentBranch: ParentBranchDetails = { branchId: "main-id", name: "main" };
+const branch: BranchDetails = { name: "candidate", parentBranch, headSnapshot: snapshot, parentSnapshot: null, createdAt: new Date() };
 const tag: TagDetails = { name: "release-001", ...snapshot, createdAt: new Date() };
-const wireBranch: WireBranchDetails = { name: "main", headSnapshot: null, parentSnapshot: null, createdAt: 1 };
+const wireBranch: WireBranchDetails = { name: "main", parentBranch: null, headSnapshot: null, parentSnapshot: null, createdAt: 1 };
 const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", snapshotCommittedAt: 1, createdAt: 2 };
 // @ts-expect-error Branch responses no longer expose a top-level snapshotId.
 const obsoleteSnapshotId = branch.snapshotId;
 // @ts-expect-error Tag snapshots cannot be null.
 const nullTag: TagDetails = { ...tag, snapshotId: null };
-// @ts-expect-error Both nullable Branch snapshot fields are required.
-const missingParent: BranchDetails = { name: "main", headSnapshot: null, createdAt: new Date() };
+// @ts-expect-error parentSnapshot is required, even when its value is null.
+const missingParent: BranchDetails = { name: "main", parentBranch: null, headSnapshot: null, createdAt: new Date() };
 // @ts-expect-error Snapshot commit times use Date in the facade.
 const numericSnapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: 1 };
 
@@ -170,3 +171,37 @@ const completions: BulkUpsertInput[] = [
 
 void [branch, tag, wireBranch, wireTag, obsoleteSnapshotId, nullTag, missingParent, numericSnapshot,
   reads, tagQuery, invalidTagFetch, aliasFetch, completions];
+
+// Branch creation is narrower than Tag creation on both Promise-based paths.
+const branchInputs: CreateBranchInput[] = [
+  { branchName: "candidate" },
+  { branchName: "candidate", source: branchSource("main") },
+  { branchName: "candidate", source: branchSource("main", new Date()) },
+  { branchName: "candidate", source: branchSource("main", 1788336000000) },
+];
+const tagInputs: CreateTagInput[] = [
+  { tagName: "release-001" },
+  { tagName: "release-001", source: branchSource("main", new Date()) },
+  { tagName: "release-001", source: tagSource("release-000") },
+];
+for (const input of branchInputs) {
+  void branches.create(input);
+  void branches.createSafe(input);
+}
+for (const input of tagInputs) {
+  void tags.create(input);
+  void tags.createSafe(input);
+}
+// @ts-expect-error A Tag cannot be the source of a Branch.
+void branches.create({ branchName: "candidate", source: tagSource("release-001") });
+// @ts-expect-error Safe Branch creation has the same Branch-only source contract.
+void branches.createSafe({ branchName: "candidate", source: tagSource("release-001") });
+// @ts-expect-error An Alias cannot be the source of a Branch.
+void branches.create({ branchName: "candidate", source: aliasRef("production") });
+// @ts-expect-error An Alias cannot be the source of a Tag.
+void tags.createSafe({ tagName: "release-001", source: aliasRef("production") });
+// @ts-expect-error parentBranch is required, even when its value is null.
+const missingParentBranch: BranchDetails = { name: "main", headSnapshot: null, parentSnapshot: null, createdAt: new Date() };
+// @ts-expect-error Parent identity requires both branchId and name.
+const incompleteParentBranch: ParentBranchDetails = { name: "main" };
+void [missingParentBranch, incompleteParentBranch];
