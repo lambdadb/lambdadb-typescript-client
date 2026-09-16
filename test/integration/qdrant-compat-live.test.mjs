@@ -12,7 +12,25 @@ const projectApiKey = process.env.LAMBDADB_PROJECT_API_KEY;
 const projectName = process.env.LAMBDADB_PROJECT_NAME || "playground";
 const baseUrl = process.env.LAMBDADB_BASE_URL || "https://api.lambdadb.ai";
 
+// Scroll reads committed data; writes can take several minutes to commit.
+async function eventually(operation, description, timeoutMs = 300_000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError;
+  while (Date.now() < deadline) {
+    try {
+      const result = await operation();
+      console.info(`[live] ${description}: passed`);
+      return result;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+  }
+  throw new Error(`Timed out waiting for ${description}`, { cause: lastError });
+}
+
 test("qdrant compatibility live smoke", {
+  timeout: 360_000,
   skip: shouldRun && projectApiKey
     ? false
     : "Set LAMBDADB_RUN_LIVE_TESTS=1 and LAMBDADB_PROJECT_API_KEY to run live tests",
@@ -99,8 +117,8 @@ test("qdrant compatibility live smoke", {
     const deletedByFilterRecords = await client.retrieve(collectionName, { ids: [3] });
     assert.equal(deletedByFilterRecords.length, 0);
 
-    await assert.rejects(
-      client.scroll(collectionName, {
+    await eventually(async () => {
+      const [records] = await client.scroll(collectionName, {
         scrollFilter: new models.Filter({
           must: [
             new models.FieldCondition({
@@ -109,12 +127,22 @@ test("qdrant compatibility live smoke", {
             }),
           ],
         }),
-      }),
+      });
+      assert.deepEqual(records.map((record) => record.id), [2]);
+      assert.equal(records[0].payload?.tenant, "acme");
+    }, "filtered scroll committed visibility");
+
+    // Numeric Qdrant point offsets remain unsupported; use returned page tokens.
+    await assert.rejects(
+      client.scroll(collectionName, { offset: 1 }),
       UnsupportedQdrantFeatureError,
     );
   } finally {
     try {
       await client.deleteCollection(collectionName);
+      await eventually(async () => {
+        assert.equal(await client.collectionExists(collectionName), false);
+      }, "Qdrant Collection cleanup", 30_000);
     } catch (error) {
       if (error?.name !== "ResourceNotFoundError") throw error;
     }
