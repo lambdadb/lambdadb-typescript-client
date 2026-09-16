@@ -82,6 +82,7 @@ export type {
   AliasTarget,
   BranchRef,
   BranchSource,
+  ParentBranchDetails,
   ReadRef,
   RefSource,
   TagRef,
@@ -109,7 +110,8 @@ export type AliasDetails = Omit<AliasDetailsModel, "createdAt"> & {
 
 export type CreateBranchInput = {
   branchName: string;
-  source?: import("../models/versioning.js").RefSource | undefined;
+  /** Omit to use main; only Branch sources support creating a Branch. */
+  source?: import("../models/versioning.js").BranchSource | undefined;
 };
 
 export type CreateBranchResponse = { branch: BranchDetails };

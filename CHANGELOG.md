@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased — stable release preparation
+
+Aligned with [docs c441804](https://github.com/lambdadb/docs/blob/c44180406c05b1a9043d8516e7c7f60df91fc9a7/reference/api/openapi.json)
+and [server PR #405](https://github.com/lambdadb/lambdadb/pull/405), merged as
+`d1a76659884a9ed09283a0b2e2989897dc799247`. The pinned contract is
+`c44180406c05b1a9043d8516e7c7f60df91fc9a7`, reviewing `c8495bf..c441804`.
+These source revisions do not establish deployment in a target environment.
+
+- **Breaking:** Branch creation accepts only `BranchSource`, in both TypeScript
+  inputs and runtime validation (`create` / `createSafe`). Replace Tag sources
+  with the intended source Branch. Omitting source still selects `main`, and
+  Branch `asOf` support is unchanged. Tag creation continues to accept Branch
+  or Tag sources; Alias sources and Tag `asOf` remain invalid.
+- Branch create/list responses now require nullable `parentBranch`, with
+  exported `ParentBranchDetails` containing `branchId` and `name`. Update mocks
+  to include this field. It records the direct source even for empty Branches
+  or ancestor snapshots selected by `asOf`; `main` and records without a parent
+  return `null`. Parent deletion or name reuse does not alter this metadata.
+- Existing nullable snapshot fields, Date conversion, synchronous ref/source
+  helpers, and Promise-based ordinary / Safe lifecycle paths are preserved.
+  There is no synchronous network API.
+- Package version and publication state are unchanged by this preparation.
+
 ## 0.5.0-rc.3 (unreleased)
 
 Aligned with [the pinned OpenAPI contract](https://github.com/lambdadb/docs/blob/c8495bf47cd8918cfd546b4742823fd4cf3d0814/reference/api/openapi.json)

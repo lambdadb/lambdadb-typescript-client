@@ -142,7 +142,7 @@ const queryBody: QueryCollectionInput = {
 const queryResult: QueryCollectionResponse = await collection.query(queryBody);
 ```
 
-Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; Data Versioning types such as `ReadRef`, `RefSource`, `AliasTarget`, `SnapshotDetails`, `BranchDetails`, and `TagDetails`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection create/list/get/update and ref lifecycle responses expose timestamps as `Date`. All are exported from the main package.
+Common types: `CreateCollectionInput`, `UpdateCollectionInput`, `QueryCollectionInput`, `ListDocsInput`, `ListCollectionsInput`, `UpsertDocsInput`, `DeleteDocsInput`, `FetchDocsInput`, `BulkUpsertInput`; response types such as `QueryCollectionResponse`, `ListDocsResponse`, `ListCollectionsResponseWithDates`, `GetCollectionResponseWithDates`, `FetchDocsResponse`, `MessageResponse`; Data Versioning types such as `ReadRef`, `BranchSource`, `RefSource`, `AliasTarget`, `SnapshotDetails`, `ParentBranchDetails`, `BranchDetails`, and `TagDetails`; and model types like `CollectionResponseWithDates`, `IndexConfigsUnion`, `IndexConfigsManagedEmbeddingVector`, `EmbeddingConfig`, `PartitionConfig`, `FieldsSelectorUnion`. Collection create/list/get/update and ref lifecycle responses expose timestamps as `Date`. All are exported from the main package.
 
 ## Data Versioning
 
@@ -187,10 +187,15 @@ for await (const page of collection.docs.listPages({
 ```
 
 Omitting a read ref or write Branch preserves the existing `main` behavior.
+Branch creation accepts only Branch sources; omitting `source` selects `main`,
+and `branchSource(name, asOf)` supports point-in-time creation. Tag creation
+continues to accept Branch or Tag sources. Branch create/list responses include
+required nullable `parentBranch: { branchId, name }`, even for an empty head;
+`main` and Branches without recorded parents return `null`.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The SDK contract is pinned at
-`c8495bf47cd8918cfd546b4742823fd4cf3d0814`. Deleting a Branch or Tag referenced
+`c44180406c05b1a9043d8516e7c7f60df91fc9a7`. Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
 all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a

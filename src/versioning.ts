@@ -14,6 +14,7 @@ import {
   AliasDetails$inboundSchema,
   AliasTarget$schema,
   BranchDetails$inboundSchema,
+  BranchSource$schema,
   TagDetails$inboundSchema,
   RefSource$schema,
   type AliasRef,
@@ -49,7 +50,7 @@ import type { Result } from "./types/fp.js";
 
 /** Exact public contract revision implemented by this SDK. */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "c8495bf47cd8918cfd546b4742823fd4cf3d0814" as const;
+  "c44180406c05b1a9043d8516e7c7f60df91fc9a7" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -237,7 +238,7 @@ function pathFor(collectionName: string, suffix: string): string {
 
 const createBranchSchema: z.ZodType<CreateBranchInput> = z.object({
   branchName: z.string().regex(refNamePattern),
-  source: RefSource$schema.optional(),
+  source: BranchSource$schema.optional(),
 }).strict();
 const createBranchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
 const listBranchesResponseSchema = z.object({ branches: z.array(BranchDetails$inboundSchema) });

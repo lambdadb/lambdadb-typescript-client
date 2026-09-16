@@ -1,7 +1,7 @@
 # Data Versioning
 
 This SDK implements the public LambdaDB Data Versioning contract pinned at
-[`c8495bf47cd8918cfd546b4742823fd4cf3d0814`](https://github.com/lambdadb/docs/commit/c8495bf47cd8918cfd546b4742823fd4cf3d0814).
+[`c44180406c05b1a9043d8516e7c7f60df91fc9a7`](https://github.com/lambdadb/docs/commit/c44180406c05b1a9043d8516e7c7f60df91fc9a7).
 The source revision identifies the implementation contract; it does not by
 itself prove that a particular API environment has deployed that contract.
 
@@ -70,13 +70,26 @@ await collection.tags.delete("release-001");
 await collection.branches.delete("candidate");
 ```
 
-Branch creation copies the source's committed state. `BranchDetails` contains
-`name`, `createdAt`, `headSnapshot`, and `parentSnapshot`. Both snapshot fields
-are required and explicitly `null` for a branch created from an empty source.
-The head can advance; the parent stays fixed at the fork snapshot. For `main`
-and branches created from an empty source, the parent remains `null` after
-commits. Parent metadata does not extend snapshot retention. Branches no longer
-have a top-level `snapshotId`.
+Branch creation accepts only a `BranchSource` in the same Collection and copies
+its committed state. Omit `source` to use `main`; `branchSource("dev", asOf)`
+selects a retained committed snapshot at or before the cutoff. Tag and Alias
+sources fail SDK input validation on both `create` and `createSafe`.
+
+`BranchDetails` in create and list responses contains `name`, `createdAt`,
+`parentBranch`, `headSnapshot`, and `parentSnapshot`. All three metadata fields
+are required and nullable:
+
+- `parentBranch: { branchId, name }` records the direct source Branch at creation,
+  even when that source is empty or `asOf` selects a snapshot originating on an
+  ancestor. It is `null` for `main` or when no parent was recorded. This historical
+  identity survives parent deletion and name reuse and does not prevent deletion.
+- `headSnapshot` is the current committed head, initially `null` for an empty source.
+- `parentSnapshot` stays fixed at the fork snapshot as the head advances. For
+  `main` and branches created from an empty source, it remains `null` after commits.
+
+An empty Branch can therefore have a non-null `parentBranch` while both snapshot
+fields are null. Parent metadata does not extend snapshot retention. Branches
+have no top-level `snapshotId`.
 
 Each non-null `SnapshotDetails` contains `snapshotId` and
 `snapshotCommittedAt`. `TagDetails` has these fields at the top level alongside
@@ -84,8 +97,11 @@ Each non-null `SnapshotDetails` contains `snapshotId` and
 facade converts both creation and snapshot commit timestamps to `Date`, including
 nested Branch snapshots. Types from `models` retain numeric Unix milliseconds.
 
-Tags require a committed Snapshot, so verify committed data before creating
-one. Data mutations are accepted asynchronously and are not necessarily
+Tag creation continues to accept a Branch or Tag source (`RefSource`), with
+omission selecting `main`. `tagSource("release-001")` pins the same snapshot,
+not a chain of Tags. Alias sources are rejected, and `asOf` is valid only for a
+Branch source. Tags require a committed Snapshot, so verify committed data before
+creating one. Data mutations are accepted asynchronously and are not necessarily
 committed when their request returns.
 
 Deleting a non-default Branch or Tag referenced by any Alias returns
@@ -100,7 +116,9 @@ recreating the same target name does not repair the binding. Normal target
 deletion is blocked while Aliases reference it. Selecting a ref that does not
 exist fails with `ResourceNotFoundError` (HTTP `404`).
 
-Every lifecycle method also has a `*Safe` form returning `Result`. Documented
+Every lifecycle method is asynchronous and also has a `*Safe` form returning
+`Promise<Result<...>>`; there is no synchronous network client. Ref/source
+helpers validate synchronously. Documented
 HTTP failures map to exported error classes, including
 `CatalogConflictError`, `PayloadTooLargeError`, `BadGatewayError`,
 `ServiceUnavailableError`, and `GatewayTimeoutError`. Create-name collisions
