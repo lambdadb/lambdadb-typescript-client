@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.1
+
+- Fixed large Query, Fetch, and List results failing with
+  `Unexpected document payload shape from URL`. The shared downloader now
+  accepts the JSON arrays returned by the server, including ordinary and Safe
+  methods, GET/POST List, and document pagination. Existing `{ docs: [...] }`
+  payloads, request options, error handling, and authentication isolation are
+  preserved; API credentials are not forwarded to signed download URLs.
+- Added regression coverage and a required live release smoke test that verifies
+  actual large-result downloads, full document contents, and temporary
+  Collection cleanup.
+
+The download payload was verified against [server revision
+`d1a76659884a9ed09283a0b2e2989897dc799247`](https://github.com/lambdadb/lambdadb/blob/d1a76659884a9ed09283a0b2e2989897dc799247/runtime-aws/src/main/java/ai/lambdadb/service/queryexecutor/QueryCoordinatorService.java#L280-L301).
+The pinned OpenAPI contract remains
+`c44180406c05b1a9043d8516e7c7f60df91fc9a7`.
+
 ## 0.5.0
 
 Aligned with [docs c441804](https://github.com/lambdadb/docs/blob/c44180406c05b1a9043d8516e7c7f60df91fc9a7/reference/api/openapi.json)
