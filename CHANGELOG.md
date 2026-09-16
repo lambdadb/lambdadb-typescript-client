@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — stable release preparation
+## 0.5.0 (unreleased)
 
 Aligned with [docs c441804](https://github.com/lambdadb/docs/blob/c44180406c05b1a9043d8516e7c7f60df91fc9a7/reference/api/openapi.json)
 and [server PR #405](https://github.com/lambdadb/lambdadb/pull/405), merged as
@@ -21,9 +21,15 @@ These source revisions do not establish deployment in a target environment.
 - Existing nullable snapshot fields, Date conversion, synchronous ref/source
   helpers, and Promise-based ordinary / Safe lifecycle paths are preserved.
   There is no synchronous network API.
-- Package version and publication state are unchanged by this preparation.
+- Promotes the RC1–RC3 Data Versioning work to the stable `0.5.0` package:
+  ref lifecycle, ref-scoped reads, Branch writes, retention, signed bulk uploads,
+  collection metadata, and typed HTTP errors. See the RC entries below for the
+  cumulative changes from stable `0.4.3`.
+- Updated the Qdrant live smoke test to exercise supported filtered scrolling
+  after data commits; numeric point offsets remain unsupported.
+- Publication is pending approval; this entry does not announce availability.
 
-## 0.5.0-rc.3 (unreleased)
+## 0.5.0-rc.3 - 2026-09-15
 
 Aligned with [the pinned OpenAPI contract](https://github.com/lambdadb/docs/blob/c8495bf47cd8918cfd546b4742823fd4cf3d0814/reference/api/openapi.json)
 at `c8495bf47cd8918cfd546b4742823fd4cf3d0814`, reviewing `b171ff0..c8495bf`.
