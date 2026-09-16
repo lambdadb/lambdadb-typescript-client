@@ -103,9 +103,6 @@ export type * from "./types/public.js";
  */
 export type { operations, models };
 
-/**
- * Fetches documents from a presigned docsUrl. Response must be { docs: [...] }.
- */
 function transferSignal(options?: RequestOptions): AbortSignal | undefined {
   const signal = options?.signal ?? options?.fetchOptions?.signal;
   if (signal != null) return signal;
@@ -170,6 +167,7 @@ async function readTransferText(
   }
 }
 
+/** Fetches a document array from a presigned docsUrl, also accepting legacy { docs: [...] } payloads. */
 async function fetchDocsFromUrl<T>(
   transferClient: HTTPClient,
   docsUrl: string,
@@ -212,7 +210,10 @@ async function fetchDocsFromUrl<T>(
   if (payload == null) {
     return [];
   }
-  if (typeof payload !== "object" || Array.isArray(payload)) {
+  if (Array.isArray(payload)) {
+    return payload as T[];
+  }
+  if (typeof payload !== "object") {
     throw new UnexpectedClientError("Unexpected document payload shape from URL");
   }
 
