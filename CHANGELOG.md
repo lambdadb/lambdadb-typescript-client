@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (unreleased)
+## 0.5.0
 
 Aligned with [docs c441804](https://github.com/lambdadb/docs/blob/c44180406c05b1a9043d8516e7c7f60df91fc9a7/reference/api/openapi.json)
 and [server PR #405](https://github.com/lambdadb/lambdadb/pull/405), merged as
@@ -27,7 +27,6 @@ These source revisions do not establish deployment in a target environment.
   cumulative changes from stable `0.4.3`.
 - Updated the Qdrant live smoke test to exercise supported filtered scrolling
   after data commits; numeric point offsets remain unsupported.
-- Publication is pending approval; this entry does not announce availability.
 
 ## 0.5.0-rc.3 - 2026-09-15
 
