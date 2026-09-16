@@ -145,8 +145,8 @@ const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", sna
 const obsoleteSnapshotId = branch.snapshotId;
 // @ts-expect-error Tag snapshots cannot be null.
 const nullTag: TagDetails = { ...tag, snapshotId: null };
-// @ts-expect-error Both nullable Branch snapshot fields are required.
-const missingParent: BranchDetails = { name: "main", headSnapshot: null, createdAt: new Date() };
+// @ts-expect-error parentSnapshot is required, even when its value is null.
+const missingParent: BranchDetails = { name: "main", parentBranch: null, headSnapshot: null, createdAt: new Date() };
 // @ts-expect-error Snapshot commit times use Date in the facade.
 const numericSnapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: 1 };
 
