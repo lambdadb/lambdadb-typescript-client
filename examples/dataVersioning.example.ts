@@ -7,6 +7,7 @@ import {
   branchRef,
   branchSource,
   tagRef,
+  tagSource,
   tagTarget,
 } from "@functional-systems/lambdadb";
 
@@ -19,10 +20,17 @@ const client = new LambdaDBClient({
 async function main() {
   const collection = client.collection("my-collection");
 
-  await collection.branches.create({
+  // Only Branch sources are accepted. Omitting source selects main;
+  // branchSource("main", new Date(...)) selects a retained point-in-time snapshot.
+  const { branch } = await collection.branches.create({
     branchName: "candidate",
     source: branchSource("main"),
   });
+  // Direct source identity can exist even when both snapshots are null.
+  console.log(branch.parentBranch?.branchId, branch.parentBranch?.name);
+  const { branches } = await collection.branches.list();
+  console.log(branches.map(({ name, parentBranch }) => ({ name, parentBranch })));
+
   await collection.docs.upsert({
     branch: "candidate",
     docs: [{ id: "doc-1", text: "Candidate content" }],
@@ -47,6 +55,11 @@ async function main() {
   await collection.tags.create({
     tagName: "release-001",
     source: branchSource("candidate"),
+  });
+  // A Tag may also pin another Tag's snapshot; it does not form a Tag chain.
+  await collection.tags.create({
+    tagName: "release-copy",
+    source: tagSource("release-001"),
   });
   await collection.aliases.create({
     aliasName: "production",

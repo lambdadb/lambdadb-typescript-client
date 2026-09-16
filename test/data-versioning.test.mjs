@@ -87,7 +87,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "c8495bf47cd8918cfd546b4742823fd4cf3d0814",
+    "c44180406c05b1a9043d8516e7c7f60df91fc9a7",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -197,13 +197,13 @@ test("supports Branch, Tag, and Alias lifecycle with millisecond Date conversion
     switch (index) {
       case 0:
         return jsonResponse({
-          branch: { name: "candidate", headSnapshot: snapshot, parentSnapshot: snapshot, createdAt },
+          branch: { name: "candidate", parentBranch: { branchId: "main-id", name: "main" }, headSnapshot: snapshot, parentSnapshot: snapshot, createdAt },
         }, 201);
       case 1:
         return jsonResponse({
           branches: [
-            { name: "main", headSnapshot: snapshot, parentSnapshot: null, createdAt },
-            { name: "candidate", headSnapshot: snapshot, parentSnapshot: snapshot, createdAt },
+            { name: "main", parentBranch: null, headSnapshot: snapshot, parentSnapshot: null, createdAt },
+            { name: "candidate", parentBranch: { branchId: "main-id", name: "main" }, headSnapshot: snapshot, parentSnapshot: snapshot, createdAt },
           ],
         });
       case 2:
@@ -303,6 +303,52 @@ test("supports Branch, Tag, and Alias lifecycle with millisecond Date conversion
   assert.equal(apiCalls[6].url.pathname.endsWith("/aliases/production"), true);
   assert.equal(apiCalls[7].url.pathname.endsWith("/tags/release-001"), true);
   assert.equal(apiCalls[8].url.pathname.endsWith("/branches/candidate"), true);
+});
+
+test("Branch creation accepts only Branch sources; Tag creation retains Branch and Tag sources", async () => {
+  const asOf = 1788336000123;
+  const sources = [
+    undefined,
+    branchSource("main"),
+    branchSource("dev", asOf),
+    branchSource("dev", new Date(asOf)),
+    tagSource("release-001"),
+    aliasRef("production"),
+    { kind: "tag", name: "release-001", asOf },
+    { kind: "branch", name: "main", asOf: 1.5 },
+    { kind: "branch", name: "main", asOf: null },
+    { kind: "branch", name: "main", extra: true },
+    {},
+    null,
+  ];
+  for (const resource of ["branches", "tags"]) {
+    for (const [index, source] of sources.entries()) {
+      const allowed = index < 4 || (resource === "tags" && index === 4);
+      const singular = resource === "branches" ? "branch" : "tag";
+      const input = { [`${singular}Name`]: "candidate", ...(source === undefined ? {} : { source }) };
+      const parentBranch = { branchId: "direct-source-id", name: source?.name ?? "main" };
+      // The snapshot may originate on main while the direct requested source is dev.
+      const snapshot = { snapshotId: "main-snapshot", snapshotCommittedAt: asOf - 1 };
+      const details = resource === "branches"
+        ? { name: "candidate", parentBranch, headSnapshot: snapshot, parentSnapshot: snapshot, createdAt: asOf }
+        : { name: "candidate", ...snapshot, createdAt: asOf };
+      const { apiCalls, client } = createClient(() => jsonResponse({ [singular]: details }, 201));
+      const refs = client.collection(COLLECTION_NAME)[resource];
+      const safe = await refs.createSafe(input);
+      assert.equal(safe.ok, allowed, `${resource}: ${JSON.stringify(source)}`);
+      if (allowed) {
+        const response = await refs.create(input);
+        assert.deepEqual(response, safe.value);
+        if (resource === "branches") assert.deepEqual(response.branch.parentBranch, parentBranch);
+        assert.equal(apiCalls.length, 2);
+        for (const call of apiCalls) assert.deepEqual(JSON.parse(call.body), input);
+      } else {
+        assert.ok(safe.error instanceof SDKValidationError);
+        await assert.rejects(refs.create(input), SDKValidationError);
+        assert.equal(apiCalls.length, 0);
+      }
+    }
+  }
 });
 
 test("maps duplicate, not-found, and validation failures to concrete errors", async () => {
@@ -661,15 +707,16 @@ test("classifies body errors from failed safe bulk upload responses", async () =
   assert.equal(result.error.cause, transferError);
 });
 
-test("preserves empty heads and fixed fork snapshots across Branch create/list and Tag create/list", async () => {
+test("preserves parent Branch identity, empty heads, and fork snapshots across ordinary and Safe create/list", async () => {
   const parent = { snapshotId: "fork", snapshotCommittedAt: 1788335940123 };
   const head = { snapshotId: "head", snapshotCommittedAt: 1788336060456 };
   const createdAt = 1788336000789;
   const branches = [
-    { name: "empty", headSnapshot: null, parentSnapshot: null, createdAt },
-    { name: "main", headSnapshot: head, parentSnapshot: null, createdAt },
-    { name: "empty-source", headSnapshot: head, parentSnapshot: null, createdAt },
-    { name: "candidate", headSnapshot: head, parentSnapshot: parent, createdAt },
+    { name: "empty", parentBranch: { branchId: "main-id", name: "main" }, headSnapshot: null, parentSnapshot: null, createdAt },
+    { name: "main", parentBranch: null, headSnapshot: head, parentSnapshot: null, createdAt },
+    { name: "empty-source", parentBranch: { branchId: "empty-id", name: "empty" }, headSnapshot: head, parentSnapshot: null, createdAt },
+    { name: "candidate", parentBranch: { branchId: "dev-original-id", name: "dev" }, headSnapshot: head, parentSnapshot: parent, createdAt },
+    { name: "legacy", parentBranch: null, headSnapshot: head, parentSnapshot: parent, createdAt },
   ];
   const tag = { name: "release-001", ...parent, createdAt };
   const { client } = createClient((call) => {
@@ -684,9 +731,16 @@ test("preserves empty heads and fixed fork snapshots across Branch create/list a
   });
   const collection = client.collection(COLLECTION_NAME);
   const listed = await collection.branches.list();
+  const listedSafe = await collection.branches.listSafe();
+  assert.equal(listedSafe.ok, true);
+  assert.deepEqual(listedSafe.value, listed);
   for (const [index, wire] of branches.entries()) {
     const { branch } = await collection.branches.create({ branchName: wire.name });
+    const safe = await collection.branches.createSafe({ branchName: wire.name });
+    assert.equal(safe.ok, true);
+    assert.deepEqual(safe.value.branch, branch);
     assert.deepEqual(branch, listed.branches[index]);
+    assert.deepEqual(branch.parentBranch, wire.parentBranch);
     assert.equal(branch.createdAt.getTime(), createdAt);
     for (const key of ["headSnapshot", "parentSnapshot"]) {
       assert.deepEqual(branch[key], wire[key] === null ? null : {
@@ -706,13 +760,17 @@ test("preserves empty heads and fixed fork snapshots across Branch create/list a
 
 test("rejects obsolete or incomplete Branch and Tag responses on create and list", async () => {
   const snapshot = { snapshotId: "snap-1", snapshotCommittedAt: 1788335940000 };
-  const branch = { name: "candidate", headSnapshot: snapshot, parentSnapshot: null, createdAt: 1788336000000 };
+  const branch = { name: "candidate", parentBranch: { branchId: "main-id", name: "main" }, headSnapshot: snapshot, parentSnapshot: null, createdAt: 1788336000000 };
   const tag = { name: "release-001", ...snapshot, createdAt: branch.createdAt };
   for (const [resource, singular, input, invalidDetails] of [
     ["branches", "branch", { branchName: branch.name }, [
       { name: branch.name, snapshotId: "old", createdAt: branch.createdAt },
       { ...branch, headSnapshot: undefined },
       { ...branch, parentSnapshot: undefined },
+      { ...branch, parentBranch: undefined },
+      ...[{}, { branchId: "main-id" }, { name: "main" },
+        { branchId: 1, name: "main" }, { branchId: "main-id", name: null },
+        "main", []].map((parentBranch) => ({ ...branch, parentBranch })),
       { ...branch, headSnapshot: { snapshotId: "missing-time" } },
       { ...branch, parentSnapshot: { ...snapshot, snapshotCommittedAt: 1.5 } },
     ]],
@@ -727,6 +785,8 @@ test("rejects obsolete or incomplete Branch and Tag responses on create and list
         ? jsonResponse({ [singular]: details }, 201)
         : jsonResponse({ [resource]: [details] }));
       const refs = client.collection(COLLECTION_NAME)[resource];
+      await assert.rejects(refs.create(input), ResponseValidationError);
+      await assert.rejects(refs.list(), ResponseValidationError);
       for (const result of [await refs.createSafe(input), await refs.listSafe()]) {
         assert.equal(result.ok, false);
         assert.ok(result.error instanceof ResponseValidationError);

@@ -11,6 +11,7 @@ import {
   branchRef,
   branchSource,
   tagRef,
+  tagSource,
   tagTarget,
 } from "../../dist/esm/index.js";
 
@@ -102,6 +103,17 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(metadata.collection.defaultBranchName, "main");
     assert.ok(metadata.collection.createdAt.getTime() > 1_000_000_000_000);
 
+    // Default source remains main, including when its head is empty.
+    const { branch: empty } = await collection.branches.create({ branchName: "empty-probe" });
+    assert.equal(empty.parentBranch.name, "main");
+    assert.equal(typeof empty.parentBranch.branchId, "string");
+    assert.equal(empty.headSnapshot, null);
+    assert.equal(empty.parentSnapshot, null);
+    const { branches: initialBranches } = await collection.branches.list();
+    assert.equal(initialBranches.find((branch) => branch.name === "main").parentBranch, null);
+    assert.deepEqual(initialBranches.find((branch) => branch.name === "empty-probe"), empty);
+    await collection.branches.delete("empty-probe");
+
     await collection.docs.upsert({
       docs: [
         { id: "doc-1", title: "one" },
@@ -124,10 +136,24 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       return response;
     }, "main Branch committed list visibility", COMMIT_TIMEOUT_MS);
 
-    await collection.branches.create({
+    const { branch: createdCandidate } = await collection.branches.create({
       branchName: "candidate",
       source: branchSource("main"),
     });
+    assert.equal(createdCandidate.parentBranch.name, "main");
+    // Candidate still shares main's snapshot: the direct source must be candidate.
+    const inherited = await collection.branches.createSafe({
+      branchName: "inherited-probe",
+      source: branchSource("candidate", Date.now() + 1_000),
+    });
+    assert.equal(inherited.ok, true);
+    assert.equal(inherited.value.branch.parentBranch.name, "candidate");
+    assert.equal(typeof inherited.value.branch.parentBranch.branchId, "string");
+    assert.equal(inherited.value.branch.headSnapshot.snapshotId, createdCandidate.headSnapshot.snapshotId);
+    const inheritedList = await collection.branches.listSafe();
+    assert.equal(inheritedList.ok, true);
+    assert.deepEqual(inheritedList.value.branches.find((branch) => branch.name === "inherited-probe"), inherited.value.branch);
+    await collection.branches.delete("inherited-probe");
     await collection.docs.upsert({
       branch: "candidate",
       docs: [{ id: "doc-4", title: "four" }],
@@ -201,8 +227,16 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     assert.equal(typeof tag.snapshotId, "string");
     assert.ok(tag.snapshotCommittedAt instanceof Date);
     assert.ok(tag.createdAt instanceof Date);
+    const copiedTag = await collection.tags.createSafe({
+      tagName: "release-copy",
+      source: tagSource("release-001"),
+    });
+    assert.equal(copiedTag.ok, true);
+    assert.equal(copiedTag.value.tag.snapshotId, tag.snapshotId);
+    await collection.tags.delete("release-copy");
     const { branches } = await collection.branches.list();
     const candidate = branches.find((branch) => branch.name === "candidate");
+    assert.deepEqual(candidate.parentBranch, createdCandidate.parentBranch);
     assert.ok(candidate.headSnapshot.snapshotCommittedAt instanceof Date);
     assert.ok(candidate.parentSnapshot.snapshotCommittedAt instanceof Date);
     assert.equal(branches.find((branch) => branch.name === "main").parentSnapshot, null);

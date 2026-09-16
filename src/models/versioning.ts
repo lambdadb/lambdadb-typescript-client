@@ -27,7 +27,7 @@ export type BranchSource = BranchRef & {
 
 export type TagSource = TagRef;
 
-/** A Branch or Tag used as the source of a new Branch or Tag. */
+/** A Branch or Tag used as the source of a new Tag. */
 export type RefSource = BranchSource | TagSource;
 
 /** A Branch or Tag used as the target of an Alias. */
@@ -39,8 +39,20 @@ export type SnapshotDetails = {
   snapshotCommittedAt: number;
 };
 
+/** Historical direct source identity, independent of snapshot origin. */
+export type ParentBranchDetails = {
+  branchId: string;
+  name: string;
+};
+
 export type BranchDetails = {
   name: string;
+  /**
+   * Fixed direct source, even for an empty head or an ancestor snapshot selected
+   * by asOf. Null for main or unrecorded parents. Survives parent deletion and
+   * name reuse; this metadata does not prevent parent deletion.
+   */
+  parentBranch: ParentBranchDetails | null;
   /** Current committed head; null for an empty branch. */
   headSnapshot: SnapshotDetails | null;
   /**
@@ -123,8 +135,15 @@ export const SnapshotDetails$inboundSchema: z.ZodType<SnapshotDetails> = z.objec
 });
 
 /** @internal */
+export const ParentBranchDetails$inboundSchema: z.ZodType<ParentBranchDetails> = z.object({
+  branchId: z.string(),
+  name: z.string(),
+});
+
+/** @internal */
 export const BranchDetails$inboundSchema: z.ZodType<BranchDetails> = z.object({
   name: z.string(),
+  parentBranch: ParentBranchDetails$inboundSchema.nullable(),
   headSnapshot: SnapshotDetails$inboundSchema.nullable(),
   parentSnapshot: SnapshotDetails$inboundSchema.nullable(),
   createdAt: z.number().int(),
