@@ -147,7 +147,29 @@ Before publishing any development, RC, or stable package:
 - Install the generated tarball in a clean directory.
 - Verify both ESM `import` and CommonJS `require` from that installation.
 - Complete applicable live and third-party integration smoke tests.
+- Run `npm run test:live:docs-url` against the intended deployed endpoint before
+  every publication. This creates a temporary Collection with two 3 MiB
+  documents and requires real `docsUrl` array downloads for Query, Fetch, GET/POST
+  List, and their Safe methods, then verifies Collection deletion. An inline-only
+  response or missing environment variables is a failure, not a skipped check.
+  Record the environment, SDK commit, observed behavior, and cleanup result;
+  source revision alone does not establish the deployed server revision.
 - Review generated release notes before publishing the GitHub Release.
+
+The docsUrl smoke reads `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
+`LAMBDADB_PROJECT_API_KEY` from the environment or `.env.local`. Use a project
+where temporary test Collections may be created and deleted. For a worktree
+without its own environment file, load the original checkout's file explicitly:
+
+```bash
+npm run build
+node --env-file=/absolute/path/to/original-checkout/.env.local \
+  --test test/integration/docs-url-live.test.mjs
+```
+
+This credentialed test is separate from the ordinary PR CI. Missing credentials
+or an untested deployed endpoint must not be reported as successful live
+validation. Do not record API keys or signed download URLs in release evidence.
 
 After publication, verify the registry without relying only on the workflow
 status:
