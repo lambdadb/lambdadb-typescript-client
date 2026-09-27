@@ -194,12 +194,15 @@ required nullable `parentBranch: { branchId, name }`, even for an empty head;
 `main` and Branches without recorded parents return `null`.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
-configuration. The SDK contract is pinned at
+configuration. The Data Versioning contract is pinned at
 `c44180406c05b1a9043d8516e7c7f60df91fc9a7`. Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
 all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
 ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
+
+The additional text analyzer names are documented in [Analyzer](docs/models/analyzer.md)
+and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
 ### Pagination
 

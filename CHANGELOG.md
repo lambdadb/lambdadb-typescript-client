@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Expanded the closed text analyzer enum from four to sixteen names, adding
+  `chinese`, `cjk`, `arabic`, `french`, `german`, `hindi`, `indonesian`,
+  `italian`, `portuguese`, `russian`, `spanish`, and `turkish`. TypeScript inputs
+  and Zod request/response validation share the expanded list. Omission, empty
+  arrays, duplicates, and existing names retain their behavior.
+- Pinned the analyzer-only [source contract](docs/OPENAPI_UPDATE.md#openapi-spec)
+  to docs `3bda642f2e7f4f26432f1dfdcb076f656d50f873` and backend PR #417.
+  This does not establish deployment or a published SDK version.
+
 ## 0.5.1
 
 - Fixed large Query, Fetch, and List results failing with
