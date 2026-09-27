@@ -43,6 +43,26 @@ regressions compare the managed source with both Zod schemas, exercise the
 public client's create/get paths with mock HTTP, and compile package consumers
 without casts. These local checks do not establish live server support.
 
+### Live analyzer smoke
+
+Load the intended environment explicitly when testing from a worktree:
+
+```bash
+npm run build
+node --env-file=/absolute/path/to/original-checkout/.env.local \
+  --test test/integration/text-analyzers-live.test.mjs
+```
+
+The test requires `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
+`LAMBDADB_PROJECT_API_KEY`; missing values fail the test. It creates a temporary
+Collection, verifies all 16 analyzer names through create/get/getSafe, writes a
+language sample, and checks positive and negative searches with both query
+syntax settings. It also checks Chinese/CJK matching differences, the server
+`standard` default, empty arrays, and duplicate/order preservation. Cleanup
+verifies Collection absence with a 404, including after validation failures.
+The metadata checks allow the server's automatically added reserved `id` field.
+This credentialed test is separate from ordinary PR CI.
+
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
