@@ -1,5 +1,8 @@
 # IndexConfigsText
 
+Use unique analyzer names. The server rejects duplicates with HTTP 400; the SDK
+preserves the supplied list without silently deduplicating it.
+
 ## Example Usage
 
 ```typescript
@@ -19,8 +22,8 @@ let value: IndexConfigsText = {
 | `analyzers`                                | [models.Analyzer](../models/analyzer.md)[] | :heavy_minus_sign:                         | Text analyzers applied independently. Omit for the server default `["standard"]`.                                 |
 
 The SDK leaves omitted `analyzers` out of the request. An empty array does not
-select the default. Arrays retain their order and duplicates; use lowercase
-names and avoid duplicates when configuring new fields. Selecting multiple
+select the default. The SDK preserves array order and contents; use unique
+lowercase names so the server accepts the configuration. Selecting multiple
 analyzers does not enable automatic language detection.
 
 See [Choose text analyzers](https://docs.lambdadb.ai/guides/collections/choose-text-analyzers)

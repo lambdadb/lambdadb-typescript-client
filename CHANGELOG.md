@@ -24,10 +24,14 @@ channel: `rc`; the stable `latest` channel is unchanged by an RC publication.
   `chinese`, `cjk`, `arabic`, `french`, `german`, `hindi`, `indonesian`,
   `italian`, `portuguese`, `russian`, `spanish`, and `turkish`. TypeScript inputs
   and Zod request/response validation share the expanded list. Omission, empty
-  arrays, duplicates, and existing names retain their behavior.
+  arrays, ordering, and existing names retain their behavior. Use unique analyzer
+  names: the current server rejects duplicates with HTTP 400. The SDK preserves
+  the caller's list without silently deduplicating it.
 - Pinned the analyzer-only [source contract](docs/OPENAPI_UPDATE.md#openapi-spec)
   to docs `3bda642f2e7f4f26432f1dfdcb076f656d50f873` and backend PR #417.
   This does not establish deployment or a published SDK version.
+- Verified duplicate-analyzer rejection against backend source
+  `335cb16fcef5d7b8d60f88c84f2ce2cf87f96939` and the development endpoint.
 
 ## 0.5.1
 

@@ -3,10 +3,11 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 
-import { HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
+import { BadRequestError, HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
 import { Analyzer } from "../../dist/esm/models/indexconfigsunion.js";
 
 // Search fixtures from backend PR #417, head 410154abcdf5275add1df47dcf23c170ed0e0efd.
+// Duplicate rejection verified in backend 335cb16fcef5d7b8d60f88c84f2ce2cf87f96939.
 const languages = [
   ["standard", "Hello WORLD", "world"],
   ["english", "The books and houses", "book"],
@@ -62,7 +63,7 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
   Object.assign(indexConfigs, {
     omitted: { type: "text" },
     empty: { type: "text", analyzers: [] },
-    duplicates: { type: "text", analyzers: ["cjk", "standard", "chinese", "cjk", "standard"] },
+    ordered: { type: "text", analyzers: ["cjk", "standard", "chinese"] },
     chineseWord: { type: "text", analyzers: ["chinese"] },
   });
   let created = false;
@@ -110,7 +111,7 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
     }, options);
     creating = false;
     assert.equal(result.collection.collectionName, collectionName);
-    console.info("[live] Create: 16 analyzers plus omission, empty array, duplicates, and Chinese word field accepted");
+    console.info("[live] Create: 16 analyzers plus omission, empty array, ordered list, and Chinese word field accepted");
     const expected = { ...indexConfigs, omitted: { type: "text", analyzers: ["standard"] } };
     const metadata = await collection.get(options);
     // The server also adds its reserved id keyword field. Check each requested field.
@@ -122,10 +123,21 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
     for (const [name, field] of Object.entries(expected)) {
       assert.deepEqual(safeMetadata.value.collection.indexConfigs[name], field, name);
     }
-    console.info("[live] Get/GetSafe: all names, server default, empty array, duplicates, and order preserved");
+    console.info("[live] Get/GetSafe: all names, server default, empty array, and order preserved");
+
+    const duplicate = await collection.updateSafe({
+      indexConfigs: {
+        ...metadata.collection.indexConfigs,
+        duplicateProbe: { type: "text", analyzers: ["cjk", "cjk"] },
+      },
+    }, options);
+    assert.equal(duplicate.ok, false, "Server must reject duplicate analyzer names");
+    assert.ok(duplicate.error instanceof BadRequestError);
+    assert.equal(duplicate.error.data$.message, "Duplicate analyzer: cjk");
+    console.info("[live] Duplicate analyzer update rejected with HTTP 400");
 
     const doc = Object.fromEntries(languages.map(([name, content]) => [name, content]));
-    Object.assign(doc, { id: "language-sample", omitted: "Hello WORLD", empty: "hello", duplicates: "北京大学", chineseWord: "北京大学" });
+    Object.assign(doc, { id: "language-sample", omitted: "Hello WORLD", empty: "hello", ordered: "北京大学", chineseWord: "北京大学" });
     await collection.docs.upsert({ docs: [doc] }, options);
     const search = async (field, query, skipSyntax) => collection.query({
       query: { queryString: { query, defaultField: field, skipSyntax } },
@@ -153,9 +165,9 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
         assert.equal((await search("cjk", query, skipSyntax)).total, 1);
       }
       assert.equal((await search("omitted", "world", skipSyntax)).total, 1);
-      assert.equal((await search("duplicates", "大学", skipSyntax)).total, 1);
+      assert.equal((await search("ordered", "大学", skipSyntax)).total, 1);
     }
-    console.info("[live] Chinese/CJK matching differences, omitted standard analyzer, and duplicate-list indexing passed");
+    console.info("[live] Chinese/CJK matching differences, omitted standard analyzer, and ordered-list indexing passed");
   } catch (error) {
     throw safeError(error);
   } finally {
