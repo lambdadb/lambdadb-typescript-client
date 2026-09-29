@@ -1,9 +1,8 @@
 # Changelog
 
-## 0.6.0-rc.1
+## 0.6.0
 
-Release candidate for keyword facets and expanded text analyzers. Intended npm
-channel: `rc`; the stable `latest` channel is unchanged by an RC publication.
+Keyword facets and expanded text analyzers. Intended npm channel: `latest`.
 
 - Added keyword facets to `query` and `querySafe`, including public
   `FacetRequest`, `FacetBucket`, and `FacetResult` types. Omit `query` to match
