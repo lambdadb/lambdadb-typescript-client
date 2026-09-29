@@ -1,15 +1,36 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
+Keyword facets and expanded text analyzers. Intended npm channel: `latest`.
+
+- Added keyword facets to `query` and `querySafe`, including public
+  `FacetRequest`, `FacetBucket`, and `FacetResult` types. Omit `query` to match
+  all documents; use query-level `size: 0` for counts without document hits.
+  Facet buckets remain available after automatic `docsUrl` downloads.
+- Facet bucket `size` accepts 1–100; omission or null uses the server default
+  of 10. Requests with more than five fields or `size: 0` without a facet fail
+  locally before network I/O. Facet counts use JavaScript Number and cannot
+  represent every integer above `Number.MAX_SAFE_INTEGER` exactly.
+- Facets require a server deployment containing the feature and newly built
+  keyword indexes. Reinsert existing data into a new Collection; partial
+  updates, segment merging, and old Tags do not migrate the index format.
+- Pinned the facet source contract to docs
+  `899092420ff801cfcb3b693b1ba273be7ac1f1ef` and backend
+  `8da50bcd0b5a3c781ffccd7f01fb07ed0510dd30`. See
+  [keyword facets](docs/keyword-facets.md) for semantics and live validation.
 - Expanded the closed text analyzer enum from four to sixteen names, adding
   `chinese`, `cjk`, `arabic`, `french`, `german`, `hindi`, `indonesian`,
   `italian`, `portuguese`, `russian`, `spanish`, and `turkish`. TypeScript inputs
   and Zod request/response validation share the expanded list. Omission, empty
-  arrays, duplicates, and existing names retain their behavior.
+  arrays, ordering, and existing names retain their behavior. Use unique analyzer
+  names: the current server rejects duplicates with HTTP 400. The SDK preserves
+  the caller's list without silently deduplicating it.
 - Pinned the analyzer-only [source contract](docs/OPENAPI_UPDATE.md#openapi-spec)
   to docs `3bda642f2e7f4f26432f1dfdcb076f656d50f873` and backend PR #417.
   This does not establish deployment or a published SDK version.
+- Verified duplicate-analyzer rejection against backend source
+  `335cb16fcef5d7b8d60f88c84f2ce2cf87f96939` and the development endpoint.
 
 ## 0.5.1
 

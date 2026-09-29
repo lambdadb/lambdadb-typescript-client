@@ -204,6 +204,33 @@ ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 The additional text analyzer names are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
+### Keyword facets
+
+Count matching documents by indexed keyword values, including arrays and dotted
+field paths. Query-level `size: 0` returns counts without documents; omit `query`
+to count all documents in the selected read scope.
+
+```typescript
+const result = await client.collection("items").query({
+  size: 0,
+  facets: { tags: { size: 5 } },
+});
+for (const bucket of result.facets?.tags?.buckets ?? []) {
+  console.log(bucket.value, bucket.count);
+}
+```
+
+`querySafe` accepts the same input. Request up to five keyword fields, with
+1–100 buckets per field (default 10 when omitted or null). Counts cover all
+matching documents, independent of the number of documents returned, and survive
+`docsUrl` downloads. Public types include `FacetRequest`, `FacetBucket`, and
+`FacetResult`.
+
+Use a server deployment containing the facet feature and newly built keyword
+indexes. Existing data must be reinserted into a new Collection; old Tags and
+partial index updates do not migrate the format. See [keyword facets](docs/keyword-facets.md)
+for supported queries, limits, and validation evidence.
+
 ### Pagination
 
 **Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page. The methods `list()`, `query()`, and `fetch()` automatically resolve documents from the presigned URL when the API returns them via `docsUrl` (`isDocsInline: false`), so you always receive `docs` in the response.

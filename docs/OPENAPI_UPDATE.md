@@ -38,6 +38,14 @@ The source has no `minItems` or `uniqueItems`: retain empty arrays, duplicates,
 and caller order without adding constraints or normalization. The existing
 inbound null-to-undefined handling also remains unchanged.
 
+The deployed server now rejects duplicate analyzer names with HTTP 400
+(`Duplicate analyzer: ...`), as implemented in backend
+`335cb16fcef5d7b8d60f88c84f2ce2cf87f96939`,
+`core/src/main/java/ai/lambdadb/application/validation/Validation.java`.
+This is an additional server validation rule; the pinned enum excerpt above
+remains unchanged. The SDK preserves the supplied list and surfaces the server
+error rather than silently deduplicating it.
+
 Run `npm ci`, `npm run lint`, `npm run typecheck`, and `npm test`. The analyzer
 regressions compare the managed source with both Zod schemas, exercise the
 public client's create/get paths with mock HTTP, and compile package consumers
@@ -58,7 +66,8 @@ The test requires `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
 Collection, verifies all 16 analyzer names through create/get/getSafe, writes a
 language sample, and checks positive and negative searches with both query
 syntax settings. It also checks Chinese/CJK matching differences, the server
-`standard` default, empty arrays, and duplicate/order preservation. Cleanup
+`standard` default, empty arrays, order preservation, and HTTP 400 rejection of
+duplicate analyzer settings in a Collection update. Cleanup
 verifies Collection absence with a 404, including after validation failures.
 The metadata checks allow the server's automatically added reserved `id` field.
 This credentialed test is separate from ordinary PR CI.
