@@ -83,6 +83,10 @@ node --env-file=/absolute/path/to/.env.local \
 
 ### Live validation on 2026-09-29
 
+The initial run below found a score response mismatch. The later
+[retest after the server fix](#live-retest-after-the-server-fix) passed the same
+34 scenarios without SDK or test changes.
+
 - SDK/test revision: `e4b3ecb0c6cc591fe65e409d008b2abb4865711d`.
 - Environment: `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai`,
   project `bench-recall`, using the original checkout's `.env.local`.
@@ -102,13 +106,13 @@ node --env-file=/absolute/path/to/.env.local \
   server returned HTTP 200 with `maxScore: "NaN"` and `docs[0].score: "NaN"`.
   These strings fail the numeric response schema as `ResponseValidationError`.
   The behavior occurs with both `consistentRead` values and both SDK methods.
-  The smoke remains failing until this response-contract mismatch is corrected;
-  it does not normalize the strings or suppress these scenarios.
+  The initial smoke failed on this response-contract mismatch; it did not
+  normalize the strings or suppress these scenarios.
 - Cleanup: `ts-facets-6d95e758-4e4a-4777-b549-7c7dfc030e0c` was deleted and a
   subsequent GET returned 404. Earlier diagnostic Collections were also deleted
   and checked for absence.
 
-Minimal reproduction against a Collection containing at least one matching
+Initial failure reproduction against a Collection containing at least one matching
 document (replace `tags` with an indexed keyword field):
 
 ```typescript
@@ -116,9 +120,29 @@ await collection.query({
   size: 1,
   fields: { include: ["id"] },
   facets: { tags: { size: 1 } },
-}); // ResponseValidationError: maxScore and docs[0].score are strings ("NaN").
+}); // Before the server fix: ResponseValidationError for string scores ("NaN").
 ```
 
-The review fixes and local tests passed, but this live result is **not a complete
-deployment acceptance or release validation**. Third-party integrations and a
-registry package installation were not tested, and no package was published.
+### Live retest after the server fix
+
+- Retested on 2026-09-29 at approximately 09:18 UTC against the same development
+  endpoint and `bench-recall` project after the user reported deploying the fix.
+- SDK checkout: `fede7ac6e3ed49de4034f6ea8bab3fb128329085`, rebuilt with
+  `npm run build`. The SDK implementation and live test are unchanged from the
+  initial run at `e4b3ecb0c6cc591fe65e409d008b2abb4865711d`.
+- Result: **all 34 child scenarios passed**, including all 12 previously failing
+  query-less document cases. Node reports 35 passed (including the parent test),
+  0 failed, 0 skipped; total duration approximately 65 seconds.
+- Both `query` and `querySafe` passed with `consistentRead: true` and `false`.
+  Document limits, partition-filtered documents, and responses without facets now
+  parse successfully with the existing numeric score schema.
+- Both real 6 MiB `docsUrl` downloads passed again, including payload hashes,
+  facet preservation, and API-header isolation.
+- Cleanup: `ts-facets-c64fec20-ab6e-4dab-9b26-c7a33faffb07` was deleted and a
+  subsequent GET returned 404.
+- These are observed deployed behaviors; the exact deployed backend revision was
+  not independently established. No SDK workaround or test suppression was added.
+
+The targeted live regression now passes. This is not a full release validation:
+third-party integrations and a registry package installation were not tested,
+and no package was published.
