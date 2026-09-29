@@ -9,7 +9,10 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
-export type FacetRequest = { size?: number | undefined };
+export type FacetRequest = {
+  /** Maximum buckets to return (1–100). Omitted or null uses the server default of 10. */
+  size?: number | null | undefined;
+};
 export type FacetBucket = { value: string; count: number };
 export type FacetResult = { buckets: Array<FacetBucket> };
 
@@ -116,7 +119,11 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
 > = z.object({
   size: z.number().int().optional(),
   query: z.record(z.any()).optional(),
-  facets: z.record(z.object({ size: z.number().int().min(1).max(100).optional() }).strict()).optional(),
+  facets: z.record(z.object({
+    size: z.number().int().min(1).max(100).nullable().optional(),
+  }).strict()).refine((facets) => Object.keys(facets).length <= 5, {
+    message: "At most five facet fields may be requested",
+  }).optional(),
   consistentRead: z.boolean().default(false),
   includeVectors: z.boolean().default(false),
   sort: z.array(z.record(z.any())).optional(),
@@ -124,6 +131,13 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   ref: models.ReadRef$schema.optional(),
 }).strict().superRefine((value, context) => {
+  if (value.size === 0 && Object.keys(value.facets ?? {}).length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "size: 0 requires at least one facet",
+      path: ["facets"],
+    });
+  }
   if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
     context.addIssue({
       code: z.ZodIssueCode.custom,
