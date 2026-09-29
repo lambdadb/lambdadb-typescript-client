@@ -111,8 +111,9 @@ below remain separate from local and live checks.
   `v0.6.0-rc.1` tag. Recheck before publishing to avoid identity reuse.
 - The release PR must be reviewed and merged into `main` before tagging.
   The package publisher verifies that the tagged commit belongs to `main`.
-- Main merge, tag creation/push, GitHub prerelease publication, and resulting
-  npm publication require explicit approval under [RELEASING.md](../RELEASING.md).
+- The main merge is left for review and approval. Tag creation/push, GitHub
+  prerelease publication, and resulting npm publication require explicit approval
+  under [RELEASING.md](../RELEASING.md).
 - A published GitHub prerelease starts the existing trusted-publishing workflow;
   it publishes the tested tarball with npm `rc` and provenance.
 - After publication verify exact-version installation, `rc=0.6.0-rc.1`, and
