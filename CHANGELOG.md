@@ -1,7 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.6.0-rc.1
 
+Release candidate for keyword facets and expanded text analyzers. Intended npm
+channel: `rc`; the stable `latest` channel is unchanged by an RC publication.
+
+- Added keyword facets to `query` and `querySafe`, including public
+  `FacetRequest`, `FacetBucket`, and `FacetResult` types. Omit `query` to match
+  all documents; use query-level `size: 0` for counts without document hits.
+  Facet buckets remain available after automatic `docsUrl` downloads.
+- Facet bucket `size` accepts 1–100; omission or null uses the server default
+  of 10. Requests with more than five fields or `size: 0` without a facet fail
+  locally before network I/O. Facet counts use JavaScript Number and cannot
+  represent every integer above `Number.MAX_SAFE_INTEGER` exactly.
+- Facets require a server deployment containing the feature and newly built
+  keyword indexes. Reinsert existing data into a new Collection; partial
+  updates, segment merging, and old Tags do not migrate the index format.
+- Pinned the facet source contract to docs
+  `899092420ff801cfcb3b693b1ba273be7ac1f1ef` and backend
+  `8da50bcd0b5a3c781ffccd7f01fb07ed0510dd30`. See
+  [keyword facets](docs/keyword-facets.md) for semantics and live validation.
 - Expanded the closed text analyzer enum from four to sixteen names, adding
   `chinese`, `cjk`, `arabic`, `french`, `german`, `hindi`, `indonesian`,
   `italian`, `portuguese`, `russian`, `spanish`, and `turkish`. TypeScript inputs
