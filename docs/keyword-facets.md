@@ -17,8 +17,12 @@ do not migrate their format. No version, package, or release is published by thi
 ## Semantics
 
 Request up to five keyword fields by name, including dotted paths. A field's `size`
-is 1–100 (default 10). `size: 0` at the query level requires at least one facet and
+is 1–100 (default 10 when omitted or null). `size: 0` at the query level requires at least one facet and
 returns counts without documents. Omit `query` to match all documents.
+
+The SDK rejects more than five requested facet fields and `size: 0` without a
+facet before making a network request. `query` throws `SDKValidationError` for
+these inputs; `querySafe` returns it as an error Result.
 
 Counts include all documents matching the query and partition filter within the
 selected ref, independent of the returned document count. Each distinct indexed
@@ -58,8 +62,63 @@ exported as public types. Counts use JavaScript Number, so integers above
 
 - [Request/response types and schemas](../src/models/operations/querycollection.ts),
   [public exports](../src/types/public.ts), and [wire tests](../test/facets.test.mjs).
-- `npm test`: build, type tests, and all 110 runtime tests passed.
+- `npm test`: build, type tests (including `test/types/facets.ts`), and all 114 runtime tests passed.
 - `npm run lint` and `npm run typecheck` passed.
 - Tests cover facet-only and downloaded documents through query/querySafe, omitted
-  facets, default bucket configuration, Unicode values, and counts above 32 bits.
-- No live API call or package publication was performed.
+  facets, omitted/null bucket sizes, the five-field boundary, local rejection of
+  invalid requests, Unicode values, and counts above 32 bits.
+- No package publication was performed.
+
+The credentialed [facet smoke test](../test/integration/facets-live.test.mjs)
+creates fresh indexes, checks query/querySafe with consistent and committed reads,
+and deletes its temporary Collection with a follow-up 404 check. Missing environment
+variables fail the test instead of silently skipping it. Run it against the intended
+deployment after building the SDK:
+
+```bash
+npm run build
+node --env-file=/absolute/path/to/.env.local \
+  --test test/integration/facets-live.test.mjs
+```
+
+### Live validation on 2026-09-29
+
+- SDK/test revision: `e4b3ecb0c6cc591fe65e409d008b2abb4865711d`.
+- Environment: `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai`,
+  project `bench-recall`, using the original checkout's `.env.local`.
+- This validates observed endpoint behavior; the deployed backend commit was not
+  independently established. The pinned source contracts above remain unchanged.
+- Result: **22 of 34 child scenarios passed; 12 failed**. Node also counts the
+  failing parent test, reporting 35 tests, 22 passed, and 13 failed. No tests skipped.
+- Passed with both `query` and `querySafe`, and both `consistentRead` modes:
+  facet-only omitted/null size defaults (10 of 12 categories), array deduplication,
+  Unicode buckets, logical partition filtering on two values sharing one physical
+  partition, query filtering, dotted field names, and empty buckets.
+- Both ordinary and Safe queries successfully downloaded real 6 MiB document
+  results from `docsUrl`. The test verified JSON-array downloads, payload hashes,
+  unchanged facet buckets, and absence of API credentials on transfer requests.
+- Every failed case omitted `query` and requested one document: facet top-bucket
+  limits, partition-filtered document results, or a request without facets. The
+  server returned HTTP 200 with `maxScore: "NaN"` and `docs[0].score: "NaN"`.
+  These strings fail the numeric response schema as `ResponseValidationError`.
+  The behavior occurs with both `consistentRead` values and both SDK methods.
+  The smoke remains failing until this response-contract mismatch is corrected;
+  it does not normalize the strings or suppress these scenarios.
+- Cleanup: `ts-facets-6d95e758-4e4a-4777-b549-7c7dfc030e0c` was deleted and a
+  subsequent GET returned 404. Earlier diagnostic Collections were also deleted
+  and checked for absence.
+
+Minimal reproduction against a Collection containing at least one matching
+document (replace `tags` with an indexed keyword field):
+
+```typescript
+await collection.query({
+  size: 1,
+  fields: { include: ["id"] },
+  facets: { tags: { size: 1 } },
+}); // ResponseValidationError: maxScore and docs[0].score are strings ("NaN").
+```
+
+The review fixes and local tests passed, but this live result is **not a complete
+deployment acceptance or release validation**. Third-party integrations and a
+registry package installation were not tested, and no package was published.
