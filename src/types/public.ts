@@ -273,3 +273,5 @@ export function tagDetailsWithDates(details: TagDetailsModel): TagDetails {
 export function aliasDetailsWithDate(details: AliasDetailsModel): AliasDetails {
   return { ...details, createdAt: new Date(details.createdAt) };
 }
+
+export type { FacetRequest, FacetBucket, FacetResult } from "../models/operations/querycollection.js";

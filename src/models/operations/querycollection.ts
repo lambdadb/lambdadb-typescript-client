@@ -9,6 +9,13 @@ import { Result as SafeParseResult } from "../../types/fp.js";
 import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
+export type FacetRequest = {
+  /** Maximum buckets to return (1–100). Omitted or null uses the server default of 10. */
+  size?: number | null | undefined;
+};
+export type FacetBucket = { value: string; count: number };
+export type FacetResult = { buckets: Array<FacetBucket> };
+
 export type QueryCollectionRequestBody = {
   /**
    * Number of documents to return. Note that the maximum number of documents is 100.
@@ -17,7 +24,8 @@ export type QueryCollectionRequestBody = {
   /**
    * Query object. For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
    */
-  query: { [k: string]: any };
+  query?: { [k: string]: any } | undefined;
+  facets?: Record<string, FacetRequest> | undefined;
   /**
    * Overlay eligible pending writes on a directly selected Branch. Tag and Alias reads reject true, pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
    */
@@ -63,6 +71,7 @@ export type QueryCollectionDoc = {
  * Documents selected by query.
  */
 export type QueryCollectionResponse = {
+  facets?: Record<string, FacetResult> | undefined;
   /**
    * Elapsed time in milliseconds.
    */
@@ -92,7 +101,8 @@ export type QueryCollectionResponse = {
 /** @internal */
 export type QueryCollectionRequestBody$Outbound = {
   size?: number | undefined;
-  query: { [k: string]: any };
+  query?: { [k: string]: any } | undefined;
+  facets?: Record<string, FacetRequest> | undefined;
   consistentRead: boolean;
   includeVectors: boolean;
   sort?: Array<{ [k: string]: any }> | undefined;
@@ -108,7 +118,12 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   QueryCollectionRequestBody
 > = z.object({
   size: z.number().int().optional(),
-  query: z.record(z.any()),
+  query: z.record(z.any()).optional(),
+  facets: z.record(z.object({
+    size: z.number().int().min(1).max(100).nullable().optional(),
+  }).strict()).refine((facets) => Object.keys(facets).length <= 5, {
+    message: "At most five facet fields may be requested",
+  }).optional(),
   consistentRead: z.boolean().default(false),
   includeVectors: z.boolean().default(false),
   sort: z.array(z.record(z.any())).optional(),
@@ -116,6 +131,13 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   ref: models.ReadRef$schema.optional(),
 }).strict().superRefine((value, context) => {
+  if (value.size === 0 && Object.keys(value.facets ?? {}).length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "size: 0 requires at least one facet",
+      path: ["facets"],
+    });
+  }
   if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
     context.addIssue({
       code: z.ZodIssueCode.custom,
@@ -194,6 +216,9 @@ export const QueryCollectionResponse$inboundSchema: z.ZodType<
   docs: z.array(z.lazy(() => QueryCollectionDoc$inboundSchema)),
   isDocsInline: z.boolean(),
   docsUrl: nullToUndefined(z.string().optional()),
+  facets: nullToUndefined(z.record(z.object({
+    buckets: z.array(z.object({ value: z.string(), count: z.number().int() })),
+  })).optional()),
 });
 
 export function queryCollectionResponseFromJSON(

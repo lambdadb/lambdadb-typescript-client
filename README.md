@@ -194,12 +194,42 @@ required nullable `parentBranch: { branchId, name }`, even for an empty head;
 `main` and Branches without recorded parents return `null`.
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
-configuration. The SDK contract is pinned at
+configuration. The Data Versioning contract is pinned at
 `c44180406c05b1a9043d8516e7c7f60df91fc9a7`. Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
 all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
 ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
+
+The additional text analyzer names are documented in [Analyzer](docs/models/analyzer.md)
+and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
+
+### Keyword facets
+
+Count matching documents by indexed keyword values, including arrays and dotted
+field paths. Query-level `size: 0` returns counts without documents; omit `query`
+to count all documents in the selected read scope.
+
+```typescript
+const result = await client.collection("items").query({
+  size: 0,
+  facets: { tags: { size: 5 } },
+});
+for (const bucket of result.facets?.tags?.buckets ?? []) {
+  console.log(bucket.value, bucket.count);
+}
+```
+
+`querySafe` accepts the same input. Request up to five keyword fields, with
+1–100 buckets per field (default 10 when omitted or null). Counts cover all
+matching documents, independent of the number of documents returned, and survive
+`docsUrl` downloads. Public types include `FacetRequest`, `FacetBucket`, and
+`FacetResult`.
+
+Use a server deployment containing the facet feature and newly built keyword
+indexes. Existing data must be reinserted into a new Collection; old Tags and
+partial index updates do not migrate the format. See [keyword facets](docs/keyword-facets.md)
+for supported queries, limits, and validation evidence.
 
 ### Pagination
 
