@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - Added optional per-query managed reranking for `typesafe` / `jev-1.13.0`,
   including nullable defaults, custom criteria, strict option/bounds validation,
