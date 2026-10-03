@@ -5,14 +5,18 @@ import { HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/es
 
 // Opt-in paid-provider smoke through LambdaDB only; no Jev key is accepted.
 const options = { timeoutMs: 30_000, retries: { strategy: "none" } };
-function safeError(error) {
+function safeError(error, stage = "cleanup") {
   if (error instanceof assert.AssertionError) return error;
-  return new Error(`${error?.name ?? "Error"}; HTTP ${error?.statusCode ?? "unavailable"}`);
+  const message = typeof error?.data$?.message === "string"
+    ? error.data$.message.replaceAll(process.env.LAMBDADB_PROJECT_API_KEY, "[redacted]")
+      .replace(/https?:\/\/\S+/g, "[URL redacted]")
+    : "";
+  return new Error(`${stage}: ${error?.name ?? "Error"}; HTTP ${error?.statusCode ?? "unavailable"}${message ? `; ${message}` : ""}`);
 }
 
 // Run explicitly with the intended environment; missing credentials are a failure.
 test("live managed reranking defaults, custom criteria, scores, projection and cleanup", {
-  timeout: 180_000,
+  timeout: 360_000,
 }, async (t) => {
   for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
     assert.ok(process.env[name], `Missing ${name}; load the intended environment's .env.local`);
@@ -44,11 +48,13 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
       throw safeError(error);
     }
   });
+  let stage = "create Collection";
   try {
     creating = true;
     await client.createCollection({ collectionName, tags: { purpose: "sdk-release-smoke" },
       indexConfigs: { title: { type: "text" }, body: { type: "text" } } }, options);
     creating = false;
+    stage = "write fixture documents";
     await collection.docs.upsert({ docs: [
       { id: "restore", title: "Restore a version", body: "Create a branch from a previous snapshot to restore collection data." },
       { id: "backup", title: "Keep backups", body: "Use tags to retain immutable collection snapshots for later recovery." },
@@ -56,7 +62,24 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
       { id: "recipe", title: "Bread recipe", body: "Mix flour, water and yeast, then bake the dough." },
     ] }, options);
     const input = { size: 4, consistentRead: true, query: { queryString: { query: "*:*" } }, fields: { include: ["id", "title"] } };
-    const baseline = await collection.query(input, options);
+    stage = "baseline retrieval";
+    // New Collection placement can lag creation. Poll only ordinary retrieval;
+    // never retry paid reranking requests or hide permanent API errors.
+    const deadline = Date.now() + 90_000;
+    let baseline;
+    let attempts = 0;
+    while (true) {
+      attempts++;
+      const result = await collection.querySafe(input, options);
+      if (result.ok && result.value.docs.length === 4) {
+        baseline = result.value;
+        break;
+      }
+      if (!result.ok && ![404, 503].includes(result.error?.statusCode)) throw result.error;
+      assert.ok(Date.now() < deadline, "Timed out waiting for Collection placement and four visible documents");
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+    console.info(`[live] Baseline retrieval ready after ${attempts} attempts`);
     assert.equal(baseline.docs.length, 4);
     assert.equal(baseline.rerank, undefined);
     assert.ok(baseline.docs.every((hit) => hit.retrievalScore === undefined));
@@ -70,6 +93,7 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
       ["custom10", { criteria: Array.from({ length: 10 }, (_, i) => `Relevance level ${i}: ${i} of 9 query requirements are addressed.`) }, "custom"],
     ];
     for (const [index, [label, extra, version]] of cases.entries()) {
+      stage = `rerank ${label}`;
       const request = { ...input, size: 2, rerank: { ...rerank, ...extra } };
       let response;
       if (index % 2 === 0) response = await collection.query(request, options);
@@ -99,6 +123,7 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
       assert.equal("rubricVersion" in response.rerank, false);
       console.info(`[live] ${label}: applied; candidate/scored=4/4, final size=2; scores, order and projection passed`);
     }
+    stage = "empty candidates";
     const empty = await collection.query({ ...input, query: { queryString: { query: "zzzxqv", defaultField: "body" } }, rerank }, options);
     assert.deepEqual(empty.docs, []);
     assert.equal(empty.maxScore, undefined);
@@ -107,12 +132,13 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
     assert.equal(empty.rerank.candidateCount, 0);
     assert.equal(empty.rerank.scoredCount, 0);
     assert.equal(empty.rerank.criteriaVersion, undefined);
+    stage = "explicit null rerank";
     const legacy = await collection.query({ ...input, rerank: null }, options);
     assert.deepEqual(legacy.docs, baseline.docs);
     assert.equal(legacy.rerank, undefined);
     console.info("[live] Empty candidates skip reranking; explicit null preserves baseline");
   } catch (error) {
-    throw safeError(error);
+    throw safeError(error, stage);
   } finally {
     creating = false;
   }

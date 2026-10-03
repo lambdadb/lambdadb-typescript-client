@@ -85,8 +85,36 @@ from the approved main release commit and publishes only its tested tarball.
 
 ## Live validation
 
-Release-build checks are running against the development endpoint above.
-Results and cleanup will be recorded before completing this preparation.
+Checks ran on October 3, 2026 with the `0.7.0` build from SDK commit
+`3180705` and the final smoke-test readiness/diagnostic changes in this PR.
+
+| Check | Result |
+| :-- | :-- |
+| Required docsUrl smoke | Passed all eight ordinary/Safe Query, Fetch and GET/POST List paths with actual array downloads, hashes and header isolation. |
+| Data Versioning | Passed lifecycle, reads, writes, branches, tags, aliases and bulk upload. |
+| Qdrant live compatibility | Passed. |
+| Keyword facets | Passed all 35 tests on an isolated rerun, including real docsUrl downloads. Initial concurrent run returned HTTP 503 before Collection creation. |
+| Managed reranking | Passed default/null/custom 2/3/10 criteria, scores, order, retrievalScore, projection, metadata, empty candidates and legacy null behavior. |
+| Expanded analyzers | **Blocked:** Collection creation returned HTTP 400. A separate `nepali` probe confirmed the endpoint still advertises only the original 16 analyzers. |
+
+Reranking initially failed before any provider call because ordinary baseline
+retrieval returned HTTP 503 immediately after creating a Collection. The final
+test polls ordinary retrieval for at most 90 seconds, accepting only transient
+404/503 errors or incomplete visibility. Baseline retrieval became ready on
+the second attempt. Paid reranking requests are never retried. Initial
+concurrent Collection-creation failures are retained in the evidence logs;
+they are not counted as successful runs.
+
+All successfully created temporary Collections were deleted and their absence
+verified. Failed-create Collections and the unsupported-analyzer probe were
+also confirmed absent. No test data or Collections remain from these checks.
+
+Run the managed reranking smoke explicitly with the intended environment:
+
+```bash
+npm run build
+node --env-file=.env.local --test test/integration/managed-reranking-live.test.mjs
+```
 
 The managed rerank smoke calls LambdaDB with five small synthetic-document
 requests: default, explicit null and custom 2/3/10 criteria. It checks applied
@@ -98,8 +126,11 @@ accounting or provider usage-event correctness.
 
 - Recheck npm versions and remote tags before publication. At preparation,
   `latest=0.6.0` and no npm `0.7.0` version was present.
-- Complete and record the required docsUrl smoke and applicable live checks,
-  including temporary Collection cleanup.
+- Deploy the 49-analyzer backend contract in the intended test environment and
+  pass `test/integration/text-analyzers-live.test.mjs`. The current HTTP 400
+  remains a publication blocker; SDK enum support does not change a server's
+  allowlist. Re-run the required docsUrl smoke and applicable checks if the
+  release candidate or target deployment changes.
 - Resolve prerelease feedback or obtain an explicit direct-stable exception.
 - Review and merge the release PR into main before tagging; verify the tag
   target is the reviewed main commit and version metadata is consistent.
