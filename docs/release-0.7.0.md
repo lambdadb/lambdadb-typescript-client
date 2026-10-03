@@ -90,12 +90,19 @@ Checks ran on October 3, 2026 with the `0.7.0` build from SDK commit
 
 | Check | Result |
 | :-- | :-- |
-| Required docsUrl smoke | Passed all eight ordinary/Safe Query, Fetch and GET/POST List paths with actual array downloads, hashes and header isolation. |
+| Required docsUrl smoke | Passed all eight ordinary/Safe Query, Fetch and GET/POST List paths with actual array downloads, hashes and header isolation; passed again after the analyzer deployment, with Collection deletion and absence verified. |
 | Data Versioning | Passed lifecycle, reads, writes, branches, tags, aliases and bulk upload. |
 | Qdrant live compatibility | Passed. |
 | Keyword facets | Passed all 35 tests on an isolated rerun, including real docsUrl downloads. Initial concurrent run returned HTTP 503 before Collection creation. |
 | Managed reranking | Passed default/null/custom 2/3/10 criteria, scores, order, retrievalScore, projection, metadata, empty candidates and legacy null behavior. |
-| Expanded analyzers | **Blocked:** Collection creation returned HTTP 400. A separate `nepali` probe confirmed the endpoint still advertises only the original 16 analyzers. |
+| Expanded analyzers | Passed after deployment: creation and Get/GetSafe preserved all 49 names, omitted `standard` default, empty arrays and ordering; duplicate names were rejected. Existing 16-language positive/negative searches and Chinese/CJK differences passed. Newly added presets were checked for acceptance and metadata, not language-specific search quality. |
+
+Before deployment, expanded-analyzer Collection creation returned HTTP 400;
+a `nepali` probe showed only the original 16 supported names. The post-deployment
+rerun on the same endpoint/project passed and supersedes that blocker. Its
+temporary Collection was deleted and GET returned 404. This establishes observed
+development API behavior, not the exact deployed source revision or production
+availability.
 
 Reranking initially failed before any provider call because ordinary baseline
 retrieval returned HTTP 503 immediately after creating a Collection. The final
@@ -126,11 +133,9 @@ accounting or provider usage-event correctness.
 
 - Recheck npm versions and remote tags before publication. At preparation,
   `latest=0.6.0` and no npm `0.7.0` version was present.
-- Deploy the 49-analyzer backend contract in the intended test environment and
-  pass `test/integration/text-analyzers-live.test.mjs`. The current HTTP 400
-  remains a publication blocker; SDK enum support does not change a server's
-  allowlist. Re-run the required docsUrl smoke and applicable checks if the
-  release candidate or target deployment changes.
+- The 49-analyzer development smoke passed after deployment. Re-run the required
+  docsUrl smoke and applicable checks if the release candidate or target
+  deployment changes; SDK enum support alone does not establish server support.
 - Resolve prerelease feedback or obtain an explicit direct-stable exception.
 - Review and merge the release PR into main before tagging; verify the tag
   target is the reviewed main commit and version metadata is consistent.
