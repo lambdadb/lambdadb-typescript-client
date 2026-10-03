@@ -275,3 +275,5 @@ export function aliasDetailsWithDate(details: AliasDetailsModel): AliasDetails {
 }
 
 export type { FacetRequest, FacetBucket, FacetResult } from "../models/operations/querycollection.js";
+
+export type { RerankConfig, RerankResponse } from "../models/rerank.js";

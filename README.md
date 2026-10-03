@@ -204,6 +204,19 @@ ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 The 49 fixed text analyzer presets are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
+### Managed reranking
+
+Pass an optional per-query `rerank` object to `query` or `querySafe` with
+`provider: "typesafe"`, `model: "jev-1.13.0"`, nonblank `queryText` and stored
+scalar text `fields`. The server manages credentials. Optional `criteria` selects
+2–10 ordered custom descriptions; omission/null uses the default criteria.
+See [Managed reranking](docs/managed-reranking.md) for default/custom examples,
+candidate limits, response fields and eligible fallback behavior. An applied
+`score` is the final evaluation score in [0,1], not a relevance probability;
+`retrievalScore` retains the original search score outside `doc`. Inspect
+`rerank.status` because fallback retains search scores. Omitted/null `rerank`
+keeps existing query behavior.
+
 ### Keyword facets
 
 Count matching documents by indexed keyword values, including arrays and dotted
