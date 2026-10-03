@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Expanded fixed text analyzer presets from 16 to 49, pinned to backend PR #437
+  merge `55d888299fee44466326a9db8016af9811ade13b`. The shared closed enum
+  covers types and request/response validation. Existing names, lowercase
+  selection, omitted server default, empty lists, ordering, and serialization
+  remain unchanged. See [Analyzer](docs/models/analyzer.md) for the full list,
+  text/keyword distinction, and Lucene-only language extensions.
+- Qdrant payload schema objects now reject unsupported field options instead
+  of silently dropping them. Type-only text mapping retains the server default;
+  use the native SDK for LambdaDB analyzer presets.
+- Source alignment does not establish dev/production deployment or publication.
+
 ## 0.6.0
 
 Keyword facets and expanded text analyzers. Intended npm channel: `latest`.

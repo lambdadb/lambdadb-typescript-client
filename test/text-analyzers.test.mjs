@@ -52,8 +52,20 @@ function createClient(field) {
   return { client, calls };
 }
 
-test("Analyzer constant and both Zod enums match the pinned OpenAPI excerpt", () => {
-  assert.equal(names.length, 16);
+test("Analyzer constant and both Zod enums match the pinned analyzer schema", () => {
+  assert.equal(names.length, 49);
+  assert.deepEqual(names, [
+    "standard", "english", "korean", "japanese", "chinese",
+    "cjk", "arabic", "french", "german", "hindi",
+    "indonesian", "italian", "portuguese", "russian", "spanish",
+    "turkish", "armenian", "basque", "bengali", "brazilian",
+    "bulgarian", "catalan", "czech", "danish", "dutch",
+    "estonian", "finnish", "galician", "greek", "hungarian",
+    "irish", "latvian", "lithuanian", "norwegian", "persian",
+    "romanian", "serbian", "sorani", "swedish", "thai",
+    "simple", "whitespace", "stop", "keyword", "pattern",
+    "fingerprint", "nepali", "tamil", "telugu",
+  ]);
   assert.deepEqual(Object.values(Analyzer), names);
   assert.deepEqual(Object.values(Analyzer$inboundSchema.enum), names);
   assert.deepEqual(Object.values(Analyzer$outboundSchema.enum), names);
@@ -65,14 +77,14 @@ test("Analyzer constant and both Zod enums match the pinned OpenAPI excerpt", ()
 const validCases = [
   ...names.map((name) => [name, [name]]),
   ["all analyzers", names],
-  ["original four", ["standard", "english", "korean", "japanese"]],
+  ["original sixteen", names.slice(0, 16)],
   ["omitted", undefined],
   ["empty", []],
   ["duplicates and caller order", ["cjk", "standard", "chinese", "cjk", "standard"]],
 ];
 
 for (const [label, analyzers] of validCases) {
-  test(`${label}: model JSON and public create/get preserve analyzer settings`, async () => {
+  test(`${label}: model JSON and public create/get/update preserve analyzer settings`, async () => {
     const field = analyzers === undefined ? { type: "text" } : { type: "text", analyzers };
     assert.deepEqual(JSON.parse(indexConfigsTextToJSON(field)), field);
     const parsed = indexConfigsTextFromJSON(JSON.stringify(field));
@@ -87,10 +99,17 @@ for (const [label, analyzers] of validCases) {
     const result = await client.collection("multilingual").get(NO_RETRIES);
     assert.deepEqual(result.collection.indexConfigs.content, field);
     assert.equal(calls[1].method, "GET");
+    const update = { indexConfigs: { content: field } };
+    const updated = await client.collection("multilingual").update(update, NO_RETRIES);
+    assert.deepEqual(updated.collection.indexConfigs.content, field);
+    assert.deepEqual(JSON.parse(calls[2].body), update);
+    const safe = await client.collection("multilingual").getSafe(NO_RETRIES);
+    assert.equal(safe.ok, true);
+    assert.deepEqual(safe.value.collection.indexConfigs.content, field);
   });
 }
 
-for (const value of ["unknown", "CHINESE", " chinese ", "", null, 123]) {
+for (const value of ["unknown", "CHINESE", "KEYWORD", "Nepali", " chinese ", "", null, 123, { type: "custom", tokenizer: "standard" }]) {
   test(`invalid analyzer ${JSON.stringify(value)} fails request and response validation`, async () => {
     assert.equal(Analyzer$inboundSchema.safeParse(value).success, false);
     assert.equal(Analyzer$outboundSchema.safeParse(value).success, false);

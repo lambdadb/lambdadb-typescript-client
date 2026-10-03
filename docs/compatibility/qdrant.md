@@ -122,6 +122,14 @@ Mapping:
 | `uuid` | `keyword` |
 | `geo` | Unsupported |
 
+Payload schema objects support only `{ type: "text" }` (or another supported
+type). Text mapping omits `analyzers`, preserving the server's `standard`
+default. Extra field options, including `analyzers`, `tokenizer`, `lowercase`,
+stopwords, and custom pipelines, throw `UnsupportedQdrantFeatureError` rather
+than being silently dropped. For LambdaDB's fixed analyzer presets, configure
+`IndexConfigsText` through the native SDK; this adapter does not translate
+Qdrant/Elasticsearch/OpenSearch analyzer settings.
+
 `createPayloadIndex()` is intentionally limited. LambdaDB collection updates
 replace `indexConfigs`, so the compatibility client reads the existing configs,
 merges the new payload index, and sends the full merged set. LambdaDB currently

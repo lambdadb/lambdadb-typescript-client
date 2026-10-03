@@ -49,7 +49,7 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
   for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
     assert.ok(process.env[name], `Missing ${name}; load the intended environment's .env.local`);
   }
-  assert.deepEqual(languages.map(([name]) => name).sort(), Object.values(Analyzer).sort());
+  assert.ok(languages.every(([name]) => Object.values(Analyzer).includes(name)));
   const raw = process.env.LAMBDADB_BASE_URL;
   const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
   const projectName = process.env.LAMBDADB_PROJECT_NAME;
@@ -57,7 +57,7 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
     ? { serverURL: url.toString() }
     : { baseUrl: url.toString(), projectName };
   const collectionName = `ts-analyzers-${randomUUID()}`;
-  const indexConfigs = Object.fromEntries(languages.map(([name]) => [
+  const indexConfigs = Object.fromEntries(Object.values(Analyzer).map((name) => [
     name, { type: "text", analyzers: [name] },
   ]));
   Object.assign(indexConfigs, {
@@ -111,7 +111,7 @@ test("live text analyzer creation, metadata, language searches, and cleanup", {
     }, options);
     creating = false;
     assert.equal(result.collection.collectionName, collectionName);
-    console.info("[live] Create: 16 analyzers plus omission, empty array, ordered list, and Chinese word field accepted");
+    console.info("[live] Create: 49 analyzers plus omission, empty array, ordered list, and Chinese word field accepted");
     const expected = { ...indexConfigs, omitted: { type: "text", analyzers: ["standard"] } };
     const metadata = await collection.get(options);
     // The server also adds its reserved id keyword field. Check each requested field.
