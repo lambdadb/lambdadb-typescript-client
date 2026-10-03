@@ -201,7 +201,7 @@ all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
 ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 
-The additional text analyzer names are documented in [Analyzer](docs/models/analyzer.md)
+The 49 fixed text analyzer presets are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
 ### Keyword facets

@@ -597,3 +597,43 @@ test("filtered scroll maps to extended list options and page-token offsets", asy
     UnsupportedQdrantFeatureError,
   );
 });
+
+test("type-only payload text mapping preserves the server default", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  await client.createCollection("docs", {
+    vectorsConfig: new models.VectorParams({ size: 3, distance: models.Distance.COSINE }),
+    payloadSchema: { body: { type: "text" } },
+  });
+  assert.deepEqual(fake.created[0].indexConfigs.body, { type: "text" });
+  await client.createPayloadIndex("docs", "additionalBody", { type: "text" });
+  assert.deepEqual(fake.collection("docs").updates[0].indexConfigs.additionalBody, { type: "text" });
+});
+
+for (const option of [
+  { analyzers: ["nepali"] },
+  { tokenizer: "word" },
+  { lowercase: false },
+  { stopwords: ["the"] },
+  { pattern: "\\W+" },
+  { pipeline: ["lowercase"] },
+]) {
+  test(`Qdrant mapping rejects field options ${Object.keys(option)} before writes`, async () => {
+    const fake = new FakeLambdaDB();
+    const client = new QdrantCompatClient(fake);
+    const field = { type: "text", ...option };
+    await assert.rejects(
+      client.createCollection("docs", {
+        vectorsConfig: new models.VectorParams({ size: 3, distance: models.Distance.COSINE }),
+        payloadSchema: { body: field },
+      }),
+      UnsupportedQdrantFeatureError,
+    );
+    await assert.rejects(
+      client.createPayloadIndex("docs", "body", field),
+      UnsupportedQdrantFeatureError,
+    );
+    assert.deepEqual(fake.created, []);
+    assert.deepEqual(fake.collection("docs").updates, []);
+  });
+}

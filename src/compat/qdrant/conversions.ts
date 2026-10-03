@@ -328,6 +328,12 @@ function payloadSchemaType(rawSchema: unknown): string {
   if (typeof rawSchema === "string") {
     rawType = rawSchema;
   } else if (isObject(rawSchema) && "type" in rawSchema) {
+    const unsupportedOptions = Object.keys(rawSchema).filter((key) => key !== "type");
+    if (unsupportedOptions.length > 0) {
+      throw new UnsupportedQdrantFeatureError(
+        `Unsupported Qdrant payload schema options: ${unsupportedOptions.join(", ")}. Use the native SDK for LambdaDB analyzer presets.`,
+      );
+    }
     rawType = String(rawSchema["type"]);
   } else {
     throw new QdrantCompatValidationError(
