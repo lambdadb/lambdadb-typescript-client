@@ -61,7 +61,7 @@ test("live managed reranking defaults, custom criteria, scores, projection and c
       { id: "weather", title: "Weather forecast", body: "Tomorrow will be sunny with light winds." },
       { id: "recipe", title: "Bread recipe", body: "Mix flour, water and yeast, then bake the dough." },
     ] }, options);
-    const input = { size: 4, consistentRead: true, query: { queryString: { query: "*:*" } }, fields: { include: ["id", "title"] } };
+    const input = { size: 4, consistentRead: true, query: { bool: undefined, queryString: { query: "*:*" } }, fields: { include: ["id", "title"] } };
     stage = "baseline retrieval";
     // New Collection placement can lag creation. Poll only ordinary retrieval;
     // never retry paid reranking requests or hide permanent API errors.

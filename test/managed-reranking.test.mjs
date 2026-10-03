@@ -105,6 +105,27 @@ test("query default size and candidate cap stay on the server; scoring bool/hybr
   assert.doesNotThrow(() => queryCollectionRequestBodyToJSON({ query, size: 100, rerank: { ...rerank, candidateSize: 100 } }));
 });
 
+test("undefined optional composite keys preserve scoring queries through serialization", async () => {
+  const optional = { bool: undefined, rrf: undefined, mm: undefined, l2: undefined };
+  for (const scoring of [
+    query,
+    { queryString: { query: "restore", defaultField: "body" } },
+    ...["bool", "rrf", "mm", "l2"].map((key) => ({ [key]: [{ ...optional, ...query }] })),
+  ]) {
+    for (const safe of [false, true]) {
+      const { handle, calls } = collection(() => json({ took: 0, total: 0, docs: [], isDocsInline: true }));
+      const input = { query: { ...optional, ...scoring }, rerank };
+      if (safe) assert.equal((await handle.querySafe(input, options)).ok, true);
+      else await handle.query(input, options);
+      assert.deepEqual(calls[0].query, JSON.parse(JSON.stringify(scoring)));
+    }
+  }
+  // A present composite still takes precedence over other scoring alternatives.
+  for (const value of [null, [], [{ ...query, occur: "FILTER" }]]) {
+    assert.throws(() => queryCollectionRequestBodyToJSON({ query: { bool: value, ...query }, rerank }));
+  }
+});
+
 for (const safe of [false, true]) {
   for (const download of [false, true]) {
     test(`scores, ordering, applied metadata and facets survive query/download, safe=${safe}, download=${download}`, async () => {

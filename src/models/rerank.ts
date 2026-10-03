@@ -79,7 +79,8 @@ export function hasRerankScoringQuery(query: unknown): boolean {
   if (occur === "FILTER" || occur === "MUST_NOT") return false;
   // Follow backend parser precedence for composite queries.
   for (const key of ["bool", "rrf", "mm", "l2"]) {
-    if (key in node) {
+    // Undefined members are omitted by JSON serialization.
+    if (node[key] !== undefined) {
       const children = node[key];
       return Array.isArray(children) && children.some(hasRerankScoringQuery);
     }
