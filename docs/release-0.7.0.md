@@ -67,7 +67,7 @@ independent binary-to-source provenance is claimed.
 ## Local and package validation
 
 - All seven version locations match `0.7.0`.
-- `npm ci`, lint, typecheck, build and all 175 ordinary runtime tests passed.
+- `npm ci`, lint, typecheck, build and all 176 ordinary runtime tests passed.
 - Four LangChain/LlamaIndex compatibility tests passed against their in-memory
   backend; these are separate from live API validation.
 - Package dry-run and real pack completed: 910 files, both module formats,
@@ -75,8 +75,8 @@ independent binary-to-source provenance is claimed.
 - A clean tarball installation passed ESM import, CommonJS require, package and
   runtime version checks, 49 analyzer exports, rerank serialization and strict
   NodeNext `.mts`/`.cts` consumers with nullable options.
-- Packed artifact: `functional-systems-lambdadb-0.7.0.tgz`, 294807 bytes.
-- SHA-1: `b51df6ab18aff7e03ff0211f3bb3d02aa6809057`.
+- Packed artifact: `functional-systems-lambdadb-0.7.0.tgz`, 294943 bytes.
+- SHA-1: `8fce936cfb4ef09b95d3b8b830e1b55c1d749cb9`.
 
 Local validation artifacts are retained under
 `/Users/steven/orca/artifacts/lambdadb-typescript-client/release-0.7.0/`.
@@ -87,6 +87,14 @@ from the approved main release commit and publishes only its tested tarball.
 
 Checks ran on October 3, 2026 with the `0.7.0` build from SDK commit
 `3180705` and the final smoke-test readiness/diagnostic changes in this PR.
+After review, SDK commit `10085ab` corrected scoring-query validation to skip
+undefined composite members omitted by JSON while retaining present composite
+precedence. All 176 runtime tests, lint and typecheck passed. The rebuilt tarball
+passed clean ESM/CommonJS and strict NodeNext consumer checks, including the
+undefined-member regression. Reranking and all eight required docsUrl paths
+passed again against shared dev with cleanup verified. The final package
+artifact and manifests are under the validation directory's `review-fix/` folder;
+earlier package artifacts are retained as superseded evidence.
 
 | Check | Result |
 | :-- | :-- |
