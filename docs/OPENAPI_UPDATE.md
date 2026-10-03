@@ -72,6 +72,23 @@ verifies Collection absence with a 404, including after validation failures.
 The metadata checks allow the server's automatically added reserved `id` field.
 This credentialed test is separate from ordinary PR CI.
 
+## Updating managed reranking
+
+The public OpenAPI at docs revision `961561c379acb079aec20191e13b89809ef096e9`
+does not yet contain managed reranking. Use the exact backend source pin and
+DTO/test links in [Managed reranking](managed-reranking.md); do not claim this
+feature is generated from that older OpenAPI. This checkout has no maintained
+schema generator. Follow the manual model workflow above until upstream OpenAPI
+is available, and reconcile it against these DTOs when it is published.
+
+Keep `src/models/rerank.ts`, query request/response schemas, public exports,
+reference documentation and package-consumer tests aligned. Null/omitted request
+options stay on the wire as supplied without client defaults. Response optional
+nulls use the existing null-to-undefined convention. Do not re-sort docsUrl
+results or change `knn.k`. Stored field validation and facet query restrictions
+remain on the server. Run lint, typecheck and the complete test suite, which
+builds both module formats and tests package declaration consumers.
+
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
