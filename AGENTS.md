@@ -2,17 +2,6 @@
 
 These instructions apply to the entire repository.
 
-## Language policy
-
-- Use Korean for direct conversation with the user unless the user requests
-  another language.
-- Use English for all authored work outside that conversation, including code
-  comments, documentation, examples, tests, repository instructions, commit
-  messages, branch names, and GitHub PR titles, descriptions, and review comments.
-- Before committing or publishing an artifact, check that newly authored text
-  follows this policy. Preserve existing identifiers, quoted source text, and
-  non-English language fixtures when their original language is required.
-
 <!-- CLONE:ARTIFACT-REVIEW-CONTRACT:START -->
 ## Artifact review contract
 
