@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 - Added optional per-query managed reranking for `typesafe` / `jev-1.13.0`,
   including nullable defaults, custom criteria, strict option/bounds validation,
@@ -10,6 +10,9 @@
   Contract pinned to backend `a5e06d49be06d95dc5f4046aeecaf51f8a7733c0`;
   see [Managed reranking](docs/managed-reranking.md). Source support does not
   establish deployment or a package release.
+  Undefined optional composite query members are omitted during scoring-query
+  validation consistently with JSON serialization; present composites retain
+  the server's precedence.
 
 - Expanded fixed text analyzer presets from 16 to 49, pinned to backend PR #437
   merge `55d888299fee44466326a9db8016af9811ade13b`. The shared closed enum
