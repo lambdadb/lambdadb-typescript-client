@@ -18,3 +18,6 @@ async function run() {
 run();
 ```
 <!-- End SDK Example Usage [usage] -->
+
+For opt-in lexical/vector fusion and managed reranking, see
+[Bayesian hybrid search](docs/bayesian-search.md).

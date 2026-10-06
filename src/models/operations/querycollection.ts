@@ -23,7 +23,8 @@ export type QueryCollectionRequestBody = {
    */
   size?: number | undefined;
   /**
-   * Query object. For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
+   * Query object. BayesianQuery provides an optional typed top-level hybrid query.
+   * For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
    */
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;

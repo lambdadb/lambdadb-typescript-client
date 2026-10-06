@@ -89,6 +89,15 @@ results or change `knn.k`. Stored field validation and facet query restrictions
 remain on the server. Run lint, typecheck and the complete test suite, which
 builds both module formats and tests package declaration consumers.
 
+## Updating Bayesian hybrid search
+
+The Bayesian contract is maintained manually from backend
+`c49da19629d8fd3ce2144ead97b6f8e2b985c3bb`; see
+[Bayesian hybrid search](bayesian-search.md) for exact DTO links and live validation.
+Keep the optional types, rerank scoring-query recognition, and package-consumer
+tests aligned. Preserve free-form query serialization and existing defaults;
+invalid fusion contracts retain server-side validation and error classification.
+
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.

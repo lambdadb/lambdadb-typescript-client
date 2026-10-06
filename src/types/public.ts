@@ -4,6 +4,7 @@
  */
 
 // ---- Input types (RequestBody / Request aliased as XxxInput) ----
+export type { BayesianQuery, BayesianSubquery } from "../models/bayesian.js";
 export type { CreateCollectionRequest as CreateCollectionInput } from "../models/operations/createcollection.js";
 export type { UpdateCollectionRequestBody as UpdateCollectionInput } from "../models/operations/updatecollection.js";
 export type { UpsertDocsRequestBody as UpsertDocsInput } from "../models/operations/upsertdocs.js";
