@@ -62,7 +62,7 @@ quality, load handling, or complete provider billing/accounting correctness.
 
 - All seven version values, including the embedded User-Agent, match `0.8.0`.
 - `npm ci`, `npm run lint`, `npm run typecheck`, and `npm test` passed: build,
-  declaration consumers, and 197 executed runtime tests, no failures/skips.
+  declaration consumers, and 198 executed runtime tests, no failures/skips.
 - `npm run test:external:qdrant` passed four in-memory LangChain/LlamaIndex
   compatibility tests; these are separate from deployed-server tests.
 - `npm pack --dry-run --json` and `npm pack --pack-destination /tmp/lambdadb-latest-compat/release080-review-pack --json`
@@ -96,6 +96,15 @@ quality, load handling, or complete provider billing/accounting correctness.
 Original logs, package manifests, tarball, and consumer fixtures are retained
 outside the repository under `/tmp/lambdadb-latest-compat/`. They are preparation
 artifacts; the publishing workflow rebuilds and validates the actual main tag.
+
+The concurrency review fix groups automatic and explicit dev publications
+together, with RC/stable tag groups unchanged. A focused regression evaluates
+the actual workflow expression across push/dev/RC/stable events. Full checks
+passed with 198 runtime tests, and
+`go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 .github/workflows/publish.yaml`
+passed. This workflow/test/documentation change does not alter the packed SDK
+or perform a publication. Pending dev runs, including explicit dev Releases,
+retain GitHub's replacement behavior as documented in [RELEASING.md](../RELEASING.md).
 
 ## Remaining publication steps
 
