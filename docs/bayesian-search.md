@@ -14,6 +14,12 @@ This source pin does not establish deployment in another environment.
 - Calibration uses the retained retrieval candidates. Scores are heuristic fusion scores, not relevance probabilities.
 - Existing RRF, Min-Max, L2 and request defaults remain unchanged. The SDK does not insert `size`, `knn.k`, or rerank candidate defaults.
 
+The latest dev contract requires a candidate budget only for Bayesian retrieval
+without rerank. Earlier Bayesian requests that omit it return HTTP 400. Ordinary
+text/KNN and RRF/Min-Max/L2 requests retain their existing behavior and must not
+set the top-level field. `candidateSize` controls candidates per signal; `size`
+controls the final number of returned documents.
+
 `BayesianQuery` and `BayesianSubquery` are optional TypeScript helpers exported
 from the package root and `/models`. The existing free-form query input is
 preserved: serialization passes the query unchanged, and the server validates
@@ -167,19 +173,24 @@ and `managedEmbedding: true` requests. A separate live compatibility probe
 verified legacy embedding Collection creation, actual OpenAI document embedding,
 and Bayesian `knn.queryText` through the SDK. The server's simplified
 embedding-only request was accepted through raw HTTP, and the SDK parsed its
-legacy-compatible Collection response. The current SDK still rejects that new
-request shape before HTTP; adding simplified native embedding input is a separate
-SDK follow-up, not part of Bayesian support.
+legacy-compatible Collection response. The SDK at that review point rejected the new request shape before HTTP.
+This PR subsequently added [native embedding-only input](native-embeddings.md)
+at the user's request, while retaining explicit legacy flags and named types.
 
 All temporary Collections were deleted and absence verified. The dedicated
 `typescript-sdk-ci` project and its Secrets Manager key remain for CI; no local
 credential file was created. This validation did not deploy, publish, promote
 fusion defaults, or change IAM.
 
-Final validation passed `npm ci`, `npm run lint`, `npm run typecheck`, and
+Candidate-budget validation passed `npm ci`, `npm run lint`, `npm run typecheck`, and
 `npm test` (183 tests, zero failures/skips). Clean tarball ESM/CommonJS consumers
 serialized `candidateSize` successfully. After adding bounded cleanup retries
 for HTTP 429/503, the complete live smoke passed again in 69.61 seconds and
 verified Collection absence. An intermediate failed smoke's remaining Collection
 was removed explicitly; final project enumeration confirmed no test Collections
 remained. Original scratch evidence is retained outside the repository.
+
+Native embedding-only support subsequently passed lint, typecheck, declaration
+consumers, and all 186 unit tests. Its deployed SDK smoke passed in 4.72 seconds
+for both new and legacy input, including ordinary KNN without `candidateSize`.
+Both temporary Collections were deleted and their absence verified.

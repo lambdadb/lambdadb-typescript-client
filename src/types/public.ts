@@ -143,6 +143,7 @@ export type GetBulkUpsertInput = { branch?: string | undefined };
 export type {
   IndexConfigsUnion,
   IndexConfigsManagedEmbeddingVector,
+  IndexConfigsNativeEmbeddingVector,
   EmbeddingConfig,
   EmbeddingProvider,
   PartitionConfig,

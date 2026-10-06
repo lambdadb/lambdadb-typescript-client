@@ -21,3 +21,6 @@ run();
 
 For opt-in lexical/vector fusion and managed reranking, see
 [Bayesian hybrid search](docs/bayesian-search.md).
+
+For automatic document/query embeddings using the embedding-only vector configuration,
+see [Native embeddings](docs/native-embeddings.md).

@@ -67,7 +67,7 @@ export const EmbeddingProvider = {
 export type EmbeddingProvider = ClosedEnum<typeof EmbeddingProvider>;
 
 /**
- * Managed embedding configuration for vector fields.
+ * Native embedding configuration for vector fields.
  */
 export type EmbeddingConfig = {
   /**
@@ -99,6 +99,14 @@ export type IndexConfigsManagedEmbeddingVector = {
    */
   managedEmbedding: true;
   embedding: EmbeddingConfig;
+};
+
+/** Native embedding input at backend 9072a1bc8925954369a887f558f1eaf387b7ea0e. */
+export type IndexConfigsNativeEmbeddingVector = {
+  type: "vector";
+  embedding: EmbeddingConfig;
+  /** Legacy flag for older servers. Omit on servers supporting native embedding input. */
+  managedEmbedding?: true | undefined;
 };
 
 // Analyzer contract: schemas/text-analyzers.json (see docs/OPENAPI_UPDATE.md).
@@ -169,6 +177,7 @@ export type IndexConfigsUnion =
   | IndexConfigsText
   | IndexConfigsVector
   | IndexConfigsManagedEmbeddingVector
+  | IndexConfigsNativeEmbeddingVector
   | (IndexConfigs & { type: "keyword" })
   | (IndexConfigs & { type: "long" })
   | (IndexConfigs & { type: "double" })
@@ -423,6 +432,51 @@ export function indexConfigsManagedEmbeddingVectorFromJSON(
 }
 
 /** @internal */
+export const IndexConfigsNativeEmbeddingVector$inboundSchema: z.ZodType<
+  IndexConfigsNativeEmbeddingVector,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
+  type: z.literal("vector"),
+  embedding: z.lazy(() => EmbeddingConfig$inboundSchema),
+  managedEmbedding: z.literal(true).optional(),
+});
+
+/** @internal */
+export type IndexConfigsNativeEmbeddingVector$Outbound = {
+  type: "vector";
+  embedding: EmbeddingConfig$Outbound;
+  managedEmbedding?: true | undefined;
+};
+
+/** @internal */
+export const IndexConfigsNativeEmbeddingVector$outboundSchema: z.ZodType<
+  IndexConfigsNativeEmbeddingVector$Outbound,
+  z.ZodTypeDef,
+  IndexConfigsNativeEmbeddingVector
+> = z.object({
+  type: z.literal("vector"),
+  embedding: z.lazy(() => EmbeddingConfig$outboundSchema),
+  managedEmbedding: z.literal(true).optional(),
+}).strict();
+
+export function indexConfigsNativeEmbeddingVectorToJSON(
+  indexConfigsNativeEmbeddingVector: IndexConfigsNativeEmbeddingVector,
+): string {
+  return JSON.stringify(IndexConfigsNativeEmbeddingVector$outboundSchema.parse(indexConfigsNativeEmbeddingVector));
+}
+
+export function indexConfigsNativeEmbeddingVectorFromJSON(
+  jsonString: string,
+): SafeParseResult<IndexConfigsNativeEmbeddingVector, SDKValidationError> {
+  return safeParse(
+    jsonString,
+    (json) => IndexConfigsNativeEmbeddingVector$inboundSchema.parse(JSON.parse(json)),
+    "Failed to parse 'IndexConfigsNativeEmbeddingVector' from JSON",
+  );
+}
+
+/** @internal */
 export const Analyzer$inboundSchema: z.ZodNativeEnum<typeof Analyzer> = z
   .nativeEnum(Analyzer);
 /** @internal */
@@ -480,6 +534,7 @@ export const IndexConfigsUnion$inboundSchema: z.ZodType<
   z.lazy(() => IndexConfigsText$inboundSchema),
   z.lazy(() => IndexConfigsVector$inboundSchema),
   z.lazy(() => IndexConfigsManagedEmbeddingVector$inboundSchema),
+  z.lazy(() => IndexConfigsNativeEmbeddingVector$inboundSchema),
   z.lazy(() => IndexConfigs$inboundSchema).and(
     z.object({ type: z.literal("keyword") }),
   ),
@@ -505,6 +560,7 @@ export type IndexConfigsUnion$Outbound =
   | IndexConfigsText$Outbound
   | IndexConfigsVector$Outbound
   | IndexConfigsManagedEmbeddingVector$Outbound
+  | IndexConfigsNativeEmbeddingVector$Outbound
   | (IndexConfigs$Outbound & { type: "keyword" })
   | (IndexConfigs$Outbound & { type: "long" })
   | (IndexConfigs$Outbound & { type: "double" })
@@ -522,6 +578,7 @@ export const IndexConfigsUnion$outboundSchema: z.ZodType<
   z.lazy(() => IndexConfigsText$outboundSchema),
   z.lazy(() => IndexConfigsVector$outboundSchema),
   z.lazy(() => IndexConfigsManagedEmbeddingVector$outboundSchema),
+  z.lazy(() => IndexConfigsNativeEmbeddingVector$outboundSchema),
   z.lazy(() => IndexConfigs$outboundSchema).and(
     z.object({ type: z.literal("keyword") }),
   ),

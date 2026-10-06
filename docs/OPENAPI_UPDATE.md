@@ -89,6 +89,15 @@ results or change `knn.k`. Stored field validation and facet query restrictions
 remain on the server. Run lint, typecheck and the complete test suite, which
 builds both module formats and tests package declaration consumers.
 
+## Updating native embeddings
+
+The embedding-only vector input is pinned to backend
+`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+[Native embeddings](native-embeddings.md). Keep native input types, union schemas,
+root exports, examples, and consumer tests aligned. Preserve the legacy named
+type and explicit true flag for older servers. Do not insert `managedEmbedding`
+or model defaults on the wire, and retain strict conflicting-field validation.
+
 ## Updating Bayesian hybrid search
 
 The Bayesian contract is maintained manually from backend
