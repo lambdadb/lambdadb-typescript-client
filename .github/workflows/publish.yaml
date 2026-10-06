@@ -88,16 +88,20 @@ jobs:
           }
 
           const distTag = channel === "stable" ? "latest" : channel;
+          const sourceBranch = channel === "dev" ? "develop" : "main";
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_branch=${sourceBranch}\n`);
           console.log(`Validated ${version}; npm dist-tag=${distTag}`);
           NODE
 
-      - name: Verify release commit belongs to main
+      - name: Verify release commit belongs to its channel branch
+        env:
+          SOURCE_BRANCH: ${{ steps.release.outputs.source_branch }}
         run: |
-          git fetch origin main
-          if ! git merge-base --is-ancestor HEAD origin/main; then
-            echo "Release commit $(git rev-parse HEAD) is not contained in origin/main" >&2
+          git fetch origin "$SOURCE_BRANCH"
+          if ! git merge-base --is-ancestor HEAD "origin/$SOURCE_BRANCH"; then
+            echo "Release commit $(git rev-parse HEAD) is not contained in origin/$SOURCE_BRANCH" >&2
             exit 1
           fi
 

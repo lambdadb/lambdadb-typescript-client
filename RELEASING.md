@@ -22,11 +22,11 @@ version in `src/lib/config.ts` must match those four version sources.
 
 Release tags add a leading `v` to the same package version.
 
-| Channel | Package version | Git tag | npm dist-tag |
-| :-- | :-- | :-- | :-- |
-| Development | `X.Y.Z-dev.N` | `vX.Y.Z-dev.N` | `dev` |
-| Release candidate | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` |
-| Stable | `X.Y.Z` | `vX.Y.Z` | `latest` |
+| Channel | Package version | Git tag | npm dist-tag | Source branch |
+| :-- | :-- | :-- | :-- | :-- |
+| Development | `X.Y.Z-dev.N` | `vX.Y.Z-dev.N` | `dev` | `develop` |
+| Release candidate | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` | `main` |
+| Stable | `X.Y.Z` | `vX.Y.Z` | `latest` | `main` |
 
 Use a unique version for every publication. npm does not allow replacing an
 existing package version.
@@ -87,15 +87,18 @@ validates committed versions and never rewrites them.
 
 ## Development packages
 
-Development packages provide an explicit opt-in preview through npm.
+Development packages provide an explicit opt-in preview of reviewed `develop`
+commits through npm. They do not require a merge into `main`.
 
 1. Pin the API contract revision used for the SDK implementation.
 2. Set all version sources to the next unused version, such as
    `0.5.0-dev.1`.
 3. Complete the validation checklist and merge the reviewed commit into
-   `main`.
-4. Tag the exact `main` commit as `v0.5.0-dev.1`.
-5. Create a GitHub Release for the tag and mark it as a prerelease.
+   `develop`. Record the exact validated commit SHA.
+4. After explicit publication approval, tag that exact `develop` commit as
+   `v0.5.0-dev.1`.
+5. Create a GitHub Release for the tag and mark it as a prerelease. Do not make
+   it the latest GitHub Release.
 6. Wait for the **Publish to npm** workflow to publish with dist-tag `dev`.
 7. Verify both the exact package and the default stable selection.
 
@@ -104,9 +107,10 @@ version or move its tag.
 
 ## Release candidates
 
-Release candidates follow the same sequence using a version such as
-`0.5.0-rc.1`. Mark the GitHub Release as a prerelease; the workflow publishes
-it with npm dist-tag `rc`.
+Release candidates use a version such as `0.5.0-rc.1`. Complete validation and
+merge the reviewed release commit into `main` before tagging that exact commit.
+Mark the GitHub Release as a prerelease; the workflow publishes it with npm
+dist-tag `rc`.
 
 Verify the candidate explicitly:
 
@@ -134,8 +138,9 @@ Publish the matching stable version only after prerelease feedback is resolved.
 
 Before publishing any development, RC, or stable package:
 
-- Confirm the working tree is clean and the tag target is the reviewed `main`
-  commit.
+- Confirm the working tree is clean and the tag target is the exact reviewed,
+  validated commit on `develop` for a development release or `main` for an RC
+  or stable release.
 - Pin and record the API contract revision used for implementation.
 - Confirm the target API is deployed in the intended test environment.
 - Confirm the Git tag and all four version locations agree.
@@ -187,7 +192,8 @@ For a prerelease, the first command must show the existing stable version under
 - `.github/workflows/publish.yaml` runs only for a published GitHub Release.
 - The workflow explicitly checks out the release tag and rejects unsupported
   version syntax, version mismatches, incorrect GitHub prerelease flags, and
-  release commits outside `main`.
+  development release commits outside `develop` or RC/stable release commits
+  outside `main`.
 - Only the tarball that passed lint, tests, package installation, and module
   loading checks is published.
 - npm Trusted Publishing supplies a short-lived OIDC credential. The workflow

@@ -33,6 +33,8 @@ The following rules are mandatory:
   prerelease.
 - Mark development and RC GitHub Releases as prereleases. Stable releases must
   not be marked as prereleases.
+- Publish development releases from reviewed commits on `develop`. RC and
+  stable releases must come from reviewed commits on `main`.
 - Never replace an existing npm package version or move a published Git tag.
   Publish the next development, RC, or patch version instead.
 - Never create or push a tag, publish or edit a GitHub Release, publish to npm,
