@@ -1,7 +1,9 @@
-# Publish an immutable package from a published GitHub Release.
+# Publish development commits automatically and explicit GitHub Releases.
 name: Publish to npm
 
 on:
+  push:
+    branches: [develop]
   release:
     types: [published]
 
@@ -10,17 +12,17 @@ permissions:
   id-token: write
 
 concurrency:
-  group: npm-release-${{ github.event.release.tag_name }}
+  group: npm-sdk-${{ github.event_name == 'push' && 'develop' || github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the release tag
+      - name: Check out the exact publication commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'push' && github.sha || github.event.release.tag_name }}
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -30,11 +32,16 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
+      - name: Prepare automatic development version
+        if: github.event_name == 'push'
+        run: node scripts/prepare-dev-package.mjs
+
       - name: Validate release metadata
         id: release
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          PUBLISH_EVENT: ${{ github.event_name }}
         run: |
           node <<'NODE'
           const fs = require("node:fs");
@@ -75,12 +82,18 @@ jobs:
           }
 
           const expectedTag = `v${version}`;
-          if (process.env.RELEASE_TAG !== expectedTag) {
+          const automatic = process.env.PUBLISH_EVENT === "push";
+          if (automatic) {
+            if (match[4] !== "dev" || process.env.GITHUB_REF !== "refs/heads/develop" ||
+                !process.env.GITHUB_SHA || packageJson.lambdadbSourceCommit !== process.env.GITHUB_SHA) {
+              throw new Error("Automatic publication requires a dev package from the exact develop push");
+            }
+          } else if (process.env.RELEASE_TAG !== expectedTag) {
             throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match ${expectedTag}`);
           }
 
           const channel = match[4] ?? "stable";
-          const prerelease = process.env.RELEASE_PRERELEASE === "true";
+          const prerelease = automatic || process.env.RELEASE_PRERELEASE === "true";
           if ((channel !== "stable") !== prerelease) {
             throw new Error(
               `${channel} version ${version} requires GitHub prerelease=${channel !== "stable"}`,
@@ -88,16 +101,20 @@ jobs:
           }
 
           const distTag = channel === "stable" ? "latest" : channel;
+          const sourceBranch = channel === "dev" ? "develop" : "main";
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_branch=${sourceBranch}\n`);
           console.log(`Validated ${version}; npm dist-tag=${distTag}`);
           NODE
 
-      - name: Verify release commit belongs to main
+      - name: Verify release commit belongs to its channel branch
+        env:
+          SOURCE_BRANCH: ${{ steps.release.outputs.source_branch }}
         run: |
-          git fetch origin main
-          if ! git merge-base --is-ancestor HEAD origin/main; then
-            echo "Release commit $(git rev-parse HEAD) is not contained in origin/main" >&2
+          git fetch origin "$SOURCE_BRANCH"
+          if ! git merge-base --is-ancestor HEAD "origin/$SOURCE_BRANCH"; then
+            echo "Release commit $(git rev-parse HEAD) is not contained in origin/$SOURCE_BRANCH" >&2
             exit 1
           fi
 
@@ -142,10 +159,41 @@ jobs:
           node --version
           npm --version
 
+      - name: Authenticate smoke tests to AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.LAMBDADB_SMOKE_AWS_ROLE_ARN }}
+          aws-region: ap-northeast-2
+          role-session-name: sdk-smoke-${{ github.run_id }}
+
+      - name: Validate deployed docsUrl behavior
+        env:
+          LAMBDADB_BASE_URL: ${{ vars.LAMBDADB_BASE_URL }}
+          LAMBDADB_PROJECT_NAME: ${{ vars.LAMBDADB_PROJECT_NAME }}
+          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars.LAMBDADB_SMOKE_SECRET_ARN }}
+        run: node scripts/run-live-smoke.mjs
+
+      - name: Record publication evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-${{ steps.release.outputs.version }}-${{ github.sha }}
+          path: |
+            ${{ steps.pack.outputs.tarball }}
+            npm-pack.json
+          if-no-files-found: error
+
       - name: Publish tested tarball
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+          PUBLISH_EVENT: ${{ github.event_name }}
         run: |
+          if [ "$PUBLISH_EVENT" = "push" ]; then
+            git fetch origin develop
+            if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]; then
+              echo "Skipping superseded development commit $(git rev-parse HEAD)"
+              exit 0
+            fi
+          fi
           echo "Publishing $TARBALL with npm dist-tag $DIST_TAG"
           npm publish "$TARBALL" --access public --tag "$DIST_TAG" --provenance

@@ -33,10 +33,15 @@ The following rules are mandatory:
   prerelease.
 - Mark development and RC GitHub Releases as prereleases. Stable releases must
   not be marked as prereleases.
+- Publish development releases from reviewed commits on `develop`. RC and
+  stable releases must come from reviewed commits on `main`.
 - Never replace an existing npm package version or move a published Git tag.
   Publish the next development, RC, or patch version instead.
-- Never create or push a tag, publish or edit a GitHub Release, publish to npm,
-  change an npm dist-tag, deprecate a package, or unpublish a package without
-  explicit user approval.
+- Reviewed merges into `develop` authorize the configured automatic dev
+  publication after all release checks pass. Generate its version only in the
+  disposable CI checkout; do not commit bot version bumps or create dev tags.
+- Outside that automatic dev workflow, never create or push a tag, publish or
+  edit a GitHub Release, publish to npm, change an npm dist-tag, deprecate a
+  package, or unpublish a package without explicit user approval.
 - Run the release checks in `RELEASING.md` and the applicable environment smoke
   tests before any development, RC, or stable publication.

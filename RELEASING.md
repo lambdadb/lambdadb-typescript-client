@@ -3,8 +3,9 @@
 This document defines the required packaging and release process for the
 `@functional-systems/lambdadb` npm package.
 
-npm is the production distribution channel. A published GitHub Release starts
-the npm publishing workflow. The repository also contains `jsr.json`, but the
+npm is the production distribution channel. A push to `develop` starts automatic
+dev publication. A published GitHub Release starts explicit dev, RC, or stable
+publication. The repository also contains `jsr.json`, but the
 current workflow does not publish to JSR.
 
 ## Version sources
@@ -20,13 +21,14 @@ The local package entry at `packages[".."].version` in
 `examples/package-lock.json` and both the `sdkVersion` and embedded User-Agent
 version in `src/lib/config.ts` must match those four version sources.
 
-Release tags add a leading `v` to the same package version.
+Explicit release tags add a leading `v` to the same package version. Automatic
+dev packages have no Git tag or GitHub Release.
 
-| Channel | Package version | Git tag | npm dist-tag |
-| :-- | :-- | :-- | :-- |
-| Development | `X.Y.Z-dev.N` | `vX.Y.Z-dev.N` | `dev` |
-| Release candidate | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` |
-| Stable | `X.Y.Z` | `vX.Y.Z` | `latest` |
+| Channel | Package version | Git tag | npm dist-tag | Source branch |
+| :-- | :-- | :-- | :-- | :-- |
+| Development | `X.Y.Z-dev.N` | None for automatic; `vX.Y.Z-dev.N` for explicit | `dev` | `develop` |
+| Release candidate | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` | `main` |
+| Stable | `X.Y.Z` | `vX.Y.Z` | `latest` | `main` |
 
 Use a unique version for every publication. npm does not allow replacing an
 existing package version.
@@ -54,7 +56,8 @@ Use a GitHub Actions artifact instead of npm if a build must remain internal.
 
 ## Preparing a version
 
-Create the release version on a reviewed branch. For example:
+For an explicit tagged release, create the release version on a reviewed branch.
+Automatic dev publication generates its version in CI instead. For example:
 
 ```bash
 npm version 0.5.0-dev.1 --no-git-tag-version
@@ -82,31 +85,46 @@ Also update `SDK_METADATA.sdkVersion` and the embedded version in
 `SDK_METADATA.userAgent` in `src/lib/config.ts`. The publish workflow and test
 suite reject a mismatch.
 
-Commit the version update before creating the tag. The publish workflow
-validates committed versions and never rewrites them.
+Commit the version update before creating an explicit release tag. For tagged
+releases, the publish workflow validates committed versions without rewriting
+them. For automatic dev packages, it first checks that committed versions agree,
+then updates every version source in the disposable checkout.
 
 ## Development packages
 
-Development packages provide an explicit opt-in preview through npm.
+Reviewed pushes to `develop` publish automatically after lint, typechecking,
+tests, clean tarball installation, and deployed docsUrl smoke checks pass. A
+merge into `main` is not required. Protect `develop` so only reviewed changes
+reach this publication trigger; merging into it authorizes automatic dev
+publication under this policy.
 
-1. Pin the API contract revision used for the SDK implementation.
-2. Set all version sources to the next unused version, such as
-   `0.5.0-dev.1`.
-3. Complete the validation checklist and merge the reviewed commit into
-   `main`.
-4. Tag the exact `main` commit as `v0.5.0-dev.1`.
-5. Create a GitHub Release for the tag and mark it as a prerelease.
-6. Wait for the **Publish to npm** workflow to publish with dist-tag `dev`.
-7. Verify both the exact package and the default stable selection.
+The workflow checks out the exact push SHA and generates `X.Y.Z-dev.N`, where
+`X.Y.Z` is the committed package version's core and `N` is
+`GITHUB_RUN_ID * 1000 + GITHUB_RUN_ATTEMPT`. Maintainers control the core version
+through reviewed changes. Each rerun gets a new immutable version. The workflow
+updates package and lockfile versions, `jsr.json`, SDK metadata, and User-Agent
+only in its disposable checkout. It creates no version commit, Git tag, or
+GitHub Release. The published `package.json` includes `lambdadbSourceCommit`.
 
-If a development package needs a fix, increment `N`. Never reuse a published
-version or move its tag.
+Automatic dev runs are serialized. Immediately before publication, the workflow
+fetches `develop` and skips a commit that is no longer its head. GitHub may
+replace a pending run with a newer push; not every intermediate commit is
+published. The `dev` dist-tag points to the latest successfully published
+build. Failed validation leaves the previously published dev version in place.
+The exact tarball and npm pack manifest are retained as workflow artifacts.
+
+An explicit dev GitHub Release remains supported when a manually selected
+version is needed: align all committed version sources, complete validation,
+merge into `develop`, obtain publication approval, tag that exact commit, and
+publish a GitHub prerelease. Explicit RC and stable releases still use `main`.
+Never reuse a published version or move its tag.
 
 ## Release candidates
 
-Release candidates follow the same sequence using a version such as
-`0.5.0-rc.1`. Mark the GitHub Release as a prerelease; the workflow publishes
-it with npm dist-tag `rc`.
+Release candidates use a version such as `0.5.0-rc.1`. Complete validation and
+merge the reviewed release commit into `main` before tagging that exact commit.
+Mark the GitHub Release as a prerelease; the workflow publishes it with npm
+dist-tag `rc`.
 
 Verify the candidate explicitly:
 
@@ -134,14 +152,17 @@ Publish the matching stable version only after prerelease feedback is resolved.
 
 Before publishing any development, RC, or stable package:
 
-- Confirm the working tree is clean and the tag target is the reviewed `main`
-  commit.
+- Confirm the source checkout is the exact reviewed commit on `develop` for
+  dev or `main` for RC/stable. Explicit tagged releases require a clean working
+  tree and matching tag target. Automatic dev builds may modify only generated
+  version metadata in the disposable checkout.
 - Pin and record the API contract revision used for implementation.
 - Confirm the target API is deployed in the intended test environment.
-- Confirm the Git tag and all four version locations agree.
+- Confirm all version locations agree and any explicit release tag matches.
 - Confirm the version uses the supported canonical SemVer form.
 - Run `npm ci`.
 - Run `npm run lint`.
+- Run `npm run typecheck`.
 - Run `npm test`.
 - Build and inspect the package with `npm pack --dry-run`.
 - Install the generated tarball in a clean directory.
@@ -154,7 +175,7 @@ Before publishing any development, RC, or stable package:
   response or missing environment variables is a failure, not a skipped check.
   Record the environment, SDK commit, observed behavior, and cleanup result;
   source revision alone does not establish the deployed server revision.
-- Review generated release notes before publishing the GitHub Release.
+- For explicit releases, review release notes before publishing the GitHub Release.
 
 The docsUrl smoke reads `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
 `LAMBDADB_PROJECT_API_KEY` from the environment or `.env.local`. Use a project
@@ -182,16 +203,50 @@ npm view @functional-systems/lambdadb@0.5.0-rc.1 version
 For a prerelease, the first command must show the existing stable version under
 `latest`. It must show the new package only under `dev` or `rc` as appropriate.
 
-## Workflow boundaries
+## Workflow authentication and boundaries
 
-- `.github/workflows/publish.yaml` runs only for a published GitHub Release.
-- The workflow explicitly checks out the release tag and rejects unsupported
-  version syntax, version mismatches, incorrect GitHub prerelease flags, and
-  release commits outside `main`.
-- Only the tarball that passed lint, tests, package installation, and module
-  loading checks is published.
-- npm Trusted Publishing supplies a short-lived OIDC credential. The workflow
-  does not use a long-lived npm token.
+- `.github/workflows/publish.yaml` handles `develop` pushes and published GitHub
+  Releases. Ordinary PR CI has no credentials and cannot publish.
+- Metadata and ancestry checks reject unsupported versions, mismatches,
+  incorrect prerelease flags, dev commits outside `develop`, and RC/stable
+  commits outside `main`. Automatic dev metadata must identify the exact push.
+- Only the tarball that passed lint, typechecking, tests, package installation,
+  module loading, and deployed smoke checks is published.
+- npm Trusted Publishing supplies a short-lived OIDC credential without a
+  long-lived npm token. The workflow filename remains `publish.yaml`.
+- Smoke tests authenticate to AWS using a separate GitHub OIDC role, then read
+  a dedicated project API key from Secrets Manager. The key is masked and
+  passed only in the smoke child process environment, never command arguments,
+  source files, artifacts, or GitHub Secrets. Missing configuration or a failed
+  secret read prevents publication.
+
+Configure the following repository Variables before enabling publication:
+
+| Variable | Value |
+| :-- | :-- |
+| `LAMBDADB_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
+| `LAMBDADB_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
+| `LAMBDADB_SMOKE_AWS_ROLE_ARN` | Dedicated AWS OIDC role ARN |
+| `LAMBDADB_SMOKE_SECRET_ARN` | Exact ARN of the project's API key secret |
+
+Store the project key as a plain SecretString in `ap-northeast-2`. Use a
+project where test Collections may be created and deleted. Do not grant the
+workflow the stack admin key, project creation, deployment, or secret write
+permissions. Key rotation updates the AWS secret without changing this workflow.
+
+Provision the role with an OIDC trust condition for audience `sts.amazonaws.com`
+and only these subject patterns:
+
+```text
+repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/develop
+repo:lambdadb/lambdadb-typescript-client:ref:refs/tags/v*
+```
+
+Its permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
+secret ARN. Add `kms:Decrypt` on the exact key only if using a customer-managed
+KMS key. No `ListSecrets` permission is required by the CLI reader. Provisioning
+the role, project, key, and repository Variables is a separate environment
+setup step; adding the workflow alone does not establish working AWS access.
 
 For additional administrative protection, configure a protected GitHub
 Environment for npm publishing and update the npm Trusted Publisher settings to
