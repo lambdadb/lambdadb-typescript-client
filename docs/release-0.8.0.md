@@ -23,8 +23,9 @@ dist-tag is `latest`. Follow [RELEASING.md](../RELEASING.md).
 - Added preferred native embedding-only vector configuration for create/update.
   The SDK does not insert `managedEmbedding` or model defaults. Existing explicit
   true inputs, legacy named types/helpers, and normalized server metadata remain
-  supported. Older servers require the true flag. Native dimensions/similarity
-  belong inside `embedding`; explicit false with embedding remains invalid.
+  supported. Public vector types reject mixed native/unmanaged fields at compile
+  time, matching the existing runtime schema. Older servers require the true flag.
+  Native dimensions/similarity belong inside `embedding`; explicit false with embedding remains invalid.
 - Added automatic development previews from reviewed `develop` pushes with
   unique versions, source SHA metadata, required deployed smoke checks, and AWS
   OIDC authentication. Stable publishing remains an explicit GitHub Release.
@@ -64,13 +65,18 @@ quality, load handling, or complete provider billing/accounting correctness.
   declaration consumers, and 197 executed runtime tests, no failures/skips.
 - `npm run test:external:qdrant` passed four in-memory LangChain/LlamaIndex
   compatibility tests; these are separate from deployed-server tests.
-- `npm pack --dry-run --json` and `npm pack --pack-destination /tmp/lambdadb-latest-compat --json`
-  passed inspection: 919 files, 297703 bytes, no scratch logs/credential files.
-  Prepared tarball SHA-1: `eeb83948909c3961de118fb6445e1447d2df760f`.
+- `npm pack --dry-run --json` and `npm pack --pack-destination /tmp/lambdadb-latest-compat/release080-review-pack --json`
+  passed inspection: 919 files, 297800 bytes, no scratch logs/credential files.
+  Prepared tarball SHA-1: `3bc496ef0b0c888f40ac0d1a26ddd17b0ec94f0b`.
 - Clean tarball installation passed ESM/CommonJS imports, package/runtime version,
   Bayesian candidate serialization, and native/legacy configuration checks.
   Strict NodeNext `.mts` and `.cts` consumer compilation passed, including a
-  negative nested-fusion case.
+  negative nested-fusion case and native/unmanaged union conflicts in create/update,
+  legacy inputs, and shared variables. The type-only review fix passed all 197
+  runtime tests and declaration consumers. All 202 packed JavaScript files are
+  byte-identical to the earlier live-validated build; live checks were not
+  repeated for this declaration-only change. Earlier package evidence is retained
+  separately, and the final tarball/consumers are under `release080-review-pack/`.
 - `node --test test/integration/bayesian-live.test.mjs` passed in 77.17 seconds.
   It covered retrieval, separate candidate/output budgets, thirteen contract
   rejections, legacy fusion methods, and Query/QuerySafe reranking applied to

@@ -47,6 +47,7 @@ export type Similarity = ClosedEnum<typeof Similarity>;
 
 export type IndexConfigsVector = {
   type: "vector";
+  embedding?: never;
   /**
    * Set to false or omit for unmanaged vector fields.
    */
@@ -94,6 +95,8 @@ export type EmbeddingConfig = {
 
 export type IndexConfigsManagedEmbeddingVector = {
   type: "vector";
+  dimensions?: never;
+  similarity?: never;
   /**
    * Managed embedding vector field.
    */
@@ -104,6 +107,8 @@ export type IndexConfigsManagedEmbeddingVector = {
 /** Native embedding input at backend 9072a1bc8925954369a887f558f1eaf387b7ea0e. */
 export type IndexConfigsNativeEmbeddingVector = {
   type: "vector";
+  dimensions?: never;
+  similarity?: never;
   embedding: EmbeddingConfig;
   /** Legacy flag for older servers. Omit on servers supporting native embedding input. */
   managedEmbedding?: true | undefined;

@@ -19,6 +19,8 @@
   and normalized response metadata remain supported. Dimensions/similarity stay
   inside `embedding`, and explicit false with embedding remains invalid.
   Older servers require the legacy true flag. See [Native embeddings](docs/native-embeddings.md).
+- Public vector types reject mixed native/unmanaged settings at compile time,
+  matching existing runtime validation for create/update and legacy true inputs.
 - Pinned these API additions to backend
   `9072a1bc8925954369a887f558f1eaf387b7ea0e`. Live validation targets
   `dev-aws-apne2-v3`; this pin and validation do not establish production rollout.
