@@ -21,4 +21,8 @@ const three: BayesianQuery = { bayesian: [lexical, vector, lexical] };
 const boosted: BayesianSubquery = { ...vector, boost: 1 };
 // @ts-expect-error Explicit boosts are also unsupported on Boolean descendants.
 const descendant: BayesianSubquery = { bool: [{ bool: [{ ...lexical, boost: 1 }] }] };
-void [modelQuery, one, three, boosted, descendant];
+// @ts-expect-error Bayesian fusion is allowed only at the top level.
+const nested: BayesianQuery = { bayesian: [{ bayesian: [lexical, vector] }, lexical] };
+// @ts-expect-error Bayesian fusion is also unsupported beneath Boolean descendants.
+const nestedDescendant: BayesianSubquery = { bool: [{ bool: [{ bayesian: [lexical, vector] }] }] };
+void [modelQuery, one, three, boosted, descendant, nested, nestedDescendant];
