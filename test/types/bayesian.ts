@@ -25,4 +25,17 @@ const descendant: BayesianSubquery = { bool: [{ bool: [{ ...lexical, boost: 1 }]
 const nested: BayesianQuery = { bayesian: [{ bayesian: [lexical, vector] }, lexical] };
 // @ts-expect-error Bayesian fusion is also unsupported beneath Boolean descendants.
 const nestedDescendant: BayesianSubquery = { bool: [{ bool: [{ bayesian: [lexical, vector] }] }] };
-void [modelQuery, one, three, boosted, descendant, nested, nestedDescendant];
+// @ts-expect-error RRF fusion also requires top-level placement.
+const nestedRrf: BayesianSubquery = { rrf: [lexical, vector] };
+// @ts-expect-error Min-Max fusion also requires top-level placement.
+const nestedMm: BayesianSubquery = { mm: [lexical, vector] };
+// @ts-expect-error L2 fusion also requires top-level placement.
+const nestedL2: BayesianSubquery = { l2: [lexical, vector] };
+// @ts-expect-error RRF fusion is unsupported beneath Boolean descendants.
+const descendantRrf: BayesianSubquery = { bool: [{ bool: [{ rrf: [lexical, vector] }] }] };
+// @ts-expect-error Min-Max fusion is unsupported beneath Boolean descendants.
+const descendantMm: BayesianSubquery = { bool: [{ bool: [{ mm: [lexical, vector] }] }] };
+// @ts-expect-error L2 fusion is unsupported beneath Boolean descendants.
+const descendantL2: BayesianSubquery = { bool: [{ bool: [{ l2: [lexical, vector] }] }] };
+void [modelQuery, one, three, boosted, descendant, nested, nestedDescendant,
+  nestedRrf, nestedMm, nestedL2, descendantRrf, descendantMm, descendantL2];
