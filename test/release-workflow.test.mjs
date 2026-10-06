@@ -1,0 +1,137 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { runInNewContext } from "node:vm";
+
+const workflow = readFileSync(new URL("../.github/workflows/publish.yaml", import.meta.url), "utf8");
+const metadataScript = workflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE\n/)[1];
+const branchScript = workflow.match(/- name: Verify release commit belongs to its channel branch\n[\s\S]*?run: \|\n([\s\S]*?)\n\s+- name:/)[1];
+const concurrencyExpression = workflow.match(/group: npm-sdk-\$\{\{\s*(.*?)\s*\}\}/)[1];
+
+test("automatic and explicit dev publications share one concurrency group while RC/stable retain tag groups", () => {
+  // Evaluate the workflow expression itself for string event/tag inputs.
+  const group = (event, tag) => `npm-sdk-${runInNewContext(concurrencyExpression, {
+    github: { event_name: event, event: { release: { tag_name: tag } } },
+    contains: (value, search) => typeof value === "string" && value.toLowerCase().includes(search.toLowerCase()),
+  })}`;
+  const automatic = group("push", undefined);
+  assert.equal(automatic, "npm-sdk-develop");
+  for (const tag of ["v0.8.0-dev.1", "v0.8.0-dev.42001", "v0.9.0-dev.1"]) {
+    assert.equal(group("release", tag), automatic);
+  }
+  for (const tag of ["v0.8.0-rc.1", "v0.8.0-rc.2", "v0.8.0"]) {
+    assert.equal(group("release", tag), `npm-sdk-${tag}`);
+    assert.notEqual(group("release", tag), automatic);
+  }
+});
+
+function metadata(version, prerelease, tag = `v${version}`, rootVersion = version, event = {}) {
+  let output = "";
+  const modules = {
+    "node:fs": {
+      readFileSync: () => `sdkVersion: "${version}", userAgent: "speakeasy-sdk/typescript ${version} node"`,
+      appendFileSync: (_path, text) => { output += text; },
+    },
+    "./package.json": { version, lambdadbSourceCommit: event.sourceCommit },
+    "./package-lock.json": { version, packages: { "": { version: rootVersion } } },
+    "./examples/package-lock.json": { packages: { "..": { version } } },
+    "./jsr.json": { version },
+  };
+  runInNewContext(metadataScript, {
+    require: (name) => modules[name], console: { log() {} },
+    process: { env: { RELEASE_TAG: tag, RELEASE_PRERELEASE: String(prerelease), GITHUB_OUTPUT: "output",
+      PUBLISH_EVENT: event.name ?? "release", GITHUB_REF: event.ref, GITHUB_SHA: event.sha } },
+  });
+  return Object.fromEntries(output.trim().split("\n").map((line) => line.split("=")));
+}
+
+test("release metadata routes dev to develop and keeps RC/stable on main with their dist-tags", () => {
+  for (const [version, prerelease, distTag, branch] of [
+    ["0.8.0-dev.1", true, "dev", "develop"],
+    ["0.8.0-rc.1", true, "rc", "main"],
+    ["0.8.0", false, "latest", "main"],
+  ]) {
+    assert.deepEqual(metadata(version, prerelease), { version, dist_tag: distTag, source_branch: branch });
+  }
+  assert.ok(workflow.includes("SOURCE_BRANCH: ${{ steps.release.outputs.source_branch }}"));
+});
+
+test("automatic publication only accepts an exact develop push and always selects dev", () => {
+  const sha = "a".repeat(40);
+  const event = { name: "push", ref: "refs/heads/develop", sha, sourceCommit: sha };
+  assert.deepEqual(metadata("0.8.0-dev.42001", false, "", "0.8.0-dev.42001", event), {
+    version: "0.8.0-dev.42001", dist_tag: "dev", source_branch: "develop",
+  });
+  for (const override of [{ ref: "refs/heads/main" }, { sha: undefined }, { sourceCommit: "b".repeat(40) }]) {
+    assert.throws(() => metadata("0.8.0-dev.1", false, "", "0.8.0-dev.1", { ...event, ...override }), /exact develop push/);
+  }
+  for (const version of ["0.8.0", "0.8.0-rc.1"]) {
+    assert.throws(() => metadata(version, false, "", version, event), /exact develop push/);
+  }
+});
+
+test("release metadata still rejects incorrect prerelease flags, tags, versions and version mismatches", () => {
+  for (const [version, flag] of [["0.8.0-dev.1", false], ["0.8.0-rc.1", false], ["0.8.0", true]]) {
+    assert.throws(() => metadata(version, flag), /requires GitHub prerelease/);
+  }
+  assert.throws(() => metadata("0.8.0-dev.1", true, "v0.8.0"), /does not match/);
+  assert.throws(() => metadata("0.8.0-beta.1", true), /Unsupported release version/);
+  assert.throws(() => metadata("0.8.0-dev.1", true, "v0.8.0-dev.1", "0.7.0"), /expected 0.8.0-dev.1/);
+});
+
+test("the actual ancestry guard accepts develop-only dev commits and rejects them for RC/stable", (t) => {
+  const directory = mkdtempSync(join(tmpdir(), "lambdadb-release-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  function git(...args) {
+    const result = spawnSync("git", ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
+      "-c", "user.name=Release Test", "-c", "user.email=release-test@example.com", ...args],
+    { cwd: directory, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  }
+  git("init", "--initial-branch=main");
+  git("commit", "--allow-empty", "-m", "Base");
+  const main = git("rev-parse", "HEAD");
+  git("checkout", "-b", "develop");
+  git("commit", "--allow-empty", "-m", "Development change");
+  const develop = git("rev-parse", "HEAD");
+  git("checkout", "-b", "feature");
+  git("commit", "--allow-empty", "-m", "Unmerged change");
+  const feature = git("rev-parse", "HEAD");
+  git("remote", "add", "origin", directory);
+  for (const [commit, version, prerelease, status] of [
+    [develop, "0.8.0-dev.1", true, 0],
+    [develop, "0.8.0-rc.1", true, 1],
+    [develop, "0.8.0", false, 1],
+    [main, "0.8.0-rc.1", true, 0],
+    [main, "0.8.0", false, 0],
+    [feature, "0.8.0-dev.1", true, 1],
+  ]) {
+    git("checkout", "--detach", commit);
+    const result = spawnSync("bash", ["-e", "-c", branchScript], { cwd: directory, encoding: "utf8",
+      env: { ...process.env, SOURCE_BRANCH: metadata(version, prerelease).source_branch } });
+    assert.equal(result.status, status, `${version}: ${result.stderr}`);
+  }
+
+  // Execute the real final publication step using a local npm stub, never the registry.
+  const publishScript = workflow.match(/- name: Publish tested tarball\n[\s\S]*?run: \|\n([\s\S]*)$/)[1];
+  const bin = join(directory, "bin");
+  const log = join(directory, "npm-call");
+  mkdirSync(bin);
+  writeFileSync(join(bin, "npm"), '#!/bin/sh\nprintf "%s\\n" "$@" > "$NPM_CALL_LOG"\n', { mode: 0o755 });
+  for (const [commit, event, expected] of [[develop, "push", true], [main, "push", false], [main, "release", true]]) {
+    git("checkout", "--detach", commit);
+    rmSync(log, { force: true });
+    const result = spawnSync("bash", ["-e", "-c", publishScript], { cwd: directory, encoding: "utf8", env: {
+      ...process.env, PATH: `${bin}:${process.env.PATH}`, NPM_CALL_LOG: log,
+      PUBLISH_EVENT: event, TARBALL: "tested-package.tgz", DIST_TAG: event === "push" ? "dev" : "latest",
+    } });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(log), expected);
+    if (expected) assert.equal(readFileSync(log, "utf8"),
+      `publish\ntested-package.tgz\n--access\npublic\n--tag\n${event === "push" ? "dev" : "latest"}\n--provenance\n`);
+  }
+});

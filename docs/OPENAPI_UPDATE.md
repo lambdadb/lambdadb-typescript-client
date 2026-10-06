@@ -89,7 +89,34 @@ results or change `knn.k`. Stored field validation and facet query restrictions
 remain on the server. Run lint, typecheck and the complete test suite, which
 builds both module formats and tests package declaration consumers.
 
+## Updating native embeddings
+
+The embedding-only vector input is pinned to backend
+`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+[Native embeddings](native-embeddings.md). Keep native input types, union schemas,
+root exports, examples, and consumer tests aligned. Preserve the legacy named
+type and explicit true flag for older servers. Do not insert `managedEmbedding`
+or model defaults on the wire, and retain strict conflicting-field validation.
+
+## Updating Bayesian hybrid search
+
+The Bayesian contract is maintained manually from backend
+`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+[Bayesian hybrid search](bayesian-search.md) for exact DTO links and live validation.
+Keep the optional types, rerank scoring-query recognition, and package-consumer
+tests and the top-level `candidateSize` request field aligned. Bayesian without
+rerank requires an explicit candidate budget; with rerank use
+`rerank.candidateSize` and omit the top-level budget. Preserve free-form query
+serialization and existing defaults; invalid fusion contracts retain server-side
+validation and error classification.
+
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
-- **Publish**: `.github/workflows/publish.yaml` runs for a published GitHub Release. Follow [RELEASING.md](../RELEASING.md); no Speakeasy step is involved.
+- **Publish**: `.github/workflows/publish.yaml` runs on pushes to `develop` for
+  automatic npm `dev` publication and on published GitHub Releases for explicit
+  dev, RC, or stable publication. A reviewed merge into `develop` authorizes its
+  automatic preview after package checks and deployed docsUrl smoke tests pass;
+  no Git tag or GitHub Release is created for that preview. Explicit dev releases
+  come from `develop`; RC/stable releases come from `main`, selecting `rc`/`latest`.
+  Follow [RELEASING.md](../RELEASING.md); no Speakeasy step is involved.

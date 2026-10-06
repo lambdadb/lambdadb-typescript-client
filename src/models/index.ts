@@ -12,3 +12,4 @@ export * from "./security.js";
 export * from "./status.js";
 export * from "./versioning.js";
 export * from "./rerank.js";
+export type * from "./bayesian.js";

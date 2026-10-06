@@ -22,8 +22,11 @@ export type QueryCollectionRequestBody = {
    * Number of documents to return. Note that the maximum number of documents is 100.
    */
   size?: number | undefined;
+  /** Explicit Bayesian candidate budget without rerank. Use rerank.candidateSize with rerank instead. */
+  candidateSize?: number | undefined;
   /**
-   * Query object. For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
+   * Query object. BayesianQuery provides an optional typed top-level hybrid query.
+   * For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
    */
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;
@@ -108,6 +111,7 @@ export type QueryCollectionResponse = {
 /** @internal */
 export type QueryCollectionRequestBody$Outbound = {
   size?: number | undefined;
+  candidateSize?: number | undefined;
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;
   /** Optional per-query managed reranking. Omitted or null preserves retrieval behavior. */
@@ -127,6 +131,7 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   QueryCollectionRequestBody
 > = z.object({
   size: z.number().int().optional(),
+  candidateSize: z.number().int().optional(),
   query: z.record(z.any()).optional(),
   facets: z.record(z.object({
     size: z.number().int().min(1).max(100).nullable().optional(),

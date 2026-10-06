@@ -9,5 +9,5 @@
     "strict": true,
     "target": "ES2020"
   },
-  "include": ["data-versioning.ts", "text-analyzers.ts", "facets.ts", "managed-reranking.ts"]
+  "include": ["data-versioning.ts", "text-analyzers.ts", "facets.ts", "managed-reranking.ts", "bayesian.ts", "native-embedding.ts"]
 }

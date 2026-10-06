@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.8.0
+
+- Added opt-in Bayesian hybrid search with two unboosted subqueries, optional
+  public helper types, and Bayesian scoring support for managed reranking.
+  Typed subqueries reject nested Bayesian/RRF/Min-Max/L2 fusion and explicit
+  boosts, including on Boolean descendants. Free-form queries and server error
+  classification remain unchanged.
+- Added top-level `candidateSize` serialization. Bayesian without rerank requires
+  `1 <= size <= candidateSize <= 100` on the pinned server contract. With rerank,
+  omit the top-level field and use `rerank.candidateSize`; its default is unchanged.
+  Existing text/KNN/RRF/Min-Max/L2 requests retain their behavior and do not use
+  this top-level field. No fusion weights or new defaults are inserted.
+  See [Bayesian hybrid search](docs/bayesian-search.md).
+- Added native embedding-only vector configuration for Collection creation and
+  updates. New code can omit `managedEmbedding` when supplying `embedding`.
+  Existing explicit `managedEmbedding: true` inputs, legacy named types/helpers,
+  and normalized response metadata remain supported. Dimensions/similarity stay
+  inside `embedding`, and explicit false with embedding remains invalid.
+  Older servers require the legacy true flag. See [Native embeddings](docs/native-embeddings.md).
+- Public vector types reject mixed native/unmanaged settings at compile time,
+  matching existing runtime validation for create/update and legacy true inputs.
+- Pinned these API additions to backend
+  `9072a1bc8925954369a887f558f1eaf387b7ea0e`. Live validation targets
+  `dev-aws-apne2-v3`; this pin and validation do not establish production rollout.
+- Added automatic `develop` preview publication with unique dev versions,
+  source-commit metadata, AWS OIDC smoke authentication, and required deployed
+  docsUrl checks. Stable publication still requires a reviewed `main` commit,
+  matching tag, and non-prerelease GitHub Release. See [Releasing](RELEASING.md).
+
 ## 0.7.0
 
 - Added optional per-query managed reranking for `typesafe` / `jev-1.13.0`,

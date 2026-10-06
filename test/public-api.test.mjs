@@ -160,6 +160,28 @@ test("public client supports managed embedding vector index configs", async () =
   assert.ok(result.collection.createdAt instanceof Date);
 });
 
+test("native embedding-only create and update preserve omitted flags and parse legacy response metadata", async () => {
+  const native = { type: "vector", embedding: {
+    provider: "openai", model: "text-embedding-3-small", sourceField: "body",
+  } };
+  const configs = { body: { type: "text" }, embedding: native };
+  const { calls, client } = createClient((call) => {
+    if (call.method !== "GET") {
+      assert.deepEqual(JSON.parse(call.body).indexConfigs, configs);
+      assert.equal(Object.hasOwn(JSON.parse(call.body).indexConfigs.embedding, "managedEmbedding"), false);
+    }
+    if (call.method === "POST") return jsonResponse({ collection: createdCollectionFixture("native") }, { status: 201 });
+    return jsonResponse({ collection: collectionFixture("native", { indexConfigs: {
+      ...configs, embedding: { ...native, managedEmbedding: true },
+    } }) });
+  });
+  await client.createCollection({ collectionName: "native", indexConfigs: configs });
+  await client.collection("native").update({ indexConfigs: configs });
+  const result = await client.collection("native").get();
+  assert.equal(result.collection.indexConfigs.embedding.managedEmbedding, true);
+  assert.deepEqual(calls.map((call) => call.method), ["POST", "PATCH", "GET"]);
+});
+
 test("managed embedding vector config supports optional embedding dimensions and similarity", async () => {
   const { calls, client } = createClient((call) => {
     assert.equal(call.method, "POST");
