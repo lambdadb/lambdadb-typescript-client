@@ -93,7 +93,7 @@ test("query default size and candidate cap stay on the server; scoring bool/hybr
   for (const scoring of [
     query, { queryString: { query: "restore", defaultField: "body" } },
     { sparseVector: { field: "sparse", queryVector: { indices: [1], values: [1] } } },
-    ...["bool", "rrf", "mm", "l2"].map((key) => ({ [key]: [query, { queryString: { query: "restore" } }] })),
+    ...["bool", "rrf", "bayesian", "mm", "l2"].map((key) => ({ [key]: [query, { queryString: { query: "restore" } }] })),
   ]) {
     const wire = JSON.parse(queryCollectionRequestBodyToJSON({ query: scoring, rerank }));
     assert.deepEqual(wire.query, scoring);
@@ -106,11 +106,11 @@ test("query default size and candidate cap stay on the server; scoring bool/hybr
 });
 
 test("undefined optional composite keys preserve scoring queries through serialization", async () => {
-  const optional = { bool: undefined, rrf: undefined, mm: undefined, l2: undefined };
+  const optional = { bool: undefined, rrf: undefined, bayesian: undefined, mm: undefined, l2: undefined };
   for (const scoring of [
     query,
     { queryString: { query: "restore", defaultField: "body" } },
-    ...["bool", "rrf", "mm", "l2"].map((key) => ({ [key]: [{ ...optional, ...query }] })),
+    ...["bool", "rrf", "bayesian", "mm", "l2"].map((key) => ({ [key]: [{ ...optional, ...query }] })),
   ]) {
     for (const safe of [false, true]) {
       const { handle, calls } = collection(() => json({ took: 0, total: 0, docs: [], isDocsInline: true }));

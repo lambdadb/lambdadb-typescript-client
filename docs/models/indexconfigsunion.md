@@ -20,12 +20,11 @@ const value: models.IndexConfigsVector = {
 };
 ```
 
-### `models.IndexConfigsManagedEmbeddingVector`
+### `models.IndexConfigsNativeEmbeddingVector`
 
 ```typescript
-const value: models.IndexConfigsManagedEmbeddingVector = {
+const value: models.IndexConfigsNativeEmbeddingVector = {
   type: "vector",
-  managedEmbedding: true,
   embedding: {
     provider: "openai",
     model: "text-embedding-3-small",
@@ -33,6 +32,9 @@ const value: models.IndexConfigsManagedEmbeddingVector = {
   },
 };
 ```
+
+The legacy `models.IndexConfigsManagedEmbeddingVector` with explicit
+`managedEmbedding: true` remains supported. See [Native embeddings](../native-embeddings.md).
 
 ### `models.IndexConfigs`
 

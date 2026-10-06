@@ -1,5 +1,9 @@
 # IndexConfigsManagedEmbeddingVector
 
+This legacy named type retains its required `managedEmbedding: true` flag for
+older servers. New code should use `IndexConfigsNativeEmbeddingVector` without
+the flag; see [Native embeddings](../native-embeddings.md).
+
 ## Example Usage
 
 ```typescript
