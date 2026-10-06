@@ -11,13 +11,29 @@ const rerank = { provider: "typesafe", model: "jev-1.13.0", queryText: "Restore 
 const options = { retries: { strategy: "none" } };
 
 test("Bayesian serialization preserves signals, filters and budgets without fusion or rerank defaults", () => {
-  for (const extra of [{}, { rerank }, { rerank: null }]) {
+  for (const extra of [{}, { size: 10, candidateSize: 30 }, { rerank }, { rerank: null, candidateSize: 30 }]) {
     const wire = JSON.parse(queryCollectionRequestBodyToJSON({ query, ...extra }));
     assert.deepEqual(wire, { query, ...extra, consistentRead: false, includeVectors: false });
   }
 });
 
 for (const safe of [false, true]) {
+  test(`explicit Bayesian candidate budget reaches HTTP unchanged, safe=${safe}`, async () => {
+    let body;
+    const client = new LambdaDBClient({ baseUrl: "https://api.test", projectName: "project", projectApiKey: "test-key",
+      httpClient: new HTTPClient({ fetcher: async (request) => {
+        body = await request.json();
+        return new Response(JSON.stringify({ took: 0, total: 0, docs: [], isDocsInline: true }), {
+          headers: { "content-type": "application/json" },
+        });
+      } }) });
+    const input = { query, size: 10, candidateSize: 30 };
+    const collection = client.collection("items");
+    const result = safe ? await collection.querySafe(input, options) : await collection.query(input, options);
+    if (safe) assert.equal(result.ok, true);
+    assert.deepEqual(body, { ...input, consistentRead: false, includeVectors: false });
+  });
+
   test(`Bayesian + rerank reaches HTTP and preserves response scores, safe=${safe}`, async () => {
     const calls = [];
     const response = { took: 1, total: 1, isDocsInline: true, maxScore: 0.9,

@@ -1,4 +1,4 @@
-/** Opt-in hybrid search contract at backend c49da19629d8fd3ce2144ead97b6f8e2b985c3bb. */
+/** Opt-in hybrid search contract at backend 9072a1bc8925954369a887f558f1eaf387b7ea0e. */
 
 /** Existing wire query DSL, without explicit boosts on this node or Boolean descendants. */
 export type BayesianSubquery = {

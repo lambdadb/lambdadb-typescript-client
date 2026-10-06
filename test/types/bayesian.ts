@@ -7,7 +7,7 @@ const query: BayesianQuery = { bayesian: [lexical, vector] };
 const modelQuery: ModelQuery = query;
 
 export async function search(collection: CollectionHandle) {
-  await collection.query(createQueryInput(query));
+  await collection.query(createQueryInput(query, { candidateSize: 30 }));
   return collection.querySafe({ query, rerank: {
     provider: "typesafe", model: "jev-1.13.0", queryText: "Restore a version", fields: ["body"],
   } });

@@ -1,14 +1,16 @@
 # Bayesian hybrid search
 
 Select Bayesian fusion explicitly with a top-level `bayesian` query. The contract
-is pinned to backend [c49da19629d8fd3ce2144ead97b6f8e2b985c3bb](https://github.com/lambdadb/lambdadb/pull/443):
-[BayesianQuery](https://github.com/lambdadb/lambdadb/blob/c49da19629d8fd3ce2144ead97b6f8e2b985c3bb/api/src/main/java/ai/lambdadb/model/query/BayesianQuery.java)
-and [two-signal validation](https://github.com/lambdadb/lambdadb/blob/c49da19629d8fd3ce2144ead97b6f8e2b985c3bb/api/src/main/java/ai/lambdadb/model/query/RankableQueryBase.java).
+is pinned to backend [9072a1bc8925954369a887f558f1eaf387b7ea0e](https://github.com/lambdadb/lambdadb/commit/9072a1bc8925954369a887f558f1eaf387b7ea0e):
+[BayesianQuery](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/model/query/BayesianQuery.java)
+and [two-signal validation](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/model/query/RankableQueryBase.java).
 This source pin does not establish deployment in another environment.
 
 - Supply exactly two subqueries. Use `bool` to combine clauses within a signal.
 - Explicit `boost`, including `1`, is unsupported on either child and on its Boolean descendants.
 - Bayesian fusion is top-level only and requires no caller fusion weights.
+- Without rerank, supply top-level `candidateSize` with `1 <= size <= candidateSize <= 100`.
+  With rerank, omit top-level `candidateSize` and use `rerank.candidateSize`; its existing default remains unchanged.
 - Calibration uses the retained retrieval candidates. Scores are heuristic fusion scores, not relevance probabilities.
 - Existing RRF, Min-Max, L2 and request defaults remain unchanged. The SDK does not insert `size`, `knn.k`, or rerank candidate defaults.
 
@@ -29,7 +31,7 @@ const query: BayesianQuery = {
   ],
 };
 const collection = client.collection("documents");
-const retrieval = await collection.query({ query, size: 10 });
+const retrieval = await collection.query({ query, size: 10, candidateSize: 30 });
 const reranked = await collection.query({
   query,
   size: 10,
@@ -49,6 +51,12 @@ embedding fields, use `knn.queryText` instead of `queryVector`.
 Bayesian fusion precedes managed reranking. With reranking applied, `score` is
 the final evaluation score and `retrievalScore` preserves the Bayesian score.
 See [managed reranking](managed-reranking.md) for model and candidate constraints.
+
+The candidate budget is distinct from final output `size`. Keeping the candidate
+budget fixed preserves the ranking prefix when only output size changes on
+unchanged data. The SDK serializes the supplied budget without choosing a default;
+the server validates missing, invalid, and conflicting budgets. See the pinned
+[QueryRequest](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/dto/QueryRequest.java).
 
 ## Live validation
 
@@ -81,8 +89,8 @@ The live smoke used a newly created temporary project and a separately issued
 project API key against `steven-aws-apne2` at
 `https://internal-steven-aws-apne2-bbd15c04e242.lambdadb.ai`.
 The observed deployments were Gateway revision 5 and Query Executor revision
-459, both `COMPLETED`. The supplied deployment source is the contract revision
-above; running image digests were
+459, both `COMPLETED`. The supplied deployment source for this earlier validation was
+`c49da19629d8fd3ce2144ead97b6f8e2b985c3bb`; running image digests were
 `sha256:901c25ecf28c10a8ee7abb26c803515991a732d340ae9150cf67b7f0147b9a91`
 (Gateway) and
 `sha256:f1913000c27d9382ce1438d19ecca587feedfbd997edeabc0e88c6e69022c0fa`
@@ -133,3 +141,45 @@ The temporary Collection was deleted and its absence verified by HTTP 404.
 The issued project key was revoked (HTTP 200), the temporary project was deleted
 (HTTP 200), and project absence was verified by HTTP 404. The local credential
 file was removed. No SDK publication or default promotion was performed.
+
+### Latest develop deployment compatibility
+
+The contract is now pinned to backend merge
+`9072a1bc8925954369a887f558f1eaf387b7ea0e`, including the separate candidate/output
+budgets. [Deploy Dev run 37422611173](https://github.com/lambdadb/lambdadb/actions/runs/37422611173)
+succeeded for that exact SHA. The observed `dev-aws-apne2-v3` Gateway and Query
+Executor task definitions were revision 16, with image tag `dev-v3-9072a1b` and
+running digests `sha256:300f65269579fcff327366490505327a549e38249c371e93df07f2ae0669bfef`
+and `sha256:bf87b32fdcbaf1b17f5cacb3ec8e9f1af1eb7ef51566d06cfb74273e3f857a54`,
+respectively. Deployment run, tag, and running digest evidence were checked together.
+
+The previous request without top-level `candidateSize` reproduced HTTP 400 on
+this deployment. After adding explicit budget serialization, the complete live
+smoke passed in 105.97 seconds. It covered thirteen server contract rejections,
+fixed candidate budgets with varying output size, legacy fusion methods, and
+applied Bayesian + rerank through Query and QuerySafe. Both rerank calls scored
+all three candidates, returned two results, and preserved retrieval scores.
+The docsUrl smoke also passed in 50.51 seconds.
+
+The native embedding refactor in backend
+`48f5251fb546d49c9055f496ea9a68a5c5122632` preserves the legacy public rerank shape
+and `managedEmbedding: true` requests. A separate live compatibility probe
+verified legacy embedding Collection creation, actual OpenAI document embedding,
+and Bayesian `knn.queryText` through the SDK. The server's simplified
+embedding-only request was accepted through raw HTTP, and the SDK parsed its
+legacy-compatible Collection response. The current SDK still rejects that new
+request shape before HTTP; adding simplified native embedding input is a separate
+SDK follow-up, not part of Bayesian support.
+
+All temporary Collections were deleted and absence verified. The dedicated
+`typescript-sdk-ci` project and its Secrets Manager key remain for CI; no local
+credential file was created. This validation did not deploy, publish, promote
+fusion defaults, or change IAM.
+
+Final validation passed `npm ci`, `npm run lint`, `npm run typecheck`, and
+`npm test` (183 tests, zero failures/skips). Clean tarball ESM/CommonJS consumers
+serialized `candidateSize` successfully. After adding bounded cleanup retries
+for HTTP 429/503, the complete live smoke passed again in 69.61 seconds and
+verified Collection absence. An intermediate failed smoke's remaining Collection
+was removed explicitly; final project enumeration confirmed no test Collections
+remained. Original scratch evidence is retained outside the repository.

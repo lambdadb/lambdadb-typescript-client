@@ -37,13 +37,20 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
   console.info(`[live] Environment ${url.origin}; project ${projectName}; collection ${collectionName}`);
   t.after(async () => {
     if (!created) return;
-    try {
-      await collection.delete(options);
-      const result = await collection.getSafe(options);
-      assert.equal(result.ok, false);
-      assert.ok(result.error instanceof ResourceNotFoundError);
-      console.info(`[live] Deleted ${collectionName}; absence verified (404)`);
-    } catch (error) { throw safeError(error, "Collection cleanup"); }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const removed = await collection.deleteSafe(options);
+        if (!removed.ok && !(removed.error instanceof ResourceNotFoundError)) throw removed.error;
+        const result = await collection.getSafe(options);
+        if (!result.ok && !(result.error instanceof ResourceNotFoundError)) throw result.error;
+        assert.equal(result.ok, false);
+        console.info(`[live] Deleted ${collectionName}; absence verified (404)`);
+        return;
+      } catch (error) {
+        if (attempt === 2 || ![429, 503].includes(error?.statusCode)) throw safeError(error, "Collection cleanup");
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+      }
+    }
   });
   let stage = "create Collection";
   try {
@@ -61,7 +68,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
       { id: "inactive", body: "Restore old collection data.", status: "inactive", embedding: [1, 0] },
       { id: "unrelated", body: "Bake bread with flour and water.", status: "active" },
     ] }, options);
-    const input = { query, size: 5, consistentRead: true };
+    const input = { query, size: 5, candidateSize: 30, consistentRead: true };
     stage = "consistent read and Collection placement";
     const waitFor = async (request, expected, milliseconds) => {
       const deadline = Date.now() + milliseconds;
@@ -81,7 +88,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
     console.info("[live] Bayesian lexical/vector signals and filters passed");
 
     stage = "default read snapshot";
-    const defaultRead = await waitFor({ query, size: 5 }, 3, 180_000);
+    const defaultRead = await waitFor({ query, size: 5, candidateSize: 30 }, 3, 180_000);
     assert.deepEqual(defaultRead.docs, baseline.docs);
     console.info("[live] Default read and consistent read match");
 
@@ -112,6 +119,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
       { bool: [query] },
     ];
     for (const invalidQuery of invalid) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
       const result = await collection.querySafe({ ...input, query: invalidQuery }, options);
       assert.equal(result.ok, false);
       assert.ok(result.error instanceof BadRequestError);
@@ -119,9 +127,24 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
     }
     console.info("[live] Empty signals and seven server-side contract rejections passed");
 
+    stage = "candidate budget validation";
+    for (const request of [
+      { ...input, candidateSize: undefined }, { ...input, candidateSize: 4 },
+      { ...input, candidateSize: 101 }, { ...input, candidateSize: 0 },
+      { ...input, query: { rrf: [lexical, vector] } },
+      { ...input, rerank: { provider: "typesafe", model: "jev-1.13.0", queryText: "restore", fields: ["body"] } },
+    ]) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const result = await collection.querySafe(request, options);
+      assert.equal(result.ok, false);
+      assert.ok(result.error instanceof BadRequestError, `Expected server budget error; got ${result.error?.name} HTTP ${result.error?.statusCode}`);
+      assert.equal(result.error.statusCode, 400);
+    }
+    console.info("[live] Missing, invalid and conflicting candidate budgets rejected by the server");
+
     stage = "existing hybrid methods";
     for (const method of ["rrf", "mm", "l2"]) {
-      const legacy = await collection.query({ ...input, query: { [method]: [lexical, vector] } }, options);
+      const legacy = await collection.query({ ...input, candidateSize: undefined, query: { [method]: [lexical, vector] } }, options);
       assert.deepEqual(new Set(ids(legacy)), new Set(ids(baseline)));
       assert.ok(legacy.docs.every((hit) => Number.isFinite(hit.score)));
     }
@@ -133,7 +156,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
       queryText: "How do I restore a previous collection version?", fields: ["body"] };
     // Provider calls run once each; no retry or fallback can masquerade as applied reranking.
     for (const safe of [false, true]) {
-      const request = { ...input, size: 2, rerank };
+      const request = { ...input, candidateSize: undefined, size: 2, rerank };
       const result = safe ? await collection.querySafe(request, options) : await collection.query(request, options);
       if (safe && !result.ok) throw result.error;
       const response = safe ? result.value : result;
@@ -152,7 +175,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
       console.info(`[live] Bayesian + rerank applied, safe=${safe}; candidate/scored=3/3; final size=2; retrieval scores preserved`);
     }
     stage = "empty Bayesian + rerank";
-    const skipped = await collection.query({ ...input, query: { bayesian: [emptyLexical, emptyVector] }, rerank }, options);
+    const skipped = await collection.query({ ...input, candidateSize: undefined, query: { bayesian: [emptyLexical, emptyVector] }, rerank }, options);
     assert.equal(skipped.rerank?.status, "skipped");
     assert.equal(skipped.rerank.reason, "noCandidates");
     assert.equal(skipped.rerank.candidateCount, 0);

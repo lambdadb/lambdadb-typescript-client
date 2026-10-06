@@ -92,11 +92,14 @@ builds both module formats and tests package declaration consumers.
 ## Updating Bayesian hybrid search
 
 The Bayesian contract is maintained manually from backend
-`c49da19629d8fd3ce2144ead97b6f8e2b985c3bb`; see
+`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
 [Bayesian hybrid search](bayesian-search.md) for exact DTO links and live validation.
 Keep the optional types, rerank scoring-query recognition, and package-consumer
-tests aligned. Preserve free-form query serialization and existing defaults;
-invalid fusion contracts retain server-side validation and error classification.
+tests and the top-level `candidateSize` request field aligned. Bayesian without
+rerank requires an explicit candidate budget; with rerank use
+`rerank.candidateSize` and omit the top-level budget. Preserve free-form query
+serialization and existing defaults; invalid fusion contracts retain server-side
+validation and error classification.
 
 ## CI
 
