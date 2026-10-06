@@ -113,4 +113,10 @@ validation and error classification.
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
-- **Publish**: `.github/workflows/publish.yaml` runs for a published GitHub Release. Follow [RELEASING.md](../RELEASING.md); no Speakeasy step is involved.
+- **Publish**: `.github/workflows/publish.yaml` runs on pushes to `develop` for
+  automatic npm `dev` publication and on published GitHub Releases for explicit
+  dev, RC, or stable publication. A reviewed merge into `develop` authorizes its
+  automatic preview after package checks and deployed docsUrl smoke tests pass;
+  no Git tag or GitHub Release is created for that preview. Explicit dev releases
+  come from `develop`; RC/stable releases come from `main`, selecting `rc`/`latest`.
+  Follow [RELEASING.md](../RELEASING.md); no Speakeasy step is involved.

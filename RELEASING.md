@@ -106,11 +106,17 @@ updates package and lockfile versions, `jsr.json`, SDK metadata, and User-Agent
 only in its disposable checkout. It creates no version commit, Git tag, or
 GitHub Release. The published `package.json` includes `lambdadbSourceCommit`.
 
-Automatic dev runs are serialized. Immediately before publication, the workflow
-fetches `develop` and skips a commit that is no longer its head. GitHub may
-replace a pending run with a newer push; not every intermediate commit is
-published. The `dev` dist-tag points to the latest successfully published
-build. Failed validation leaves the previously published dev version in place.
+Automatic pushes and explicit dev Releases share one concurrency group, so dev
+publications cannot overlap. RC/stable releases retain their tag-specific groups.
+Immediately before automatic publication, the workflow
+fetches `develop` and skips a commit that is no longer its head.
+[GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+may replace a pending run with a newer push; not every intermediate commit is
+published. This pending-run replacement also applies to an explicit dev Release;
+if it is canceled before publication, rerun its workflow when that selected
+version is still needed and remains unpublished. The `dev` dist-tag points to
+the latest successfully published build. Failed validation leaves the previously
+published dev version in place.
 The exact tarball and npm pack manifest are retained as workflow artifacts.
 
 An explicit dev GitHub Release remains supported when a manually selected

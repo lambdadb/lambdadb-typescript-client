@@ -9,6 +9,24 @@ import { runInNewContext } from "node:vm";
 const workflow = readFileSync(new URL("../.github/workflows/publish.yaml", import.meta.url), "utf8");
 const metadataScript = workflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE\n/)[1];
 const branchScript = workflow.match(/- name: Verify release commit belongs to its channel branch\n[\s\S]*?run: \|\n([\s\S]*?)\n\s+- name:/)[1];
+const concurrencyExpression = workflow.match(/group: npm-sdk-\$\{\{\s*(.*?)\s*\}\}/)[1];
+
+test("automatic and explicit dev publications share one concurrency group while RC/stable retain tag groups", () => {
+  // Evaluate the workflow expression itself for string event/tag inputs.
+  const group = (event, tag) => `npm-sdk-${runInNewContext(concurrencyExpression, {
+    github: { event_name: event, event: { release: { tag_name: tag } } },
+    contains: (value, search) => typeof value === "string" && value.toLowerCase().includes(search.toLowerCase()),
+  })}`;
+  const automatic = group("push", undefined);
+  assert.equal(automatic, "npm-sdk-develop");
+  for (const tag of ["v0.8.0-dev.1", "v0.8.0-dev.42001", "v0.9.0-dev.1"]) {
+    assert.equal(group("release", tag), automatic);
+  }
+  for (const tag of ["v0.8.0-rc.1", "v0.8.0-rc.2", "v0.8.0"]) {
+    assert.equal(group("release", tag), `npm-sdk-${tag}`);
+    assert.notEqual(group("release", tag), automatic);
+  }
+});
 
 function metadata(version, prerelease, tag = `v${version}`, rootVersion = version, event = {}) {
   let output = "";
