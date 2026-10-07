@@ -26,11 +26,11 @@ export type QueryCollectionRequestBody = {
   candidateSize?: number | undefined;
   /**
    * Query object. BayesianQuery provides an optional typed top-level hybrid query.
-   * For managed embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
+   * For native embedding vector fields, use knn.queryText. For unmanaged vector fields, use knn.queryVector.
    */
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;
-  /** Optional per-query managed reranking. Omitted or null preserves retrieval behavior. */
+  /** Optional per-query native reranking. Omitted or null preserves retrieval behavior. */
   rerank?: models.RerankConfig | null | undefined;
   /**
    * Overlay eligible pending writes on a directly selected Branch. Tag and Alias reads reject true, pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
@@ -114,7 +114,7 @@ export type QueryCollectionRequestBody$Outbound = {
   candidateSize?: number | undefined;
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;
-  /** Optional per-query managed reranking. Omitted or null preserves retrieval behavior. */
+  /** Optional per-query native reranking. Omitted or null preserves retrieval behavior. */
   rerank?: models.RerankConfig | null | undefined;
   consistentRead: boolean;
   includeVectors: boolean;

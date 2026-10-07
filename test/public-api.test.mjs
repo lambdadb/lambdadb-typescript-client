@@ -103,8 +103,8 @@ test("public client lists collections with project URL, auth header, and Date co
   assert.equal(result.collections[0].createdAt.toISOString(), "2023-11-14T22:13:20.000Z");
 });
 
-test("public client supports managed embedding vector index configs", async () => {
-  const managedIndexConfigs = {
+test("public client supports native embedding vector index configs with the legacy flag", async () => {
+  const nativeIndexConfigs = {
     body: {
       type: "text",
       analyzers: ["english"],
@@ -152,7 +152,7 @@ test("public client supports managed embedding vector index configs", async () =
 
   const result = await client.createCollection({
     collectionName: "semantic-items",
-    indexConfigs: managedIndexConfigs,
+    indexConfigs: nativeIndexConfigs,
   });
 
   assert.equal(calls.length, 1);
@@ -182,7 +182,7 @@ test("native embedding-only create and update preserve omitted flags and parse l
   assert.deepEqual(calls.map((call) => call.method), ["POST", "PATCH", "GET"]);
 });
 
-test("managed embedding vector config supports optional embedding dimensions and similarity", async () => {
+test("native embedding vector config supports optional embedding dimensions and similarity", async () => {
   const { calls, client } = createClient((call) => {
     assert.equal(call.method, "POST");
     assert.deepEqual(JSON.parse(call.body), {
@@ -231,7 +231,7 @@ test("managed embedding vector config supports optional embedding dimensions and
   assert.equal(result.collection.collectionName, "semantic-items");
 });
 
-test("managed embedding vector config rejects invalid Java contract shapes", async () => {
+test("native embedding vector config rejects invalid Java contract shapes", async () => {
   const { calls, client } = createClient(() => {
     throw new Error("request should not be sent for invalid index configs");
   });
@@ -305,7 +305,7 @@ test("managed embedding vector config rejects invalid Java contract shapes", asy
   assert.equal(calls.length, 0);
 });
 
-test("collection query supports managed embedding queryText KNN payloads", async () => {
+test("collection query supports native embedding queryText KNN payloads", async () => {
   const { calls, client } = createClient((call) => {
     assert.equal(call.method, "POST");
     assert.equal(call.url.pathname, "/projects/project-one/collections/items/query");
@@ -347,7 +347,7 @@ test("collection query supports managed embedding queryText KNN payloads", async
   assert.equal(result.total, 1);
 });
 
-test("getBulkUpsertSafe exposes managed embedding unsupported bad requests", async () => {
+test("getBulkUpsertSafe preserves legacy native embedding unsupported error messages", async () => {
   const { client } = createClient((call) => {
     assert.equal(call.method, "GET");
     assert.equal(call.url.pathname, "/projects/project-one/collections/items/docs/bulk-upsert");

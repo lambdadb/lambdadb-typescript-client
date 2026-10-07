@@ -3,7 +3,7 @@
 ## 0.8.0
 
 - Added opt-in Bayesian hybrid search with two unboosted subqueries, optional
-  public helper types, and Bayesian scoring support for managed reranking.
+  public helper types, and Bayesian scoring support for native reranking.
   Typed subqueries reject nested Bayesian/RRF/Min-Max/L2 fusion and explicit
   boosts, including on Boolean descendants. Free-form queries and server error
   classification remain unchanged.
@@ -31,13 +31,13 @@
 
 ## 0.7.0
 
-- Added optional per-query managed reranking for `typesafe` / `jev-1.13.0`,
+- Added optional per-query native reranking for `typesafe` / `jev-1.13.0`,
   including nullable defaults, custom criteria, strict option/bounds validation,
   envelope `retrievalScore`, and rerank status metadata. Existing requests,
   search scores, candidate `knn.k`, facets and downloads retain their behavior.
   Applied scores preserve zero and double precision without client reordering.
   Contract pinned to backend `a5e06d49be06d95dc5f4046aeecaf51f8a7733c0`;
-  see [Managed reranking](docs/managed-reranking.md). Source support does not
+  see [Native reranking](docs/native-reranking.md). Source support does not
   establish deployment or a package release.
   Undefined optional composite query members are omitted during scoring-query
   validation consistently with JSON serialization; present composites retain

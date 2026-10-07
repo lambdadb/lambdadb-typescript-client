@@ -1,6 +1,6 @@
-# Managed reranking
+# Native reranking
 
-Select managed reranking per query through `collection.query()` or `querySafe()`.
+Select native reranking per query through `collection.query()` or `querySafe()`.
 The server manages provider credentials; supply only your LambdaDB project API
 key. There is no collection-level rerank setting or client-side reranking step.
 Omitted or null `rerank` preserves existing search behavior.
@@ -59,9 +59,9 @@ many candidates exist; actual counts appear in response metadata.
 
 ## Default criteria example
 
-This assumes a managed `bodyEmbedding` vector field and stored `title`/`body`
-text fields. `rerank.fields` selects model input; the query-level `fields`
-projection independently selects returned document content.
+This assumes a `bodyEmbedding` vector field configured for native embedding
+and stored `title`/`body` text fields. `rerank.fields` selects model input; the
+query-level `fields` projection independently selects returned document content.
 
 ```typescript
 import { LambdaDBClient, type QueryCollectionInput } from "@functional-systems/lambdadb";

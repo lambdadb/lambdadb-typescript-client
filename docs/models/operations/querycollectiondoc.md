@@ -25,4 +25,4 @@ let value: QueryCollectionDoc = {
 `retrievalScore?: number` is the original retrieval/fusion score alongside
 `score`, outside `doc`, present only when rerank is applied. Numeric zero and
 precision are preserved. Scores are evaluation values, not relevance
-probabilities. See [Managed reranking](../../managed-reranking.md).
+probabilities. See [Native reranking](../../native-reranking.md).

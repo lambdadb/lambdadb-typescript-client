@@ -15,7 +15,7 @@ function safeError(error, stage = "cleanup") {
 }
 
 // Run explicitly with the intended environment; missing credentials are a failure.
-test("live managed reranking defaults, custom criteria, scores, projection and cleanup", {
+test("live native reranking defaults, custom criteria, scores, projection and cleanup", {
   timeout: 360_000,
 }, async (t) => {
   for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
