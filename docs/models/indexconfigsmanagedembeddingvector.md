@@ -25,5 +25,5 @@ let value: IndexConfigsManagedEmbeddingVector = {
 | Field              | Type                                                   | Required           | Description |
 | ------------------ | ------------------------------------------------------ | ------------------ | ----------- |
 | `type`             | *"vector"*                                             | :heavy_check_mark: | N/A |
-| `managedEmbedding` | *true*                                                 | :heavy_check_mark: | Managed embedding vector field. |
-| `embedding`        | [models.EmbeddingConfig](../models/embeddingconfig.md) | :heavy_check_mark: | Managed embedding configuration for vector fields. |
+| `managedEmbedding` | *true*                                                 | :heavy_check_mark: | Legacy flag for a native embedding vector field. |
+| `embedding`        | [models.EmbeddingConfig](../models/embeddingconfig.md) | :heavy_check_mark: | Native embedding configuration for vector fields. |

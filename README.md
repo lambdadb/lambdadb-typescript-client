@@ -106,7 +106,7 @@ async function run() {
   await collection.docs.list({ size: 20 });
   await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
   // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow.
-  // Bulk upsert is not supported for collections with managed embedding vector fields.
+  // Bulk upsert is not supported for collections with native embedding vector fields.
   // await collection.docs.bulkUpsertDocs({ docs: largeDocArray });
 }
 
@@ -204,13 +204,13 @@ ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 The 49 fixed text analyzer presets are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
-### Managed reranking
+### Native reranking
 
 Pass an optional per-query `rerank` object to `query` or `querySafe` with
 `provider: "typesafe"`, `model: "jev-1.13.0"`, nonblank `queryText` and stored
 scalar text `fields`. The server manages credentials. Optional `criteria` selects
 2–10 ordered custom descriptions; omission/null uses the default criteria.
-See [Managed reranking](docs/managed-reranking.md) for default/custom examples,
+See [Native reranking](docs/native-reranking.md) for default/custom examples,
 candidate limits, response fields and eligible fallback behavior. An applied
 `score` is the final evaluation score in [0,1], not a relevance probability;
 `retrievalScore` retains the original search score outside `doc`. Inspect
@@ -338,9 +338,9 @@ in-process fake LambdaDB transport and do not require credentials:
 npm run test:external:qdrant
 ```
 
-### Managed embeddings
+### Native embeddings
 
-Managed embedding vector fields generate vectors from a configured source text field. Create the collection with a text field and a managed vector field, then query that vector field with `knn.queryText`.
+Native embedding vector fields generate vectors from a configured source text field. Create the collection with a text field and a native embedding vector field, then query that vector field with `knn.queryText`.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
@@ -429,9 +429,9 @@ run();
 
 * [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
-* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list. Not supported for collections with managed embedding vector fields.
-* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
-* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list. Not supported for collections with native embedding vector fields.
+* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
+* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 * [delete](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 * [fetch](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
@@ -470,10 +470,10 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 
 - [`collectionsCreate`](docs/sdks/collections/README.md#create) - Create a collection.
 - [`collectionsDelete`](docs/sdks/collections/README.md#delete) - Delete an existing collection.
-- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with managed embedding vector fields.
+- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
 - [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 - [`collectionsDocsFetch`](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
-- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
+- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
 - [`collectionsDocsListDocs`](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 - [`collectionsDocsUpdate`](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 - [`collectionsDocsUpsert`](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.

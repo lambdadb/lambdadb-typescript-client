@@ -34,10 +34,10 @@ let value: QueryCollectionResponse = {
 | `docs`                                                                           | [operations.QueryCollectionDoc](../../models/operations/querycollectiondoc.md)[] | :heavy_check_mark:                                                               | List of documents.                                                               |
 | `isDocsInline`                                                                   | *boolean*                                                                        | :heavy_check_mark:                                                               | Whether the list of documents is included.                                       |
 | `docsUrl`                                                                        | *string*                                                                         | :heavy_minus_sign:                                                               | Optional download URL for the list of documents.                                 |
-| `rerank` | `RerankResponse` | :heavy_minus_sign: | Optional managed reranking metadata; see [response reference](../../managed-reranking.md#response-reference). |
+| `rerank` | `RerankResponse` | :heavy_minus_sign: | Optional native reranking metadata; see [response reference](../../native-reranking.md#response-reference). |
 
-`rerank?: RerankResponse` reports managed rerank status, provider/model, counts,
+`rerank?: RerankResponse` reports native reranking status, provider/model, counts,
 stage milliseconds and optional resolvedModel/reason/criteriaVersion. It is
-omitted when reranking is unused. See [Managed reranking](../../managed-reranking.md)
+omitted when reranking is unused. See [Native reranking](../../native-reranking.md)
 for required/optional fields and applied/skipped/fallback semantics. Metadata
 and document scores survive automatic docsUrl downloads.

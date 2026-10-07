@@ -72,11 +72,11 @@ verifies Collection absence with a 404, including after validation failures.
 The metadata checks allow the server's automatically added reserved `id` field.
 This credentialed test is separate from ordinary PR CI.
 
-## Updating managed reranking
+## Updating native reranking
 
 The public OpenAPI at docs revision `961561c379acb079aec20191e13b89809ef096e9`
-does not yet contain managed reranking. Use the exact backend source pin and
-DTO/test links in [Managed reranking](managed-reranking.md); do not claim this
+does not yet contain native reranking. Use the exact backend source pin and
+DTO/test links in [Native reranking](native-reranking.md); do not claim this
 feature is generated from that older OpenAPI. This checkout has no maintained
 schema generator. Follow the manual model workflow above until upstream OpenAPI
 is available, and reconcile it against these DTOs when it is published.

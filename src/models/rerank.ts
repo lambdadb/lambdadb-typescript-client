@@ -1,8 +1,8 @@
-/** Managed reranking DTOs, maintained manually following docs/OPENAPI_UPDATE.md. */
+/** Native reranking DTOs, maintained manually following docs/OPENAPI_UPDATE.md. */
 import * as z from "zod/v3";
 import { nullToUndefined } from "../lib/schemas.js";
 
-/** Per-query fixed managed model; credentials are managed by the server. */
+/** Per-query fixed native reranking model; the server supplies provider credentials. */
 export type RerankConfig = {
   provider: "typesafe";
   model: "jev-1.13.0";
