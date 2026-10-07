@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.1
+
+- Standardized feature terminology as native embedding and native reranking in
+  documentation, examples, SDK comments, and internal test names.
+- Moved the reranking guide to `docs/native-reranking.md`, retaining the old URL
+  and section anchors as compatibility links.
+- Preserved public symbols, wire fields, configuration keys, legacy error strings,
+  and runtime behavior. No API, dependency, default, or limit changes.
+
 ## 0.8.0
 
 - Added opt-in Bayesian hybrid search with two unboosted subqueries, optional
