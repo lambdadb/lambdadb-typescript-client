@@ -17,7 +17,7 @@ const vector = { knn: { field: "embedding", queryVector: [1, 0], k: 30,
 const query = { bayesian: [lexical, vector] };
 const ids = (response) => response.docs.map((hit) => hit.doc.id);
 
-test("live Bayesian fusion, legacy methods, validation and applied managed reranking", { timeout: 420_000 }, async (t) => {
+test("live Bayesian fusion, legacy methods, validation and applied native reranking", { timeout: 420_000 }, async (t) => {
   for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
     assert.ok(process.env[name], `Missing ${name}; load the intended test environment`);
   }
@@ -150,7 +150,7 @@ test("live Bayesian fusion, legacy methods, validation and applied managed reran
     }
     console.info("[live] Existing RRF, Min-Max and L2 accepted without changed inputs");
 
-    stage = "Bayesian + managed reranking";
+    stage = "Bayesian + native reranking";
     const scores = new Map(baseline.docs.map((hit) => [hit.doc.id, hit.score]));
     const rerank = { provider: "typesafe", model: "jev-1.13.0",
       queryText: "How do I restore a previous collection version?", fields: ["body"] };

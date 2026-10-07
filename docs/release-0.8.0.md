@@ -12,7 +12,7 @@ dist-tag is `latest`. Follow [RELEASING.md](../RELEASING.md).
 ## Release notes
 
 - Added top-level Bayesian hybrid search, two-signal helper types, and Bayesian
-  scoring support for managed reranking. Typed subqueries prohibit nested rank
+  scoring support for native reranking. Typed subqueries prohibit nested rank
   fusion and explicit boosts through Boolean descendants. Free-form queries
   and server-side contract errors retain their existing behavior.
 - Added explicit top-level `candidateSize` for Bayesian without rerank. The

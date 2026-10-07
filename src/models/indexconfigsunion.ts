@@ -98,7 +98,7 @@ export type IndexConfigsManagedEmbeddingVector = {
   dimensions?: never;
   similarity?: never;
   /**
-   * Managed embedding vector field.
+   * Legacy flag for a native embedding vector field.
    */
   managedEmbedding: true;
   embedding: EmbeddingConfig;

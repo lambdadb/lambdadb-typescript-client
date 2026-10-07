@@ -26,7 +26,7 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Request required info to upload documents. Bulk upsert is not supported for collections with managed embedding vector fields.
+ * Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
  */
 export function collectionsDocsGetBulkUpsert(
   client: LambdaDBCore,

@@ -51,12 +51,12 @@ const reranked = await collection.query({
 console.log(retrieval.docs, reranked.rerank?.status);
 ```
 
-Use the dimensions and field names configured on your Collection. For managed
+Use the dimensions and field names configured on your Collection. For native
 embedding fields, use `knn.queryText` instead of `queryVector`.
 
-Bayesian fusion precedes managed reranking. With reranking applied, `score` is
+Bayesian fusion precedes native reranking. With reranking applied, `score` is
 the final evaluation score and `retrievalScore` preserves the Bayesian score.
-See [managed reranking](managed-reranking.md) for model and candidate constraints.
+See [native reranking](native-reranking.md) for model and candidate constraints.
 
 The candidate budget is distinct from final output `size`. Keeping the candidate
 budget fixed preserves the ranking prefix when only output size changes on
@@ -77,7 +77,7 @@ node --env-file=/path/to/private/.env.local --test test/integration/bayesian-liv
 Missing credentials fail the test. The smoke creates and deletes a temporary
 Collection, checks default and consistent reads, fusion filters and budgets,
 empty signals, server contract rejection, existing fusion methods, and applied
-Bayesian + managed reranking through both Query and QuerySafe. The paid rerank
+Bayesian + native reranking through both Query and QuerySafe. The paid rerank
 provider is accessed through LambdaDB only. Prepare and revoke project keys and
 delete any temporary project through the authorized test-stack administration
 workflow separately; never record credentials in validation evidence.
@@ -107,7 +107,7 @@ not independently establish the source SHA.
 default/consistent-read equivalence, filters, result and vector budgets,
 Boolean children, empty signals, seven HTTP 400 contract rejections, and the
 existing RRF, Min-Max and L2 requests. The smoke then failed at the first
-Bayesian + managed rerank call with HTTP 503. Server logs reported
+Bayesian + native reranking call with HTTP 503. Server logs reported
 `Rerank credential lookup failed; inspect secret configuration` and a rerank
 stage with `reason: credentials`, three candidates and zero scored candidates.
 At that time, the deployed Query Executor role granted secret reads only for
@@ -135,7 +135,7 @@ in 51.55 seconds: one test passed, zero failures and zero skips. All earlier
 retrieval, default/consistent-read, filter, budget, Boolean, empty-signal,
 server-validation and legacy-fusion checks passed again.
 
-Both `collection.query()` and `collection.querySafe()` returned managed
+Both `collection.query()` and `collection.querySafe()` returned native
 reranking with `status: applied`, provider `typesafe`, model `jev-1.13.0`, three
 candidates, three scored candidates, and two final documents. Final scores were
 finite, within [0,1], and sorted descending. Each result's `retrievalScore`

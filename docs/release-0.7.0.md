@@ -13,7 +13,8 @@ exception does not authorize a new release.
 
 ## Draft release notes
 
-- Added per-query server-managed reranking with `typesafe` / `jev-1.13.0`.
+- Added per-query native reranking with `typesafe` / `jev-1.13.0`. The server
+  performs reranking.
   Specify required query text and stored scalar text fields, and optionally
   supply 2–10 custom criteria ordered from low to high relevance. LambdaDB
   manages provider credentials; no Jev API key is required from SDK users.
@@ -35,7 +36,7 @@ exception does not authorize a new release.
 
 Reranking retains existing facet query restrictions. `returnOriginal` only
 handles eligible provider failures and does not mask validation, authorization,
-retrieval, quota or admission errors. See [managed reranking](managed-reranking.md),
+retrieval, quota or admission errors. See [native reranking](native-reranking.md),
 [analyzers](models/analyzer.md) and [Qdrant compatibility](compatibility/qdrant.md).
 
 After publication, install the exact package with:
@@ -52,7 +53,7 @@ npm install @functional-systems/lambdadb@0.7.0
 - Analyzer backend: `55d888299fee44466326a9db8016af9811ade13b` (PR #437).
 - Reranking backend: `a5e06d49be06d95dc5f4046aeecaf51f8a7733c0`, after
   feature PR #435 and Secret configuration PR #442. DTOs and design contract
-  are linked in [managed reranking](managed-reranking.md).
+  are linked in [native reranking](native-reranking.md).
 - Public OpenAPI does not yet include reranking at pinned docs revision
   `961561c379acb079aec20191e13b89809ef096e9`; models follow the repository's
   documented manual maintenance procedure. Upstream reconciliation remains.
@@ -102,7 +103,7 @@ earlier package artifacts are retained as superseded evidence.
 | Data Versioning | Passed lifecycle, reads, writes, branches, tags, aliases and bulk upload. |
 | Qdrant live compatibility | Passed. |
 | Keyword facets | Passed all 35 tests on an isolated rerun, including real docsUrl downloads. Initial concurrent run returned HTTP 503 before Collection creation. |
-| Managed reranking | Passed default/null/custom 2/3/10 criteria, scores, order, retrievalScore, projection, metadata, empty candidates and legacy null behavior. |
+| Native reranking | Passed default/null/custom 2/3/10 criteria, scores, order, retrievalScore, projection, metadata, empty candidates and legacy null behavior. |
 | Expanded analyzers | Passed after deployment: creation and Get/GetSafe preserved all 49 names, omitted `standard` default, empty arrays and ordering; duplicate names were rejected. Existing 16-language positive/negative searches and Chinese/CJK differences passed. Newly added presets were checked for acceptance and metadata, not language-specific search quality. |
 
 Before deployment, expanded-analyzer Collection creation returned HTTP 400;
@@ -124,14 +125,14 @@ All successfully created temporary Collections were deleted and their absence
 verified. Failed-create Collections and the unsupported-analyzer probe were
 also confirmed absent. No test data or Collections remain from these checks.
 
-Run the managed reranking smoke explicitly with the intended environment:
+Run the native reranking smoke explicitly with the intended environment:
 
 ```bash
 npm run build
-node --env-file=.env.local --test test/integration/managed-reranking-live.test.mjs
+node --env-file=.env.local --test test/integration/native-reranking-live.test.mjs
 ```
 
-The managed rerank smoke calls LambdaDB with five small synthetic-document
+The native reranking smoke calls LambdaDB with five small synthetic-document
 requests: default, explicit null and custom 2/3/10 criteria. It checks applied
 scores, ordering, retrieval scores, projection and metadata plus empty and
 legacy requests. It does not establish quality, load, failure-injection,
