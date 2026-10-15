@@ -123,6 +123,24 @@ test("live native reranking defaults, custom criteria, scores, projection and cl
       assert.equal("rubricVersion" in response.rerank, false);
       console.info(`[live] ${label}: applied; candidate/scored=4/4, final size=2; scores, order and projection passed`);
     }
+    for (const [size, candidateSize] of [[101, 101], [1000, 1000], [1000, null]]) {
+      stage = `expanded rerank limits: size=${size}, candidateSize=${candidateSize}`;
+      const result = await collection.querySafe({ ...input, size, rerank: { ...rerank, candidateSize } }, options);
+      if (!result.ok) throw result.error;
+      const response = result.value;
+      assert.equal(response.rerank?.status, "applied");
+      assert.equal(response.rerank.candidateCount, 4);
+      assert.equal(response.rerank.scoredCount, 4);
+      assert.equal(response.docs.length, 4);
+      assert.equal(response.total, 4);
+      assert.deepEqual(new Set(response.docs.map(({ doc }) => doc.id)), new Set(scores.keys()));
+      for (const [position, hit] of response.docs.entries()) {
+        assert.ok(Number.isFinite(hit.score) && hit.score >= 0 && hit.score <= 1);
+        assert.equal(hit.retrievalScore, scores.get(hit.doc.id));
+        assert.ok(position === 0 || response.docs[position - 1].score >= hit.score);
+      }
+      console.info(`[live] Rerank size=${size}, candidateSize=${candidateSize}: accepted; actual candidate/scored=4/4`);
+    }
     stage = "empty candidates";
     const empty = await collection.query({ ...input, query: { queryString: { query: "zzzxqv", defaultField: "body" } }, rerank }, options);
     assert.deepEqual(empty.docs, []);

@@ -27,11 +27,31 @@ for (const safe of [false, true]) {
           headers: { "content-type": "application/json" },
         });
       } }) });
-    const input = { query, size: 10, candidateSize: 30 };
     const collection = client.collection("items");
-    const result = safe ? await collection.querySafe(input, options) : await collection.query(input, options);
-    if (safe) assert.equal(result.ok, true);
-    assert.deepEqual(body, { ...input, consistentRead: false, includeVectors: false });
+    for (const [size, candidateSize] of [[10, 30], [101, 101], [1000, 1000]]) {
+      const input = { query: { bayesian: [lexical, { knn: { ...vector.knn, k: candidateSize } }] }, size, candidateSize };
+      const result = safe ? await collection.querySafe(input, options) : await collection.query(input, options);
+      if (safe) assert.equal(result.ok, true);
+      assert.deepEqual(body, { ...input, consistentRead: false, includeVectors: false });
+    }
+  });
+
+  test(`ordinary KNN preserves expanded size and k without a candidate budget, safe=${safe}`, async () => {
+    const bodies = [];
+    const collection = new LambdaDBClient({ baseUrl: "https://api.test", projectName: "project", projectApiKey: "test-key",
+      httpClient: new HTTPClient({ fetcher: async (request) => {
+        bodies.push(await request.json());
+        return new Response(JSON.stringify({ took: 0, total: 0, docs: [], isDocsInline: true }), {
+          headers: { "content-type": "application/json" },
+        });
+      } }) }).collection("items");
+    for (const size of [101, 1000]) {
+      const input = { query: { knn: { ...vector.knn, k: size } }, size };
+      const result = safe ? await collection.querySafe(input, options) : await collection.query(input, options);
+      if (safe) assert.equal(result.ok, true);
+      assert.deepEqual(bodies.at(-1), { ...input, consistentRead: false, includeVectors: false });
+    }
+    assert.equal(bodies.length, 2);
   });
 
   test(`Bayesian + rerank reaches HTTP and preserves response scores, safe=${safe}`, async () => {
@@ -82,5 +102,15 @@ test("Bayesian contract errors remain server errors, preserving the free-form qu
     assert.ok(result.error instanceof BadRequestError);
     assert.equal(result.error instanceof SDKValidationError, false);
   }
-  assert.equal(calls, 5);
+  for (const input of [
+    { query: vector, size: 1001 },
+    { query, size: 1, candidateSize: 1001 },
+    { query: { knn: { ...vector.knn, k: 1001 } }, size: 1 },
+  ]) {
+    const result = await handle.querySafe(input, options);
+    assert.equal(result.ok, false);
+    assert.ok(result.error instanceof BadRequestError);
+    assert.equal(result.error instanceof SDKValidationError, false);
+  }
+  assert.equal(calls, 8);
 });
