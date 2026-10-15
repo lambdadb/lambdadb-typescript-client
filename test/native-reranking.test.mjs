@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
+import { BadRequestError, HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
 import { queryCollectionRequestBodyToJSON, queryCollectionResponseFromJSON } from "../dist/esm/models/operations/querycollection.js";
 
 const query = { knn: { field: "embedding", queryVector: [1, 0], k: 20 } };
@@ -60,7 +60,7 @@ const invalidConfigs = [
   { provider: "cohere" }, { model: "unknown" }, { queryText: "" }, { queryText: "\u3000" },
   { queryText: "é".repeat(4097) }, { fields: [] }, { fields: ["body", "body"] },
   { fields: ["body..title"] }, { fields: [" "] }, { fields: Array.from({ length: 9 }, (_, i) => `f${i}`) },
-  ...[0, 9, 101, 1.5, "50"].map((candidateSize) => ({ candidateSize })),
+  ...[0, 9, 1001, 1.5, "50"].map((candidateSize) => ({ candidateSize })),
   { onFailure: "ignore" }, ...[[], ["one"], ["a", "a"], ["a", " "], ["a", null], [{}, {}],
     Array.from({ length: 11 }, (_, i) => `${i}`), ["é".repeat(1025), "b"],
     Array.from({ length: 5 }, (_, i) => `${i}${"é".repeat(1000)}`)].map((criteria) => ({ criteria })),
@@ -68,12 +68,33 @@ const invalidConfigs = [
 ];
 const invalidInputs = [
   ...invalidConfigs.map((extra) => ({ query, size: 10, rerank: { ...rerank, ...extra } })),
-  ...[0, -1, 101].map((size) => ({ query, size, facets: { tags: {} }, rerank })),
+  ...[0, -1, 1001].map((size) => ({ query, size, facets: { tags: {} }, rerank })),
+  ...[{ size: 102, candidateSize: 101 }, { size: 1000, candidateSize: 999 }].map(({ size, candidateSize }) => (
+    { query, size, rerank: { ...rerank, candidateSize } }
+  )),
   { rerank }, { query: {}, rerank }, { query: { bool: [{ queryString: { query: "q" }, occur: "filter" }] }, rerank },
   { query: { bool: [{ knn: query.knn, occur: "MUST_NOT" }] }, rerank },
   { query, rerank, sort: [] }, { query, rerank, sort: [{ title: "asc" }] },
 ];
 for (const safe of [false, true]) {
+  test(`rerank accepts expanded output and candidate limits without inserting defaults, safe=${safe}`, async () => {
+    const { handle, calls } = collection(() => json({ took: 0, total: 0, docs: [], isDocsInline: true }));
+    for (const extra of [
+      { size: 10, rerank: { ...rerank, candidateSize: 101 } },
+      ...[101, 1000].flatMap((size) => [
+        { size, rerank },
+        { size, rerank: { ...rerank, candidateSize: null } },
+        { size, rerank: { ...rerank, candidateSize: size } },
+      ]),
+    ]) {
+      const input = { query: { knn: { ...query.knn, k: 1000 } }, ...extra };
+      const result = safe ? await handle.querySafe(input, options) : await handle.query(input, options);
+      if (safe) assert.equal(result.ok, true);
+      assert.deepEqual(calls.at(-1), { ...input, consistentRead: false, includeVectors: false });
+    }
+    assert.equal(calls.length, 7);
+  });
+
   test(`invalid rerank inputs fail before HTTP, safe=${safe}`, async () => {
     const { handle, calls } = collection(() => json({ took: 0, total: 0, docs: [], isDocsInline: true }));
     for (const input of invalidInputs) {
@@ -182,6 +203,27 @@ test("metadata required fields match the DTO while nullable optional fields norm
 });
 
 for (const safe of [false, true]) {
+  test(`hydration size errors remain server errors with returnOriginal, safe=${safe}`, async () => {
+    const message = "Query result exceeds 64 MiB";
+    const { handle, calls } = collection(() => json({ message }, 400));
+    const input = { query, size: 1000, rerank: { ...rerank, onFailure: "returnOriginal" } };
+    if (safe) {
+      const result = await handle.querySafe(input, options);
+      assert.equal(result.ok, false);
+      assert.ok(result.error instanceof BadRequestError);
+      assert.equal(result.error.statusCode, 400);
+      assert.equal(result.error.message, message);
+    } else {
+      await assert.rejects(handle.query(input, options), (error) => {
+        assert.ok(error instanceof BadRequestError);
+        assert.equal(error.statusCode, 400);
+        assert.equal(error.message, message);
+        return true;
+      });
+    }
+    assert.equal(calls.length, 1);
+  });
+
   test(`returnOriginal does not implement client fallback for server errors, safe=${safe}`, async () => {
     const { handle, calls } = collection(() => json({ message: "Rerank failed: unavailable" }, 503));
     const input = { query, rerank: { ...rerank, onFailure: "returnOriginal" } };

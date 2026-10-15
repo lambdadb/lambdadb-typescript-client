@@ -204,6 +204,17 @@ ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 The 49 fixed text analyzer presets are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
+### Query limits
+
+Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
+`rerank.candidateSize` support up to 1000 on the
+[pinned backend contract](docs/OPENAPI_UPDATE.md#updating-query-limits).
+The server enforces a 64 MiB uncompressed query response budget and a separate
+hydration budget, returning HTTP 400 without partial results when exceeded.
+See [query size and byte limits](docs/native-reranking.md#query-size-and-byte-limits).
+Facet buckets, Fetch, and List retain their existing 100-item limits.
+Source alignment does not establish deployment to your endpoint.
+
 ### Native reranking
 
 Pass an optional per-query `rerank` object to `query` or `querySafe` with

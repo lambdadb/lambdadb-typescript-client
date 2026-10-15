@@ -6,13 +6,13 @@ key. There is no collection-level rerank setting or client-side reranking step.
 Omitted or null `rerank` preserves existing search behavior.
 
 The implementation contract is pinned to backend commit
-[`a5e06d49be06d95dc5f4046aeecaf51f8a7733c0`](https://github.com/lambdadb/lambdadb/tree/a5e06d49be06d95dc5f4046aeecaf51f8a7733c0),
-including [RerankConfig](https://github.com/lambdadb/lambdadb/blob/a5e06d49be06d95dc5f4046aeecaf51f8a7733c0/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
-[RerankResponse](https://github.com/lambdadb/lambdadb/blob/a5e06d49be06d95dc5f4046aeecaf51f8a7733c0/api/src/main/java/ai/lambdadb/dto/RerankResponse.java),
+[`963d79e8866833f1deb1393ed00a9825d866c853`](https://github.com/lambdadb/lambdadb/tree/963d79e8866833f1deb1393ed00a9825d866c853),
+including [RerankConfig](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
+[RerankResponse](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankResponse.java),
 the query DTOs and contract tests, and the
-[design contract](https://github.com/lambdadb/lambdadb/blob/a5e06d49be06d95dc5f4046aeecaf51f8a7733c0/docs/design/managed-reranking.md).
-This includes feature PR #435 and Secret configuration PR #442. A source pin is
-not evidence of deployment to your endpoint or a published SDK package.
+[design contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/native-reranking.md).
+This includes native reranking and the query/candidate limit increase in PR #469.
+A source pin is not evidence of deployment to your endpoint or a published SDK package.
 
 ## Request reference
 
@@ -22,7 +22,7 @@ not evidence of deployment to your endpoint or a published SDK package.
 | `model` | `"jev-1.13.0"` | Required. |
 | `queryText` | `string` | Required nonblank text, up to 8 KiB UTF-8; also required for raw vector queries. |
 | `fields` | `string[]` | Required 1–8 unique stored scalar text paths, in model input order. The backend accepts text/keyword field configurations and validates actual scalar string values. |
-| `candidateSize` | `number \| null` | Optional integer; omitted/null defaults to `max(50, size)`. Require `size <= candidateSize <= 100`. |
+| `candidateSize` | `number \| null` | Optional integer; omitted/null defaults to `max(50, size)`. Require `size <= candidateSize <= 1000`. |
 | `onFailure` | `"error" \| "returnOriginal" \| null` | Optional; omitted/null defaults to `error`. Applies only to eligible provider failures. |
 | `criteria` | `string[] \| null` | Optional 2–10 distinct nonblank descriptions, lowest to highest relevance. Omitted/null uses the default criteria. Each description is at most 2 KiB, with at most 8 KiB total UTF-8. |
 
@@ -37,7 +37,7 @@ candidate input has a 16 KiB limit, and combined query/candidate/custom-criteria
 input has a 256 KiB limit, enforced by the server without silent truncation.
 
 Reranking requires a scoring retrieval query and positive final `size` (up to
-100, server default 10). It cannot accompany `sort`, query-less requests, or
+1000, server default 10). It cannot accompany `sort`, query-less requests, or
 filter-only Boolean queries. Existing ref and `consistentRead` constraints apply.
 Facets keep their existing lexical-query support: reranking does not enable
 vector or hybrid facets. Supported facets count the full matching set, not just
@@ -56,6 +56,28 @@ The SDK never increases `k`. A vector leg with `k: 20` and a lexical leg can
 still contribute to a merged pool capped at 50. For a vector-only search, raise
 `k` explicitly to retrieve more candidates. The cap does not guarantee that
 many candidates exist; actual counts appear in response metadata.
+
+## Query size and byte limits
+
+Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
+`rerank.candidateSize` share a maximum of 1000. The default query `size` remains
+10; omitted/null rerank candidate size remains `max(50, size)`. The separate
+16 KiB per-candidate and 256 KiB combined rerank text budgets still apply, so
+1000 candidates may exceed the input budget or provider deadline.
+
+The server limits the complete uncompressed UTF-8 JSON query response, including
+documents, scores, facets, and metadata, to 64 MiB (67,108,864 bytes) before
+`docsUrl` offloading. It also enforces a separate 64 MiB hydration budget before
+reranking and final field projection. A small projected response can therefore
+still exceed the hydration budget. Oversized results return HTTP 400 without
+truncation or partial results, including with `onFailure: "returnOriginal"`.
+The SDK surfaces these errors as `BadRequestError`; it does not implement a local
+byte budget or fallback. Reduce the result/candidate count or returned fields,
+or disable `includeVectors` as appropriate for the reported limit.
+
+Existing `docsUrl` downloads are unchanged. Internal executor streaming requires
+no SDK transport change. Facet bucket, Fetch, and List count limits remain 100.
+See the pinned [server byte-limit contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/query-result-limits.md).
 
 ## Default criteria example
 

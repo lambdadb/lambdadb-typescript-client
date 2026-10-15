@@ -101,6 +101,14 @@ test("live Bayesian fusion, legacy methods, validation and applied native rerank
     assert.deepEqual(new Set(ids(capped)), new Set(["both", "lexical"]));
     console.info("[live] Result size, knn.k and Boolean signal passed");
 
+    stage = "expanded query and candidate limits";
+    for (const budget of [101, 1000]) {
+      const expanded = await collection.query({ ...input, size: budget, candidateSize: budget,
+        query: { bayesian: [lexical, { knn: { ...vector.knn, k: budget } }] } }, options);
+      assert.deepEqual(expanded.docs, baseline.docs);
+    }
+    console.info("[live] Query size, knn.k and Bayesian candidateSize accepted 101 and 1000 with the small fixture");
+
     stage = "empty signals";
     const emptyLexical = { queryString: { query: "body:zzzxqv" } };
     const emptyVector = { knn: { ...vector.knn, filter: { queryString: { query: "status:missing" } } } };
@@ -130,7 +138,7 @@ test("live Bayesian fusion, legacy methods, validation and applied native rerank
     stage = "candidate budget validation";
     for (const request of [
       { ...input, candidateSize: undefined }, { ...input, candidateSize: 4 },
-      { ...input, candidateSize: 101 }, { ...input, candidateSize: 0 },
+      { ...input, candidateSize: 1001 }, { ...input, candidateSize: 0 },
       { ...input, query: { rrf: [lexical, vector] } },
       { ...input, rerank: { provider: "typesafe", model: "jev-1.13.0", queryText: "restore", fields: ["body"] } },
     ]) {

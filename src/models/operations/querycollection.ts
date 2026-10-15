@@ -19,10 +19,10 @@ export type FacetResult = { buckets: Array<FacetBucket> };
 
 export type QueryCollectionRequestBody = {
   /**
-   * Number of documents to return. Note that the maximum number of documents is 100.
+   * Number of documents to return. The server supports up to 1000 documents.
    */
   size?: number | undefined;
-  /** Explicit Bayesian candidate budget without rerank. Use rerank.candidateSize with rerank instead. */
+  /** Explicit Bayesian candidate budget without rerank: size <= candidateSize <= 1000. Use rerank.candidateSize with rerank instead. */
   candidateSize?: number | undefined;
   /**
    * Query object. BayesianQuery provides an optional typed top-level hybrid query.
@@ -149,10 +149,10 @@ export const QueryCollectionRequestBody$outboundSchema: z.ZodType<
   if (value.rerank != null) {
     const size = value.size ?? 10;
     const candidateSize = value.rerank.candidateSize ?? Math.max(50, size);
-    if (size < 1 || size > 100 || candidateSize < size) {
+    if (size < 1 || size > 1000 || candidateSize < size) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "rerank requires 1 <= size <= candidateSize <= 100",
+        message: "rerank requires 1 <= size <= candidateSize <= 1000",
         path: ["rerank", "candidateSize"],
       });
     }

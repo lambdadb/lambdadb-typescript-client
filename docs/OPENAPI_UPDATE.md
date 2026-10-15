@@ -72,6 +72,62 @@ verifies Collection absence with a 404, including after validation failures.
 The metadata checks allow the server's automatically added reserved `id` field.
 This credentialed test is separate from ordinary PR CI.
 
+## Updating query limits
+
+The query count and byte-limit contract is pinned to backend
+[`963d79e8866833f1deb1393ed00a9825d866c853`](https://github.com/lambdadb/lambdadb/commit/963d79e8866833f1deb1393ed00a9825d866c853)
+(PR #469). See its
+[public limits](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/publiccontract/PublicContractConstants.java),
+[QueryRequest](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/QueryRequest.java),
+[RerankConfig](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
+and [byte-limit contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/query-result-limits.md).
+This source pin does not establish deployment in any environment.
+
+Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
+`rerank.candidateSize` support up to 1000. Keep the rerank schema and cross-field
+validation aligned, including `size <= candidateSize` and omitted/null defaults.
+Preserve free-form query serialization and server-side validation for ordinary
+query size, KNN, and Bayesian budgets; do not insert defaults or rewrite `k`.
+Facet bucket, Fetch, and List limits remain unchanged at 100.
+
+The server enforces 64 MiB budgets for the uncompressed query response and
+hydrated candidate documents, returning HTTP 400 without partial results.
+Keep these as `BadRequestError`, including with rerank `returnOriginal`.
+Internal executor streaming does not change the public HTTP or `docsUrl` shape.
+Use small fixed tests for 101/1000 acceptance, 1001 rejection, candidate/output
+ordering, and unchanged facet/default/error behavior. Live tests require a
+separately verified deployment of this contract before claiming server support.
+
+### Live query-limit validation on 2026-10-15
+
+The SDK worktree based on `5486a847386bb11d3dd928588e8342ca80518b07`, with
+the query-limit changes above, passed these commands using `.env.local` against
+`https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai`, project
+`writer-perf-steven`:
+
+```bash
+npm run build
+node --env-file=.env.local --test test/integration/bayesian-live.test.mjs
+node --env-file=.env.local --test test/integration/query-limits-live.test.mjs
+node --env-file=.env.local --test test/integration/native-reranking-live.test.mjs
+node --env-file=.env.local --test test/integration/docs-url-live.test.mjs
+```
+
+All four live tests passed without skips. Lexical, KNN, and Bayesian queries
+returned all 1000 distinct fixture documents through Query and QuerySafe;
+`size`, `knn.k`, and Bayesian `candidateSize` of 1001 returned HTTP 400.
+The Bayesian smoke also verified 101/1000 request budgets, existing fusion
+methods, contract errors, and applied reranking with preserved retrieval scores.
+Native reranking accepted 101/1000 output/candidate budgets and null candidate
+size at output size 1000, scoring all four fixture documents. This does not
+establish successful provider scoring of 1000 candidates within its deadline.
+
+The docsUrl smoke verified actual 6 MiB offloaded array downloads and full
+content/header isolation for Query, Fetch, GET/POST List, and their Safe methods.
+All four temporary Collections were deleted and their absence verified.
+The 64 MiB rejection boundary and the running server's exact source revision
+were not independently verified. No deployment or publication was performed.
+
 ## Updating native reranking
 
 The public OpenAPI at docs revision `961561c379acb079aec20191e13b89809ef096e9`
@@ -101,7 +157,7 @@ or model defaults on the wire, and retain strict conflicting-field validation.
 ## Updating Bayesian hybrid search
 
 The Bayesian contract is maintained manually from backend
-`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+`963d79e8866833f1deb1393ed00a9825d866c853`; see
 [Bayesian hybrid search](bayesian-search.md) for exact DTO links and live validation.
 Keep the optional types, rerank scoring-query recognition, and package-consumer
 tests and the top-level `candidateSize` request field aligned. Bayesian without

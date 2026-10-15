@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Raised native reranking output and candidate limits from 100 to 1000, aligned
+  with backend `963d79e8866833f1deb1393ed00a9825d866c853`. Query `size`, dense
+  `knn.k`, and Bayesian `candidateSize` also support up to 1000 on that contract;
+  their server-side validation and request defaults remain unchanged.
+- Documented the server's 64 MiB query response and hydration budgets, which
+  return HTTP 400 without partial results. Facet bucket, Fetch, and List count
+  limits remain unchanged. Source alignment does not establish deployment or
+  package publication.
+
 ## 0.8.1
 
 - Standardized feature terminology as native embedding and native reranking in
