@@ -499,13 +499,46 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 <!-- Start Retries [retries] -->
 ## Retries
 
-Some of the endpoints in this SDK support retries.  If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API.  However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+Retry behavior is configured by the SDK. Document write API requests use backoff
+retries by default for HTTP `429`, all `5xx` responses (including `500`, `502`, `503`, and
+`504`), and connection errors or transport timeouts. Per-call `retries` overrides
+the client's `retryConfig`. The same retry settings apply to `*Safe` methods;
+returning a Result does not disable retries.
 
 For retryable `429` responses, the backoff implementation honors a valid
 `Retry-After` header when present. The API does not guarantee that every `429`
 contains this header.
 
-To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
+For writes, an error does not prove that the mutation was not committed. The
+response can be lost after a successful commit, and automatic retries can
+reapply the write before the SDK returns an error or a successful response.
+Retries do not provide exactly-once execution.
+
+To inspect state before deciding whether to retry a write, disable automatic
+retries on the initial call:
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+const collection = client.collection("my-collection");
+
+await collection.docs.upsert(
+  { docs: [{ id: "doc-1", title: "Updated title" }] },
+  { retries: { strategy: "none" } },
+);
+```
+
+This disables both HTTP-status and connection-error retries for that call.
+Setting only `retryConnectionErrors: false` still allows retryable HTTP
+responses, including `502` and `504`, to be retried. Disabling retries does not
+cancel a server-side write or establish its outcome. After a failure, inspect
+the target Branch state and consider the operation's semantics before issuing
+another write. The SDK does not perform that reconciliation automatically.
+
+To change the retry strategy for a single API call, pass `retries` in its request options:
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
 
