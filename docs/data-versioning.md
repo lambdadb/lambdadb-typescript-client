@@ -124,8 +124,18 @@ HTTP failures map to exported error classes, including
 `ServiceUnavailableError`, and `GatewayTimeoutError`. Create-name collisions
 remain `ResourceAlreadyExistsError`. All HTTP errors retain status, body,
 headers, and the raw `Response`; `retryAfter` exposes the optional header.
-After a write receives `BadGatewayError` or `GatewayTimeoutError`, treat its
-outcome as uncertain and verify state before retrying.
+
+Document write API requests automatically retry HTTP `429`, all `5xx` responses
+(including `500`, `502`, `503`, and `504`), and connection errors or transport timeouts by
+default. This also applies to `*Safe` methods. A failed write may already have
+committed, and automatic retries may reapply it before the SDK returns an error
+or a successful response; retries do not provide exactly-once execution.
+
+If the caller needs to inspect state before deciding whether to retry, pass
+`{ retries: { strategy: "none" } }` on the initial write call. This disables
+automatic retries but does not cancel a server-side write or prove that it
+failed. Inspect the target Branch state and consider the operation's semantics
+before submitting another write. See the [retry configuration and example](../README.md#retries).
 
 ## Ref-scoped reads
 
