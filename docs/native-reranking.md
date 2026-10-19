@@ -65,19 +65,29 @@ Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
 16 KiB per-candidate and 256 KiB combined rerank text budgets still apply, so
 1000 candidates may exceed the input budget or provider deadline.
 
-The server limits the complete uncompressed UTF-8 JSON query response, including
-documents, scores, facets, and metadata, to 64 MiB (67,108,864 bytes) before
-`docsUrl` offloading. It also enforces a separate 64 MiB hydration budget before
-reranking and final field projection. A small projected response can therefore
-still exceed the hydration budget. Oversized results return HTTP 400 without
-truncation or partial results, including with `onFailure: "returnOriginal"`.
-The SDK surfaces these errors as `BadRequestError`; it does not implement a local
-byte budget or fallback. Reduce the result/candidate count or returned fields,
-or disable `includeVectors` as appropriate for the reported limit.
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. The server spools document bodies with bounded resources and offloads
+large results through the existing `docsUrl` format: a complete JSON document
+array with gzip content encoding. Scores, facets, and rerank metadata retain
+their existing locations. Internal gRPC messages, transport metadata, and
+individual hydration batches retain their separate 64 MiB safeguards.
 
-Existing `docsUrl` downloads are unchanged. Internal executor streaming requires
+Encoded bodies and compressed uploads share a process-wide temporary storage
+budget, initially 256 MiB and configurable by the server operator. Concurrent
+queries compete for it, and multiple representations can coexist, so it is not
+a maximum supported response size. Exhaustion returns HTTP 503 with
+`Query temporary storage budget is busy; retry later`, without truncation or
+partial results. Unexpected local I/O and upload failures also remain server
+errors. Storage failures cannot trigger rerank provider fallback, including with
+`onFailure: "returnOriginal"`.
+
+The SDK surfaces a final HTTP 503 as `ServiceUnavailableError`; its default
+[retry policy](../README.md#retries) applies to both Query and QuerySafe. It
+does not implement a local byte budget or rerank fallback. Downloads still read
+the complete response text and parse the document array in memory, so client
+memory must accommodate the full result. Internal executor streaming requires
 no SDK transport change. Facet bucket, Fetch, and List count limits remain 100.
-See the pinned [server byte-limit contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/query-result-limits.md).
+See the pinned [server resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
 
 ## Default criteria example
 

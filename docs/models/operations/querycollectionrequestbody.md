@@ -37,6 +37,8 @@ and no `sort`. Existing facet and ref restrictions still apply.
 
 Query `size`, dense `knn.k`, and both candidate budgets support up to 1000 on the
 [pinned backend contract](../../OPENAPI_UPDATE.md#updating-query-limits).
-The server enforces 64 MiB response and hydration budgets, returning HTTP 400
-without partial results. See [query size and byte limits](../../native-reranking.md#query-size-and-byte-limits).
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. Large results use `docsUrl`; exhaustion of the server's shared temporary
+storage budget returns HTTP 503 without partial results. See
+[query size and byte limits](../../native-reranking.md#query-size-and-byte-limits).
 Facet bucket, Fetch, and List count limits remain unchanged at 100.

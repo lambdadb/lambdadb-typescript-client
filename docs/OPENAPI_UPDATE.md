@@ -74,13 +74,13 @@ This credentialed test is separate from ordinary PR CI.
 
 ## Updating query limits
 
-The query count and byte-limit contract is pinned to backend
-[`963d79e8866833f1deb1393ed00a9825d866c853`](https://github.com/lambdadb/lambdadb/commit/963d79e8866833f1deb1393ed00a9825d866c853)
-(PR #469). See its
-[public limits](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/publiccontract/PublicContractConstants.java),
-[QueryRequest](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/QueryRequest.java),
-[RerankConfig](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
-and [byte-limit contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/query-result-limits.md).
+The query count and resource-budget contract is pinned to backend
+[`234f6f97814bf0d60604fa45ab2907f1fce88b5a`](https://github.com/lambdadb/lambdadb/commit/234f6f97814bf0d60604fa45ab2907f1fce88b5a)
+(PR #472, retaining the count limits from PR #469). See its
+[public limits](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/model/publiccontract/PublicContractConstants.java),
+[QueryRequest](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/dto/QueryRequest.java),
+[RerankConfig](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
+and [resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
 This source pin does not establish deployment in any environment.
 
 Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
@@ -90,13 +90,21 @@ Preserve free-form query serialization and server-side validation for ordinary
 query size, KNN, and Bayesian budgets; do not insert defaults or rewrite `k`.
 Facet bucket, Fetch, and List limits remain unchanged at 100.
 
-The server enforces 64 MiB budgets for the uncompressed query response and
-hydrated candidate documents, returning HTTP 400 without partial results.
-Keep these as `BadRequestError`, including with rerank `returnOriginal`.
-Internal executor streaming does not change the public HTTP or `docsUrl` shape.
+Query results and hydrated candidate bodies no longer have aggregate 64 MiB
+limits. Internal transport safeguards and rerank text budgets remain unchanged.
+The server spools large results and retains the public HTTP and `docsUrl` shapes.
+Shared temporary storage exhaustion returns HTTP 503, surfaced by the existing
+`ServiceUnavailableError` mapping after the configured retries. Storage failures
+cannot trigger rerank `returnOriginal` and never return partial results. The
+initial shared budget of 256 MiB is an operational setting, not a public maximum
+response size. See [query size and byte limits](native-reranking.md#query-size-and-byte-limits).
 Use small fixed tests for 101/1000 acceptance, 1001 rejection, candidate/output
-ordering, and unchanged facet/default/error behavior. Live tests require a
-separately verified deployment of this contract before claiming server support.
+ordering, and unchanged facet/default/error behavior. Generate large download
+bodies in the test rather than committing fixtures; verify Query and QuerySafe
+can read a complete array larger than 64 MiB and propagate storage HTTP 503
+without client fallback. These mocked regressions do not establish deployed
+server support. Live tests require a separately verified deployment of this
+contract before claiming server support.
 
 ### Live query-limit validation on 2026-10-15
 

@@ -65,8 +65,9 @@ the server validates missing, invalid, and conflicting budgets. See the pinned
 [QueryRequest](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/QueryRequest.java).
 
 Query `size`, dense `knn.k`, and both candidate budgets support up to 1000.
-The server also enforces 64 MiB response and hydration budgets; an oversized
-result returns HTTP 400 without partial results. See
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. Large results use `docsUrl`; exhaustion of the server's shared temporary
+storage budget returns HTTP 503 without partial results. See
 [query size and byte limits](native-reranking.md#query-size-and-byte-limits).
 The live results below predate the 1000-count contract and do not establish its
 deployment or successful retrieval/reranking of 1000 documents.
