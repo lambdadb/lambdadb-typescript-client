@@ -129,3 +129,68 @@ test("listAll downloads arrays across pages and preserves the page token", async
   assert.equal(apiCalls, 2);
   assert.equal(downloads, 2);
 });
+
+test("Query and QuerySafe download complete arrays above 64 MiB without losing order or metadata", async () => {
+  // Query resource contract: lambdadb 234f6f97814bf0d60604fa45ab2907f1fce88b5a.
+  // Generate one document per chunk instead of retaining a large fixture file.
+  const body = "x".repeat(1024 * 1024);
+  const count = 65;
+  const rerank = {
+    status: "applied", provider: "typesafe", model: "jev-1.13.0",
+    candidateCount: count, scoredCount: count, took: 12,
+    criteriaVersion: "default-relevance-v1",
+  };
+  const facets = { tags: { buckets: [{ value: "large", count }] } };
+  const input = {
+    size: count, query: { queryString: { query: "large", defaultField: "title" } },
+    rerank: { provider: "typesafe", model: "jev-1.13.0", queryText: "large", fields: ["title"] },
+  };
+  for (const safe of [false, true]) {
+    let downloads = 0;
+    let downloadedBytes = 0;
+    const collection = createClient((request) => {
+      downloads++;
+      assert.equal(request.url, docsUrl);
+      assert.equal(request.headers.get("x-api-key"), null);
+      const encoder = new TextEncoder();
+      let index = 0;
+      return new Response(new ReadableStream({
+        pull(controller) {
+          const chunk = encoder.encode(index < count
+            ? `${index === 0 ? "[" : ","}${JSON.stringify({
+              collection: "items", score: 1 - index / 128, retrievalScore: index / 128,
+              doc: { id: `doc-${index}`, title: "large", body },
+            })}`
+            : "]");
+          downloadedBytes += chunk.byteLength;
+          controller.enqueue(chunk);
+          if (index++ === count) controller.close();
+        },
+      }), { headers: { "content-type": "application/json" } });
+    }, () => jsonResponse({
+      took: 25, total: count, maxScore: 1, docs: [], isDocsInline: false,
+      docsUrl, rerank, facets,
+    }));
+    const result = safe ? await collection.querySafe(input) : await collection.query(input);
+    if (safe) assert.equal(result.ok, true);
+    const response = safe ? result.value : result;
+    assert.ok(downloadedBytes > 64 * 1024 * 1024);
+    assert.equal(downloads, 1);
+    assert.equal(response.docs.length, count);
+    assert.equal(response.isDocsInline, true);
+    assert.equal(response.docsUrl, docsUrl);
+    assert.equal(response.total, count);
+    assert.equal(response.took, 25);
+    assert.equal(response.maxScore, 1);
+    assert.deepEqual(response.rerank, rerank);
+    assert.deepEqual(response.facets, facets);
+    for (const [index, hit] of response.docs.entries()) {
+      assert.equal(hit.collection, "items");
+      assert.equal(hit.doc.id, `doc-${index}`);
+      assert.equal(hit.doc.title, "large");
+      assert.equal(hit.doc.body, body);
+      assert.equal(hit.score, 1 - index / 128);
+      assert.equal(hit.retrievalScore, index / 128);
+    }
+  }
+});

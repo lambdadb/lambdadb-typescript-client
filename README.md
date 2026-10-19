@@ -209,8 +209,9 @@ and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec)
 Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
 `rerank.candidateSize` support up to 1000 on the
 [pinned backend contract](docs/OPENAPI_UPDATE.md#updating-query-limits).
-The server enforces a 64 MiB uncompressed query response budget and a separate
-hydration budget, returning HTTP 400 without partial results when exceeded.
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. Large results use the existing `docsUrl` download format; exhaustion of
+the server's shared temporary storage budget returns HTTP 503 without partial results.
 See [query size and byte limits](docs/native-reranking.md#query-size-and-byte-limits).
 Facet buckets, Fetch, and List retain their existing 100-item limits.
 Source alignment does not establish deployment to your endpoint.

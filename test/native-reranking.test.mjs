@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { BadRequestError, HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
+import { HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
 import { queryCollectionRequestBodyToJSON, queryCollectionResponseFromJSON } from "../dist/esm/models/operations/querycollection.js";
 
 const query = { knn: { field: "embedding", queryVector: [1, 0], k: 20 } };
@@ -203,20 +203,22 @@ test("metadata required fields match the DTO while nullable optional fields norm
 });
 
 for (const safe of [false, true]) {
-  test(`hydration size errors remain server errors with returnOriginal, safe=${safe}`, async () => {
-    const message = "Query result exceeds 64 MiB";
-    const { handle, calls } = collection(() => json({ message }, 400));
+  test(`temporary storage exhaustion cannot trigger returnOriginal, safe=${safe}`, async () => {
+    const message = "Query temporary storage budget is busy; retry later";
+    const { handle, calls } = collection(() => json({ message }, 503), () => {
+      assert.fail("Storage failures must not download partial results");
+    });
     const input = { query, size: 1000, rerank: { ...rerank, onFailure: "returnOriginal" } };
     if (safe) {
       const result = await handle.querySafe(input, options);
       assert.equal(result.ok, false);
-      assert.ok(result.error instanceof BadRequestError);
-      assert.equal(result.error.statusCode, 400);
+      assert.ok(result.error instanceof ServiceUnavailableError);
+      assert.equal(result.error.statusCode, 503);
       assert.equal(result.error.message, message);
     } else {
       await assert.rejects(handle.query(input, options), (error) => {
-        assert.ok(error instanceof BadRequestError);
-        assert.equal(error.statusCode, 400);
+        assert.ok(error instanceof ServiceUnavailableError);
+        assert.equal(error.statusCode, 503);
         assert.equal(error.message, message);
         return true;
       });

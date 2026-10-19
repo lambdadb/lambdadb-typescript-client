@@ -6,10 +6,14 @@
   with backend `963d79e8866833f1deb1393ed00a9825d866c853`. Query `size`, dense
   `knn.k`, and Bayesian `candidateSize` also support up to 1000 on that contract;
   their server-side validation and request defaults remain unchanged.
-- Documented the server's 64 MiB query response and hydration budgets, which
-  return HTTP 400 without partial results. Facet bucket, Fetch, and List count
-  limits remain unchanged. Source alignment does not establish deployment or
-  package publication.
+- Aligned query resource documentation with backend
+  `234f6f97814bf0d60604fa45ab2907f1fce88b5a`: query results and hydrated candidate
+  bodies no longer have aggregate 64 MiB limits. Large results retain the
+  existing `docsUrl` format; shared temporary storage exhaustion returns HTTP
+  503 without partial results or rerank provider fallback. Internal transport
+  and rerank input budgets remain unchanged, as do Facet bucket, Fetch, and
+  List count limits. Source alignment does not establish deployment or package
+  publication.
 
 ## 0.8.1
 
