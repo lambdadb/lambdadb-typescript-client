@@ -13,5 +13,5 @@ let value: Similarity = "euclidean";
 ## Values
 
 ```typescript
-"cosine" | "euclidean" | "dot_product" | "max_inner_product"
+"cosine" | "euclidean"
 ```

@@ -37,8 +37,8 @@ export async function create(client: LambdaDBClient) {
 const disabled: IndexConfigsNativeEmbeddingVector = { ...native, managedEmbedding: false };
 // @ts-expect-error The legacy named type retains its required true flag.
 const oldWithoutFlag: IndexConfigsManagedEmbeddingVector = native;
-const unmanaged: IndexConfigsUnion = { type: "vector", dimensions: 2, similarity: "cosine" };
-const disabledUnmanaged: IndexConfigsUnion = { type: "vector", managedEmbedding: false, dimensions: 2 };
+const unmanaged: IndexConfigsUnion = { type: "vector", dimensions: 64, similarity: "cosine" };
+const disabledUnmanaged: IndexConfigsUnion = { type: "vector", managedEmbedding: false, dimensions: 64 };
 const nestedSettings: IndexConfigsUnion = { ...native, embedding: { ...native.embedding, dimensions: 1536, similarity: "cosine" } };
 // @ts-expect-error Explicitly unmanaged vectors cannot carry embedding configuration.
 const unmanagedEmbedding: IndexConfigsUnion = { type: "vector", managedEmbedding: false, dimensions: 1536, embedding: native.embedding };
@@ -51,3 +51,9 @@ const sharedInput = { type: "vector" as const, embedding: native.embedding, dime
 const sharedConflict: IndexConfigsUnion = sharedInput;
 void [model, oldFlag, disabled, oldWithoutFlag, unmanaged, disabledUnmanaged, nestedSettings,
   unmanagedEmbedding, legacyDimensions, legacySimilarity, sharedConflict];
+
+// @ts-expect-error Dot product is outside the public OpenAPI similarity enum.
+const dot: IndexConfigsUnion = { type: "vector", dimensions: 64, similarity: "dot_product" };
+// @ts-expect-error Native embeddings use the same restricted similarity enum.
+const inner: ModelNative = { type: "vector", embedding: { ...native.embedding, similarity: "max_inner_product" } };
+void [dot, inner];

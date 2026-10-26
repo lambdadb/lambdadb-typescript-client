@@ -45,6 +45,9 @@ Each KNN query must provide exactly one non-null query input. This distinction i
 clarified in [OpenAPI revision `94a7b716`](https://github.com/lambdadb/docs/blob/94a7b71613a3bf217a370d5117b3ff6ddfbae851/reference/api/openapi.json)
 and enforced by the server; the SDK preserves free-form query serialization.
 Native dimensions and similarity, when explicit, belong inside `embedding`.
+Dimensions must be an integer from 64 to 4096, and similarity must be `cosine`
+or `euclidean`. The server also enforces each model's supported maximum.
+Omitted native dimensions and similarity remain omitted on the wire.
 Bulk upsert remains unsupported for Collections with native embedding fields.
 
 ## Source paths and writes
