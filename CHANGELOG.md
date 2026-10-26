@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.0
+
+- Raised native reranking output and candidate limits to 1000, matching the
+  server's Query size, dense KNN k, and Bayesian candidate limits. Fetch and List
+  also support 1000 on the pinned server contract; List's default remains 100.
+- Added explicit null support for POST List size, pageToken, and filter, including
+  public list/listSafe routing and pagination. Existing GET inputs, defaults,
+  server-side validation, and error classification retain their behavior.
+- Updated native embedding and reranking examples for unindexed stored string
+  paths, with coverage for nested JSON, partial updates, projection, and source
+  validation. Legacy indexed sources and managedEmbedding inputs remain supported.
+- Documented query result spooling without an aggregate 64 MiB result limit,
+  Fetch's retained 64 MiB per-node JSON budget, and HTTP 503 on shared temporary
+  storage admission failure. Rerank text budgets and facet limits are unchanged.
+- Updated contribution guidance for manual SDK maintenance and aligned CI with
+  the Node 24 publication runtime.
+- Clarified that native embedding KNN fields require queryText and reject
+  queryVector, matching the corrected OpenAPI description and server behavior.
+- Clarified write retries and uncertain outcomes. Default retries include all
+  HTTP 5xx responses, including 502/504. Callers that need to reconcile an
+  uncertain write before replay must explicitly disable retries.
+- Pinned the current OpenAPI to docs `94a7b71613a3bf217a370d5117b3ff6ddfbae851`
+  and the read contract to backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`.
+  Native stored string paths use backend `ff13daf3f4ed40487b2b13522a141265c2f459ab`.
+  Server-dependent capabilities require a supporting deployment; source pins and
+  SDK publication alone do not establish production rollout.
+
 ## 0.8.1
 
 - Standardized feature terminology as native embedding and native reranking in

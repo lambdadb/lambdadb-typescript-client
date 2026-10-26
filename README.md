@@ -204,6 +204,20 @@ ref that does not exist fails with `ResourceNotFoundError` (HTTP `404`).
 The 49 fixed text analyzer presets are documented in [Analyzer](docs/models/analyzer.md)
 and use a separate [pinned source contract](docs/OPENAPI_UPDATE.md#openapi-spec).
 
+### Query limits
+
+Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
+`rerank.candidateSize` support up to 1000 on the
+[pinned backend contract](docs/OPENAPI_UPDATE.md#updating-query-limits).
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. Large results use the existing `docsUrl` download format; exhaustion of
+the server's shared temporary storage budget returns HTTP 503 without partial results.
+See [query size and byte limits](docs/native-reranking.md#query-size-and-byte-limits).
+Facet buckets retain their 100-item limit. Fetch and GET/POST List support up to
+1000 IDs/documents; List defaults to 100. Fetch retains a 64 MiB per-node JSON
+budget. See the [read contract](docs/OPENAPI_UPDATE.md#updating-fetch-and-list).
+Source alignment does not establish deployment to your endpoint.
+
 ### Native reranking
 
 Pass an optional per-query `rerank` object to `query` or `querySafe` with
@@ -340,7 +354,9 @@ npm run test:external:qdrant
 
 ### Native embeddings
 
-Native embedding vector fields generate vectors from a configured source text field. Create the collection with a text field and a native embedding vector field, then query that vector field with `knn.queryText`.
+Native embedding vector fields generate vectors from a configured stored string
+path. The source and its object ancestors need no index declarations. Declare
+the vector field, write the original JSON, and query with `knn.queryText`:
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
@@ -350,14 +366,12 @@ const client = new LambdaDBClient({ projectApiKey: "..." });
 await client.createCollection({
   collectionName: "semantic-items",
   indexConfigs: {
-    body: { type: "text", analyzers: ["english"] },
     bodyEmbedding: {
       type: "vector",
-      managedEmbedding: true,
       embedding: {
         provider: "openai",
         model: "text-embedding-3-small",
-        sourceField: "body",
+        sourceField: "article.body",
       },
     },
   },
@@ -365,7 +379,7 @@ await client.createCollection({
 
 const collection = client.collection("semantic-items");
 await collection.docs.upsert({
-  docs: [{ id: "policy-1", body: "Refunds are available within 30 days." }],
+  docs: [{ id: "policy-1", article: { body: "Refunds are available within 30 days." } }],
 });
 
 const result = await collection.query({
@@ -379,6 +393,11 @@ const result = await collection.query({
   },
 });
 ```
+
+`rerank.fields` can select the same unindexed string path. Add appropriate source
+indexes when you also need lexical search, filtering, or sorting on those fields.
+This requires the [pinned native embedding contract](docs/native-embeddings.md)
+at the deployed endpoint; a legacy flag alone does not enable unindexed sources.
 
 <!-- End SDK Example Usage [usage] -->
 
@@ -488,13 +507,46 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 <!-- Start Retries [retries] -->
 ## Retries
 
-Some of the endpoints in this SDK support retries.  If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API.  However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+Retry behavior is configured by the SDK. Document write API requests use backoff
+retries by default for HTTP `429`, all `5xx` responses (including `500`, `502`, `503`, and
+`504`), and connection errors or transport timeouts. Per-call `retries` overrides
+the client's `retryConfig`. The same retry settings apply to `*Safe` methods;
+returning a Result does not disable retries.
 
 For retryable `429` responses, the backoff implementation honors a valid
 `Retry-After` header when present. The API does not guarantee that every `429`
 contains this header.
 
-To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
+For writes, an error does not prove that the mutation was not committed. The
+response can be lost after a successful commit, and automatic retries can
+reapply the write before the SDK returns an error or a successful response.
+Retries do not provide exactly-once execution.
+
+To inspect state before deciding whether to retry a write, disable automatic
+retries on the initial call:
+
+```typescript
+import { LambdaDBClient } from "@functional-systems/lambdadb";
+
+const client = new LambdaDBClient({
+  projectApiKey: "<YOUR_PROJECT_API_KEY>",
+});
+const collection = client.collection("my-collection");
+
+await collection.docs.upsert(
+  { docs: [{ id: "doc-1", title: "Updated title" }] },
+  { retries: { strategy: "none" } },
+);
+```
+
+This disables both HTTP-status and connection-error retries for that call.
+Setting only `retryConnectionErrors: false` still allows retryable HTTP
+responses, including `502` and `504`, to be retried. Disabling retries does not
+cancel a server-side write or establish its outcome. After a failure, inspect
+the target Branch state and consider the operation's semantics before issuing
+another write. The SDK does not perform that reconciliation automatically.
+
+To change the retry strategy for a single API call, pass `retries` in its request options:
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
 

@@ -72,14 +72,99 @@ verifies Collection absence with a 404, including after validation failures.
 The metadata checks allow the server's automatically added reserved `id` field.
 This credentialed test is separate from ordinary PR CI.
 
+## Updating query limits
+
+The query count and resource-budget contract is pinned to backend
+[`234f6f97814bf0d60604fa45ab2907f1fce88b5a`](https://github.com/lambdadb/lambdadb/commit/234f6f97814bf0d60604fa45ab2907f1fce88b5a)
+(PR #472, retaining the count limits from PR #469). See its
+[public limits](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/model/publiccontract/PublicContractConstants.java),
+[QueryRequest](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/dto/QueryRequest.java),
+[RerankConfig](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
+and [resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
+This source pin does not establish deployment in any environment.
+
+Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
+`rerank.candidateSize` support up to 1000. Keep the rerank schema and cross-field
+validation aligned, including `size <= candidateSize` and omitted/null defaults.
+Preserve free-form query serialization and server-side validation for ordinary
+query size, KNN, and Bayesian budgets; do not insert defaults or rewrite `k`.
+Facet bucket limits remain 100. Fetch and List now support 1000; see the read contract below.
+
+Query results and hydrated candidate bodies no longer have aggregate 64 MiB
+limits. Internal transport safeguards and rerank text budgets remain unchanged.
+The server spools large results and retains the public HTTP and `docsUrl` shapes.
+Shared temporary storage exhaustion returns HTTP 503, surfaced by the existing
+`ServiceUnavailableError` mapping after the configured retries. Storage failures
+cannot trigger rerank `returnOriginal` and never return partial results. The
+initial shared budget of 256 MiB is an operational setting, not a public maximum
+response size. See [query size and byte limits](native-reranking.md#query-size-and-byte-limits).
+Use small fixed tests for 101/1000 acceptance, 1001 rejection, candidate/output
+ordering, and unchanged facet/default/error behavior. Generate large download
+bodies in the test rather than committing fixtures; verify Query and QuerySafe
+can read a complete array larger than 64 MiB and propagate storage HTTP 503
+without client fallback. These mocked regressions do not establish deployed
+server support. Live tests require a separately verified deployment of this
+contract before claiming server support.
+
+### Live query-limit validation on 2026-10-15
+
+The SDK worktree based on `5486a847386bb11d3dd928588e8342ca80518b07`, with
+the query-limit changes above, passed these commands using `.env.local` against
+`https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai`, project
+`writer-perf-steven`:
+
+```bash
+npm run build
+node --env-file=.env.local --test test/integration/bayesian-live.test.mjs
+node --env-file=.env.local --test test/integration/query-limits-live.test.mjs
+node --env-file=.env.local --test test/integration/native-reranking-live.test.mjs
+node --env-file=.env.local --test test/integration/docs-url-live.test.mjs
+```
+
+All four live tests passed without skips. Lexical, KNN, and Bayesian queries
+returned all 1000 distinct fixture documents through Query and QuerySafe;
+`size`, `knn.k`, and Bayesian `candidateSize` of 1001 returned HTTP 400.
+The Bayesian smoke also verified 101/1000 request budgets, existing fusion
+methods, contract errors, and applied reranking with preserved retrieval scores.
+Native reranking accepted 101/1000 output/candidate budgets and null candidate
+size at output size 1000, scoring all four fixture documents. This does not
+establish successful provider scoring of 1000 candidates within its deadline.
+
+The docsUrl smoke verified actual 6 MiB offloaded array downloads and full
+content/header isolation for Query, Fetch, GET/POST List, and their Safe methods.
+All four temporary Collections were deleted and their absence verified.
+The 64 MiB rejection boundary and the running server's exact source revision
+were not independently verified. No deployment or publication was performed.
+
+## Updating Fetch and List
+
+The read contract is pinned to docs `94a7b71613a3bf217a370d5117b3ff6ddfbae851`
+and backend [`0a54b6ecb483ce7df9677ba2071a491f9f9879c9`](https://github.com/lambdadb/lambdadb/blob/0a54b6ecb483ce7df9677ba2071a491f9f9879c9/docs/design/query-result-limits.md).
+Fetch accepts 1–1000 nonblank IDs; GET/POST List accepts size 1–1000 with server
+default 100. Fetch retains its 64 MiB per-node projected JSON budget and unary
+transport limits. Budget exhaustion returns HTTP 400 without partial results;
+request fewer IDs or fields, or disable vectors. Shared temporary storage
+admission failures return HTTP 503. These source pins do not establish deployment.
+
+POST List allows explicit null for size, pageToken, and filter. Preserve these
+values in the body and route public list/listSafe calls containing them to POST;
+GET parameters remain non-nullable. Pagination preserves the initial null token
+and then uses server tokens. Do not insert a size default.
+
+Keep existing server-side validation for Fetch ID counts/nonblank values, List
+bounds, nonempty Collection index configs, write arrays/objects, and delete IDs.
+The OpenAPI constraints document server requirements; adding local rejection
+would change error classification and validation order. Do not trim, deduplicate,
+or truncate inputs. Test wire preservation, nullable routing, pagination, and
+server HTTP 400 propagation using small deterministic fixtures.
+
 ## Updating native reranking
 
-The public OpenAPI at docs revision `961561c379acb079aec20191e13b89809ef096e9`
-does not yet contain native reranking. Use the exact backend source pin and
-DTO/test links in [Native reranking](native-reranking.md); do not claim this
-feature is generated from that older OpenAPI. This checkout has no maintained
-schema generator. Follow the manual model workflow above until upstream OpenAPI
-is available, and reconcile it against these DTOs when it is published.
+The public OpenAPI at docs revision
+[`94a7b71613a3bf217a370d5117b3ff6ddfbae851`](https://github.com/lambdadb/docs/blob/94a7b71613a3bf217a370d5117b3ff6ddfbae851/reference/api/openapi.json)
+includes native reranking, native stored string paths, and the 1000 query and
+candidate limits. Keep it aligned with the backend pins in
+[Native reranking](native-reranking.md). This SDK remains manually maintained.
 
 Keep `src/models/rerank.ts`, query request/response schemas, public exports,
 reference documentation and package-consumer tests aligned. Null/omitted request
@@ -91,17 +176,42 @@ builds both module formats and tests package declaration consumers.
 
 ## Updating native embeddings
 
-The embedding-only vector input is pinned to backend
-`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+OpenAPI revision `94a7b71613a3bf217a370d5117b3ff6ddfbae851` corrects the
+native KNN input description: native embedding fields require `queryText` and
+reject `queryVector`. Caller-provided vector fields use `queryVector`.
+Backend [`NativeEmbeddingService`](https://github.com/lambdadb/lambdadb/blob/0a54b6ecb483ce7df9677ba2071a491f9f9879c9/runtime-aws/src/main/java/ai/lambdadb/service/embedding/NativeEmbeddingService.java)
+enforces this distinction. Preserve free-form SDK queries and server validation;
+do not introduce a Collection lookup or client-side field inference.
+
+The native embedding and unindexed-source contract is pinned to backend
+`ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481); see
 [Native embeddings](native-embeddings.md). Keep native input types, union schemas,
 root exports, examples, and consumer tests aligned. Preserve the legacy named
 type and explicit true flag for older servers. Do not insert `managedEmbedding`
 or model defaults on the wire, and retain strict conflicting-field validation.
 
+`embedding.sourceField` and `rerank.fields` select stored string paths without
+requiring source index declarations. Preserve existing local rerank path syntax
+and bounds checks. Leave embedding source paths, Collection field types, stored
+source/candidate validation, and patch merging to the server. Preserve
+raw nested documents, siblings, nulls, and omitted source values on the wire;
+do not infer source indexes, unwrap text objects, or merge partial updates in
+the SDK. Declared source leaves may be text or keyword, with object ancestors.
+The rerank contract in [Native reranking](native-reranking.md) uses the same
+source pin; the query resource-budget pin above is unchanged.
+
+Maintain mock HTTP and package-consumer regressions for vector-only Collection
+create/update, top-level and nested paths, and raw writes/patches. Candidate
+validation failures must surface as `BadRequestError`, including with rerank
+`returnOriginal`.
+The separate `test/integration/native-stored-text-live.test.mjs` smoke requires
+a supporting deployed endpoint and verifies actual embedding, reranking, writes,
+and cleanup. Local serialization tests do not prove server inference behavior.
+
 ## Updating Bayesian hybrid search
 
 The Bayesian contract is maintained manually from backend
-`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+`963d79e8866833f1deb1393ed00a9825d866c853`; see
 [Bayesian hybrid search](bayesian-search.md) for exact DTO links and live validation.
 Keep the optional types, rerank scoring-query recognition, and package-consumer
 tests and the top-level `candidateSize` request field aligned. Bayesian without
@@ -112,7 +222,7 @@ validation and error classification.
 
 ## CI
 
-- **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
+- **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests on Node 24.
 - **Publish**: `.github/workflows/publish.yaml` runs on pushes to `develop` for
   automatic npm `dev` publication and on published GitHub Releases for explicit
   dev, RC, or stable publication. A reviewed merge into `develop` authorizes its

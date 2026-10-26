@@ -12,7 +12,7 @@ export type { UpdateDocsRequestBody as UpdateDocsInput } from "../models/operati
 export type { DeleteDocsRequestBody as DeleteDocsInput } from "../models/operations/deletedocs.js";
 export type { BulkUpsertDocsRequestBody as BulkUpsertInput } from "../models/operations/bulkupsertdocs.js";
 
-import type { ListDocsRequest } from "../models/operations/listdocs.js";
+import type { ListDocsExtendedRequestBody } from "../models/operations/listdocs.js";
 import type { ListCollectionsRequest } from "../models/operations/listcollections.js";
 import type { QueryCollectionRequestBody } from "../models/operations/querycollection.js";
 import type { FetchDocsRequestBody } from "../models/operations/fetchdocs.js";
@@ -45,10 +45,10 @@ export type FetchDocsInput = Omit<
 
 /** Parameters for listing documents, including extended list options. */
 export type ListDocsInput = Pick<
-  ListDocsRequest,
+  ListDocsExtendedRequestBody,
   "size" | "pageToken" | "includeVectors"
 > & {
-  filter?: Record<string, unknown> | undefined;
+  filter?: Record<string, unknown> | null | undefined;
   partitionFilter?: import("../models/index.js").PartitionFilter | undefined;
   fields?: import("../models/index.js").FieldsSelectorUnion | undefined;
   /** Read target. Omitting it reads from main. */

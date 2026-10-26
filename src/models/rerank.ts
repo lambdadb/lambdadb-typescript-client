@@ -10,7 +10,7 @@ export type RerankConfig = {
   queryText: string;
   /** 1–8 unique stored scalar text paths, in model input order. */
   fields: string[];
-  /** Defaults on the server to max(50, size); does not change knn.k. */
+  /** Integer up to 1000, at least size. Defaults on the server to max(50, size); does not change knn.k. */
   candidateSize?: number | null | undefined;
   /** Server default: error. Only eligible provider failures can returnOriginal. */
   onFailure?: "error" | "returnOriginal" | null | undefined;
@@ -46,7 +46,7 @@ export const RerankConfig$outboundSchema: z.ZodType<RerankConfig> = z.object({
   fields: z.array(nonblank.refine(
     (path) => path.split(".").every((part) => !blank.test(part)), "Invalid field path",
   )).min(1).max(8).refine((paths) => new Set(paths).size === paths.length, "Fields must be unique"),
-  candidateSize: z.number().int().min(1).max(100).nullable().optional(),
+  candidateSize: z.number().int().min(1).max(1000).nullable().optional(),
   onFailure: z.enum(["error", "returnOriginal"]).nullable().optional(),
   criteria: z.array(nonblank.refine(
     (text) => bytes(text) <= 2048, "Criterion exceeds 2 KiB UTF-8",

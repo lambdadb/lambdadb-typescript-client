@@ -1,20 +1,20 @@
 # Bayesian hybrid search
 
 Select Bayesian fusion explicitly with a top-level `bayesian` query. The contract
-is pinned to backend [9072a1bc8925954369a887f558f1eaf387b7ea0e](https://github.com/lambdadb/lambdadb/commit/9072a1bc8925954369a887f558f1eaf387b7ea0e):
-[BayesianQuery](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/model/query/BayesianQuery.java)
-and [two-signal validation](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/model/query/RankableQueryBase.java).
+is pinned to backend [963d79e8866833f1deb1393ed00a9825d866c853](https://github.com/lambdadb/lambdadb/commit/963d79e8866833f1deb1393ed00a9825d866c853):
+[BayesianQuery](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/query/BayesianQuery.java)
+and [two-signal validation](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/query/RankableQueryBase.java).
 This source pin does not establish deployment in another environment.
 
 - Supply exactly two subqueries. Use `bool` to combine clauses within a signal.
 - Explicit `boost`, including `1`, is unsupported on either child and on its Boolean descendants.
 - Bayesian fusion is top-level only and requires no caller fusion weights.
-- Without rerank, supply top-level `candidateSize` with `1 <= size <= candidateSize <= 100`.
+- Without rerank, supply top-level `candidateSize` with `1 <= size <= candidateSize <= 1000`.
   With rerank, omit top-level `candidateSize` and use `rerank.candidateSize`; its existing default remains unchanged.
 - Calibration uses the retained retrieval candidates. Scores are heuristic fusion scores, not relevance probabilities.
 - Existing RRF, Min-Max, L2 and request defaults remain unchanged. The SDK does not insert `size`, `knn.k`, or rerank candidate defaults.
 
-The latest dev contract requires a candidate budget only for Bayesian retrieval
+The pinned contract requires a candidate budget only for Bayesian retrieval
 without rerank. Earlier Bayesian requests that omit it return HTTP 400. Ordinary
 text/KNN and RRF/Min-Max/L2 requests retain their existing behavior and must not
 set the top-level field. `candidateSize` controls candidates per signal; `size`
@@ -52,7 +52,9 @@ console.log(retrieval.docs, reranked.rerank?.status);
 ```
 
 Use the dimensions and field names configured on your Collection. For native
-embedding fields, use `knn.queryText` instead of `queryVector`.
+embedding fields, use `knn.queryText`; `knn.queryVector` is rejected by the server.
+For caller-provided vector fields, use `knn.queryVector`. See the
+[native embedding query contract](native-embeddings.md).
 
 Bayesian fusion precedes native reranking. With reranking applied, `score` is
 the final evaluation score and `retrievalScore` preserves the Bayesian score.
@@ -62,7 +64,15 @@ The candidate budget is distinct from final output `size`. Keeping the candidate
 budget fixed preserves the ranking prefix when only output size changes on
 unchanged data. The SDK serializes the supplied budget without choosing a default;
 the server validates missing, invalid, and conflicting budgets. See the pinned
-[QueryRequest](https://github.com/lambdadb/lambdadb/blob/9072a1bc8925954369a887f558f1eaf387b7ea0e/api/src/main/java/ai/lambdadb/dto/QueryRequest.java).
+[QueryRequest](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/QueryRequest.java).
+
+Query `size`, dense `knn.k`, and both candidate budgets support up to 1000.
+Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
+limit. Large results use `docsUrl`; exhaustion of the server's shared temporary
+storage budget returns HTTP 503 without partial results. See
+[query size and byte limits](native-reranking.md#query-size-and-byte-limits).
+The live results below predate the 1000-count contract and do not establish its
+deployment or successful retrieval/reranking of 1000 documents.
 
 ## Live validation
 
@@ -148,9 +158,9 @@ The issued project key was revoked (HTTP 200), the temporary project was deleted
 (HTTP 200), and project absence was verified by HTTP 404. The local credential
 file was removed. No SDK publication or default promotion was performed.
 
-### Latest develop deployment compatibility
+### Deployment validation of backend 9072a1bc
 
-The contract is now pinned to backend merge
+This validation used backend merge
 `9072a1bc8925954369a887f558f1eaf387b7ea0e`, including the separate candidate/output
 budgets. [Deploy Dev run 37422611173](https://github.com/lambdadb/lambdadb/actions/runs/37422611173)
 succeeded for that exact SHA. The observed `dev-aws-apne2-v3` Gateway and Query
