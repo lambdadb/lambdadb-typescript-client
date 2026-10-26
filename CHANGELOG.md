@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Align vector configuration with OpenAPI `94a7b71613a3bf217a370d5117b3ff6ddfbae851`:
+  require integer dimensions from 64 to 4096 and allow only cosine/euclidean
+  similarity in request and response schemas. Remove the unsupported DotProduct
+  and MaxInnerProduct enum members. Qdrant Dot distance is now explicitly rejected.
+  Invalid configurations previously passed through now fail locally; existing
+  out-of-contract Collection responses fail validation. Model-specific native
+  maxima remain server-validated, and defaults and optional-null handling are unchanged.
+
 ## 0.9.0
 
 - Raised native reranking output and candidate limits to 1000, matching the

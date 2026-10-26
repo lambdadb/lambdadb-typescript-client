@@ -293,7 +293,6 @@ export function validatePayloadFieldName(key: string): void {
 export function distanceToSimilarity(distance: models.Distance | string): string {
   if (distance === Distance.COSINE || distance === "cosine") return "cosine";
   if (distance === Distance.EUCLID || distance === "euclidean") return "euclidean";
-  if (distance === Distance.DOT || distance === "dot_product") return "dot_product";
   throw new UnsupportedQdrantFeatureError(
     `Qdrant distance ${String(distance)} is not supported`,
   );
@@ -317,7 +316,6 @@ function similarityToDistance(similarity: unknown): models.Distance {
   const value = similarity ?? "cosine";
   if (value === "cosine") return Distance.COSINE;
   if (value === "euclidean") return Distance.EUCLID;
-  if (value === "dot_product") return Distance.DOT;
   throw new UnsupportedQdrantFeatureError(
     `LambdaDB similarity ${String(value)} cannot be represented as a Qdrant distance`,
   );

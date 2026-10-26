@@ -326,7 +326,7 @@ const client = new QdrantCompatClient({
 
 await client.createCollection("docs", {
   vectorsConfig: new models.VectorParams({
-    size: 3,
+    size: 64,
     distance: models.Distance.COSINE,
   }),
 });

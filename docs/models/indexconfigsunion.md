@@ -16,7 +16,7 @@ const value: models.IndexConfigsText = {
 ```typescript
 const value: models.IndexConfigsVector = {
   type: "vector",
-  dimensions: 435697,
+  dimensions: 1536,
 };
 ```
 

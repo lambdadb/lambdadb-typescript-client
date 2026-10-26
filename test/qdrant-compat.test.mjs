@@ -211,8 +211,8 @@ test("createCollection maps vector params and payload schema", async () => {
   assert.equal(
     await client.createCollection("docs", {
       vectorsConfig: new models.VectorParams({
-        size: 3,
-        distance: models.Distance.DOT,
+        size: 64,
+        distance: models.Distance.EUCLID,
       }),
       payloadSchema: {
         tenant: models.PayloadSchemaType.KEYWORD,
@@ -230,8 +230,8 @@ test("createCollection maps vector params and payload schema", async () => {
       indexConfigs: {
         _qdrant_vector: {
           type: "vector",
-          dimensions: 3,
-          similarity: "dot_product",
+          dimensions: 64,
+          similarity: "euclidean",
         },
         tenant: { type: "keyword" },
         views: { type: "long" },
@@ -247,7 +247,7 @@ test("createPayloadIndex merges existing configs and rejects non-empty backfill"
   fake.indexConfigs = {
     _qdrant_vector: {
       type: "vector",
-      dimensions: 3,
+      dimensions: 64,
       similarity: "cosine",
     },
   };
@@ -267,7 +267,7 @@ test("createPayloadIndex merges existing configs and rejects non-empty backfill"
       indexConfigs: {
         _qdrant_vector: {
           type: "vector",
-          dimensions: 3,
+          dimensions: 64,
           similarity: "cosine",
         },
         tenant: { type: "keyword" },
@@ -484,7 +484,7 @@ test("retrieve, delete, scroll, count, and getCollection return qdrant-style obj
   fake.indexConfigs = {
     _qdrant_vector: {
       type: "vector",
-      dimensions: 2,
+      dimensions: 64,
       similarity: "cosine",
     },
   };
@@ -492,7 +492,7 @@ test("retrieve, delete, scroll, count, and getCollection return qdrant-style obj
   const client = new QdrantCompatClient(fake);
 
   const collection = await client.getCollection("docs");
-  assert.equal(collection.config.params.vectors.size, 2);
+  assert.equal(collection.config.params.vectors.size, 64);
   assert.equal(collection.config.params.vectors.distance, models.Distance.COSINE);
 
   const records = await client.retrieve("docs", { ids: [1], withVectors: true });
@@ -602,7 +602,7 @@ test("type-only payload text mapping preserves the server default", async () => 
   const fake = new FakeLambdaDB();
   const client = new QdrantCompatClient(fake);
   await client.createCollection("docs", {
-    vectorsConfig: new models.VectorParams({ size: 3, distance: models.Distance.COSINE }),
+    vectorsConfig: new models.VectorParams({ size: 64, distance: models.Distance.COSINE }),
     payloadSchema: { body: { type: "text" } },
   });
   assert.deepEqual(fake.created[0].indexConfigs.body, { type: "text" });
@@ -624,7 +624,7 @@ for (const option of [
     const field = { type: "text", ...option };
     await assert.rejects(
       client.createCollection("docs", {
-        vectorsConfig: new models.VectorParams({ size: 3, distance: models.Distance.COSINE }),
+        vectorsConfig: new models.VectorParams({ size: 64, distance: models.Distance.COSINE }),
         payloadSchema: { body: field },
       }),
       UnsupportedQdrantFeatureError,
@@ -637,3 +637,15 @@ for (const option of [
     assert.deepEqual(fake.collection("docs").updates, []);
   });
 }
+
+test("Dot distance is rejected before unnamed or named collection creation", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  for (const distance of [models.Distance.DOT, "dot_product"]) {
+    const params = new models.VectorParams({ size: 64, distance });
+    for (const vectorsConfig of [params, { title: params }]) {
+      await assert.rejects(client.createCollection("docs", { vectorsConfig }), UnsupportedQdrantFeatureError);
+    }
+  }
+  assert.deepEqual(fake.created, []);
+});

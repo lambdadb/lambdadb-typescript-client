@@ -37,8 +37,6 @@ export type IndexConfigs = {
 export const Similarity = {
   Cosine: "cosine",
   Euclidean: "euclidean",
-  DotProduct: "dot_product",
-  MaxInnerProduct: "max_inner_product",
 } as const;
 /**
  * Vector similarity metric.
@@ -53,7 +51,7 @@ export type IndexConfigsVector = {
    */
   managedEmbedding?: false | undefined;
   /**
-   * Vector dimensions for unmanaged vector fields.
+   * Vector dimensions for caller-provided fields: an integer from 64 to 4096.
    */
   dimensions: number;
   /**
@@ -76,7 +74,7 @@ export type EmbeddingConfig = {
    */
   provider: EmbeddingProvider;
   /**
-   * Embedding model name. See /guides/collections/managed-embeddings for the current supported providers and models.
+   * Embedding model name. See /guides/collections/native-embeddings for the current supported providers and models.
    */
   model: string;
   /**
@@ -84,7 +82,7 @@ export type EmbeddingConfig = {
    */
   sourceField: string;
   /**
-   * Embedding dimensions. Optional in requests and resolved in stored collection metadata.
+   * Embedding dimensions: an integer from 64 to 4096, within the model maximum. Optional in requests and resolved in stored metadata.
    */
   dimensions?: number | undefined;
   /**
@@ -275,6 +273,9 @@ export function indexConfigsFromJSON(
   );
 }
 
+// OpenAPI: lambdadb/docs@94a7b71613a3bf217a370d5117b3ff6ddfbae851.
+const vectorDimensionsSchema = z.number().int().min(64).max(4096);
+
 /** @internal */
 export const Similarity$inboundSchema: z.ZodNativeEnum<typeof Similarity> = z
   .nativeEnum(Similarity);
@@ -290,7 +291,7 @@ export const IndexConfigsVector$inboundSchema: z.ZodType<
 > = z.object({
   type: z.literal("vector"),
   managedEmbedding: nullToUndefined(z.literal(false).optional()),
-  dimensions: z.number().int(),
+  dimensions: vectorDimensionsSchema,
   similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
 });
 /** @internal */
@@ -309,7 +310,7 @@ export const IndexConfigsVector$outboundSchema: z.ZodType<
 > = z.object({
   type: z.literal("vector"),
   managedEmbedding: z.literal(false).optional(),
-  dimensions: z.number().int(),
+  dimensions: vectorDimensionsSchema,
   similarity: Similarity$outboundSchema.default("cosine"),
 }).strict();
 
@@ -348,7 +349,7 @@ export const EmbeddingConfig$inboundSchema: z.ZodType<
   provider: EmbeddingProvider$inboundSchema,
   model: z.string(),
   sourceField: z.string(),
-  dimensions: nullToUndefined(z.number().int().optional()),
+  dimensions: nullToUndefined(vectorDimensionsSchema.optional()),
   similarity: nullToUndefined(Similarity$inboundSchema.optional()),
 });
 /** @internal */
@@ -369,7 +370,7 @@ export const EmbeddingConfig$outboundSchema: z.ZodType<
   provider: EmbeddingProvider$outboundSchema,
   model: z.string(),
   sourceField: z.string(),
-  dimensions: z.number().int().optional(),
+  dimensions: vectorDimensionsSchema.optional(),
   similarity: Similarity$outboundSchema.optional(),
 }).strict();
 
