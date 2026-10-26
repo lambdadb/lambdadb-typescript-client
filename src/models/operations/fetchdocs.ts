@@ -11,7 +11,7 @@ import * as models from "../index.js";
 
 export type FetchDocsRequestBody = {
   /**
-   * A list of document IDs to fetch. Note that the maximum number of document IDs is 100.
+   * A list of 1 to 1000 nonblank document IDs to fetch. Projected document bodies retain a 64 MiB per-node JSON limit; exceeding it returns HTTP 400 without partial results.
    */
   ids: Array<string>;
   /**

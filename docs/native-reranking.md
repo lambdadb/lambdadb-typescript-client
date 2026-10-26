@@ -6,12 +6,14 @@ key. There is no collection-level rerank setting or client-side reranking step.
 Omitted or null `rerank` preserves existing search behavior.
 
 The implementation contract is pinned to backend commit
-[`963d79e8866833f1deb1393ed00a9825d866c853`](https://github.com/lambdadb/lambdadb/tree/963d79e8866833f1deb1393ed00a9825d866c853),
-including [RerankConfig](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
-[RerankResponse](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/RerankResponse.java),
+[`ff13daf3f4ed40487b2b13522a141265c2f459ab`](https://github.com/lambdadb/lambdadb/tree/ff13daf3f4ed40487b2b13522a141265c2f459ab),
+including [RerankConfig](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
+[RerankResponse](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/api/src/main/java/ai/lambdadb/dto/RerankResponse.java),
 the query DTOs and contract tests, and the
-[design contract](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/docs/design/native-reranking.md).
-This includes native reranking and the query/candidate limit increase in PR #469.
+[design contract](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/docs/design/native-reranking.md).
+This includes the query/candidate limit increase in PR #469 and unindexed stored
+string paths in PR #481 (included in backend `main` at
+`242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
 A source pin is not evidence of deployment to your endpoint or a published SDK package.
 
 ## Request reference
@@ -21,7 +23,7 @@ A source pin is not evidence of deployment to your endpoint or a published SDK p
 | `provider` | `"typesafe"` | Required. |
 | `model` | `"jev-1.13.0"` | Required. |
 | `queryText` | `string` | Required nonblank text, up to 8 KiB UTF-8; also required for raw vector queries. |
-| `fields` | `string[]` | Required 1–8 unique stored scalar text paths, in model input order. The backend accepts text/keyword field configurations and validates actual scalar string values. |
+| `fields` | `string[]` | Required 1–8 unique stored scalar text paths, in model input order. Index declarations are optional; declared leaves must be text/keyword with object ancestors. The backend validates actual stored values. |
 | `candidateSize` | `number \| null` | Optional integer; omitted/null defaults to `max(50, size)`. Require `size <= candidateSize <= 1000`. |
 | `onFailure` | `"error" \| "returnOriginal" \| null` | Optional; omitted/null defaults to `error`. Applies only to eligible provider failures. |
 | `criteria` | `string[] \| null` | Optional 2–10 distinct nonblank descriptions, lowest to highest relevance. Omitted/null uses the default criteria. Each description is at most 2 KiB, with at most 8 KiB total UTF-8. |
@@ -35,6 +37,16 @@ fields contribute no text; a candidate with no nonblank selected text or a
 non-string selected value causes a validation error, not fallback. Rendered
 candidate input has a 16 KiB limit, and combined query/candidate/custom-criteria
 input has a 256 KiB limit, enforced by the server without silent truncation.
+
+Both top-level and nested strings such as `article.body` may be unindexed.
+Their object ancestors need no index declarations, and no embedding configuration
+is required for the selected path.
+Traversal requires stored objects and scalar string leaves; array traversal,
+wildcards, and serializing whole objects are unsupported. The server hydrates
+selected paths at the pinned read identity before applying public projection.
+Unselected siblings are not sent to the reranker. Query predicates, filters,
+and sorting still require appropriate indexes. See
+[Native embeddings](native-embeddings.md#reranking-and-projection) for an example.
 
 Reranking requires a scoring retrieval query and positive final `size` (up to
 1000, server default 10). It cannot accompany `sort`, query-less requests, or
@@ -86,7 +98,8 @@ The SDK surfaces a final HTTP 503 as `ServiceUnavailableError`; its default
 does not implement a local byte budget or rerank fallback. Downloads still read
 the complete response text and parse the document array in memory, so client
 memory must accommodate the full result. Internal executor streaming requires
-no SDK transport change. Facet bucket, Fetch, and List count limits remain 100.
+no SDK transport change. Facet bucket limits remain 100. Fetch and List now allow 1000; Fetch retains
+a separate 64 MiB per-node JSON budget. See the [read contract](OPENAPI_UPDATE.md#updating-fetch-and-list).
 See the pinned [server resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
 
 ## Default criteria example

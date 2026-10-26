@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
+import { BadRequestError, HTTPClient, LambdaDBClient, SDKValidationError, ServiceUnavailableError } from "../dist/esm/index.js";
 import { queryCollectionRequestBodyToJSON, queryCollectionResponseFromJSON } from "../dist/esm/models/operations/querycollection.js";
 
 const query = { knn: { field: "embedding", queryVector: [1, 0], k: 20 } };
@@ -26,6 +26,49 @@ function collection(reply, download = () => json(docs)) {
     } }),
   });
   return { handle: client.collection("items"), calls };
+}
+
+// Stored rerank path contract: lambdadb ff13daf3f4ed40487b2b13522a141265c2f459ab.
+for (const safe of [false, true]) {
+  test(`stored string paths pass through without Collection schema lookup, safe=${safe}`, async () => {
+    for (const fields of [["body"], ["article.body", "article.title"]]) {
+      const projected = [{ collection: "items", score: 0.75, retrievalScore: 0.25, doc: { id: "one" } }];
+      const { handle, calls } = collection(() => json({ took: 1, total: 1,
+        docs: projected, isDocsInline: true, maxScore: 0.75,
+        rerank: { ...metadata, candidateCount: 1, scoredCount: 1 } }));
+      const input = { query, rerank: { ...rerank, fields }, fields: { include: ["id"] } };
+      const result = safe ? await handle.querySafe(input, options) : await handle.query(input, options);
+      if (safe) assert.equal(result.ok, true);
+      const response = safe ? result.value : result;
+      assert.deepEqual(calls, [{ ...input, consistentRead: false, includeVectors: false }]);
+      assert.deepEqual(response.docs, projected);
+      assert.equal(response.rerank.status, "applied");
+    }
+  });
+
+  test(`stored candidate validation surfaces BadRequestError with returnOriginal, safe=${safe}`, async () => {
+    for (const message of ["Rerank selected paths must traverse objects",
+      "Rerank selected fields must contain scalar text", "Rerank candidate has no nonblank selected text"]) {
+      const { handle, calls } = collection(() => json({ message }, 400));
+      const input = { query, rerank: { ...rerank, fields: ["article.body"], onFailure: "returnOriginal" } };
+      if (safe) {
+        const result = await handle.querySafe(input, options);
+        assert.equal(result.ok, false);
+        assert.ok(result.error instanceof BadRequestError);
+        assert.equal(result.error.statusCode, 400);
+        assert.equal(result.error.message, message);
+      } else {
+        await assert.rejects(handle.query(input, options), (error) => {
+          assert.ok(error instanceof BadRequestError);
+          assert.equal(error.statusCode, 400);
+          assert.equal(error.message, message);
+          return true;
+        });
+      }
+      assert.equal(calls.length, 1);
+      assert.deepEqual(calls[0].rerank, input.rerank);
+    }
+  });
 }
 
 for (const extra of [

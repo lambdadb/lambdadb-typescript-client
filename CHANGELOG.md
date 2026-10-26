@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Aligned Fetch/List documentation with docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
+  and backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`: both support 1000,
+  with List defaulting to 100 and Fetch retaining its per-node JSON budget.
+  Added nullable POST List inputs and public-client routing that preserves explicit
+  nulls, including pagination. Existing server validation and defaults are retained.
+
+- Documented and covered unindexed stored string paths for native embedding
+  sources and rerank fields at backend
+  `ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481). Examples use vector-only
+  schemas and original nested JSON. Clarified scalar source validation, full
+  upserts, partial updates, projection, and deployment compatibility. Runtime
+  schemas, public types, defaults, limits, and package versions are unchanged.
 - Raised native reranking output and candidate limits from 100 to 1000, aligned
   with backend `963d79e8866833f1deb1393ed00a9825d866c853`. Query `size`, dense
   `knn.k`, and Bayesian `candidateSize` also support up to 1000 on that contract;

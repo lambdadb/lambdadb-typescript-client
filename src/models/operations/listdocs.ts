@@ -15,7 +15,7 @@ export type ListDocsRequest = {
    */
   collectionName: string;
   /**
-   * Max number of documents to return at once.
+   * Max number of documents to return at once, from 1 to 1000. The server default is 100.
    */
   size?: number | undefined;
   /**
@@ -97,17 +97,17 @@ export function listDocsRequestToJSON(
 
 export type ListDocsExtendedRequestBody = {
   /**
-   * Max number of documents to return at once.
+   * Max number of documents to return at once, from 1 to 1000. The server default is 100.
    */
-  size?: number | undefined;
+  size?: number | null | undefined;
   /**
    * Opaque search position, not a Snapshot pin. Use one immutable Tag throughout a stable export.
    */
-  pageToken?: string | undefined;
+  pageToken?: string | null | undefined;
   /**
    * Filter applied before pagination.
    */
-  filter?: { [k: string]: any } | undefined;
+  filter?: { [k: string]: any } | null | undefined;
   partitionFilter?: models.PartitionFilter | undefined;
   /**
    * An object to specify a list of field names to include and/or exclude in the result.
@@ -131,9 +131,9 @@ export type ListDocsExtendedRequest = {
 
 /** @internal */
 export type ListDocsExtendedRequestBody$Outbound = {
-  size?: number | undefined;
-  pageToken?: string | undefined;
-  filter?: { [k: string]: any } | undefined;
+  size?: number | null | undefined;
+  pageToken?: string | null | undefined;
+  filter?: { [k: string]: any } | null | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
   fields?: models.FieldsSelectorUnion$Outbound | undefined;
   includeVectors: boolean;
@@ -146,9 +146,9 @@ export const ListDocsExtendedRequestBody$outboundSchema: z.ZodType<
   z.ZodTypeDef,
   ListDocsExtendedRequestBody
 > = z.object({
-  size: z.number().int().optional(),
-  pageToken: z.string().optional(),
-  filter: z.record(z.any()).optional(),
+  size: z.number().int().nullable().optional(),
+  pageToken: z.string().nullable().optional(),
+  filter: z.record(z.any()).nullable().optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
   includeVectors: z.boolean().default(false),

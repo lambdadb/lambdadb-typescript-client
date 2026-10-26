@@ -352,7 +352,9 @@ npm run test:external:qdrant
 
 ### Native embeddings
 
-Native embedding vector fields generate vectors from a configured source text field. Create the collection with a text field and a native embedding vector field, then query that vector field with `knn.queryText`.
+Native embedding vector fields generate vectors from a configured stored string
+path. The source and its object ancestors need no index declarations. Declare
+the vector field, write the original JSON, and query with `knn.queryText`:
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";
@@ -362,14 +364,12 @@ const client = new LambdaDBClient({ projectApiKey: "..." });
 await client.createCollection({
   collectionName: "semantic-items",
   indexConfigs: {
-    body: { type: "text", analyzers: ["english"] },
     bodyEmbedding: {
       type: "vector",
-      managedEmbedding: true,
       embedding: {
         provider: "openai",
         model: "text-embedding-3-small",
-        sourceField: "body",
+        sourceField: "article.body",
       },
     },
   },
@@ -377,7 +377,7 @@ await client.createCollection({
 
 const collection = client.collection("semantic-items");
 await collection.docs.upsert({
-  docs: [{ id: "policy-1", body: "Refunds are available within 30 days." }],
+  docs: [{ id: "policy-1", article: { body: "Refunds are available within 30 days." } }],
 });
 
 const result = await collection.query({
@@ -391,6 +391,11 @@ const result = await collection.query({
   },
 });
 ```
+
+`rerank.fields` can select the same unindexed string path. Add appropriate source
+indexes when you also need lexical search, filtering, or sorting on those fields.
+This requires the [pinned native embedding contract](docs/native-embeddings.md)
+at the deployed endpoint; a legacy flag alone does not enable unindexed sources.
 
 <!-- End SDK Example Usage [usage] -->
 
