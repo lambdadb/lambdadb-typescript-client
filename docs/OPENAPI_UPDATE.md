@@ -155,12 +155,30 @@ builds both module formats and tests package declaration consumers.
 
 ## Updating native embeddings
 
-The embedding-only vector input is pinned to backend
-`9072a1bc8925954369a887f558f1eaf387b7ea0e`; see
+The native embedding and unindexed-source contract is pinned to backend
+`ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481); see
 [Native embeddings](native-embeddings.md). Keep native input types, union schemas,
 root exports, examples, and consumer tests aligned. Preserve the legacy named
 type and explicit true flag for older servers. Do not insert `managedEmbedding`
 or model defaults on the wire, and retain strict conflicting-field validation.
+
+`embedding.sourceField` and `rerank.fields` select stored string paths without
+requiring source index declarations. Preserve existing local rerank path syntax
+and bounds checks. Leave embedding source paths, Collection field types, stored
+source/candidate validation, and patch merging to the server. Preserve
+raw nested documents, siblings, nulls, and omitted source values on the wire;
+do not infer source indexes, unwrap text objects, or merge partial updates in
+the SDK. Declared source leaves may be text or keyword, with object ancestors.
+The rerank contract in [Native reranking](native-reranking.md) uses the same
+source pin; the query resource-budget pin above is unchanged.
+
+Maintain mock HTTP and package-consumer regressions for vector-only Collection
+create/update, top-level and nested paths, and raw writes/patches. Candidate
+validation failures must surface as `BadRequestError`, including with rerank
+`returnOriginal`.
+The separate `test/integration/native-stored-text-live.test.mjs` smoke requires
+a supporting deployed endpoint and verifies actual embedding, reranking, writes,
+and cleanup. Local serialization tests do not prove server inference behavior.
 
 ## Updating Bayesian hybrid search
 

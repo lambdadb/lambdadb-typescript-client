@@ -14,6 +14,20 @@ const input: CreateCollectionInput = { collectionName: "native", indexConfigs: {
 export async function create(client: LambdaDBClient) {
   await client.createCollection(input);
   await client.collection("native").update({ indexConfigs: input.indexConfigs });
+  // No source or ancestor index is required for stored string paths.
+  const storedSource: CreateCollectionInput = { collectionName: "stored-source", indexConfigs: {
+    vector: { type: "vector", embedding: { ...native.embedding, sourceField: "article.body" } },
+  } };
+  await client.createCollection(storedSource);
+  await client.collection("stored-source").update({ indexConfigs: storedSource.indexConfigs });
+  const collection = client.collection("stored-source");
+  await collection.docs.upsert({ docs: [{ id: "one", article: { body: "Stored text", title: "Sibling" } }] });
+  await collection.docs.update({ docs: [{ id: "one", article: { title: "Changed sibling" } }] });
+  await collection.query({
+    query: { knn: { field: "vector", queryText: "Stored text", k: 30 } },
+    rerank: { provider: "typesafe", model: "jev-1.13.0", queryText: "Stored text", fields: ["article.body"] },
+    fields: { include: ["id", "article.title"] },
+  });
   // @ts-expect-error Create's public union rejects top-level native similarity.
   await client.createCollection({ collectionName: "native", indexConfigs: { vector: { type: "vector", embedding: native.embedding, similarity: "cosine" } } });
   // @ts-expect-error Update's public union rejects top-level native dimensions.

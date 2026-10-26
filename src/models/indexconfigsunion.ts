@@ -80,7 +80,7 @@ export type EmbeddingConfig = {
    */
   model: string;
   /**
-   * Source text field name used to generate embeddings.
+   * Dot-separated stored string path used to generate embeddings; source indexes are optional.
    */
   sourceField: string;
   /**
@@ -104,7 +104,7 @@ export type IndexConfigsManagedEmbeddingVector = {
   embedding: EmbeddingConfig;
 };
 
-/** Native embedding input at backend 9072a1bc8925954369a887f558f1eaf387b7ea0e. */
+/** Native embedding input and stored source paths at backend ff13daf3f4ed40487b2b13522a141265c2f459ab. */
 export type IndexConfigsNativeEmbeddingVector = {
   type: "vector";
   dimensions?: never;

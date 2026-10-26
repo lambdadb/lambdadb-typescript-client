@@ -7,7 +7,7 @@ import { remap as remap$ } from "../../lib/primitives.js";
 
 export type UpsertDocsRequestBody = {
   /**
-   * A list of documents to upsert. For native embedding vector fields, omit the native embedding vector field and provide only the configured source text field.
+   * A list of documents to upsert. For native embedding vector fields, omit the generated vector and provide the configured source string at its stored JSON path. Source indexes are optional; full upserts replace the document.
    */
   docs: Array<{ [k: string]: any }>;
   /** Write target Branch. Omitting it writes to main. */

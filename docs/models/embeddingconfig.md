@@ -10,7 +10,7 @@ import { EmbeddingConfig } from "@functional-systems/lambdadb/models";
 let value: EmbeddingConfig = {
   provider: "openai",
   model: "text-embedding-3-small",
-  sourceField: "body",
+  sourceField: "article.body",
 };
 ```
 
@@ -20,6 +20,6 @@ let value: EmbeddingConfig = {
 | ------------- | -------------------------------------------- | ------------------ | ----------- |
 | `provider`    | [models.EmbeddingProvider](../models/embeddingprovider.md) | :heavy_check_mark: | Embedding provider. |
 | `model`       | *string*                                     | :heavy_check_mark: | Embedding model name. See /guides/collections/managed-embeddings for the current supported providers and models. |
-| `sourceField` | *string*                                     | :heavy_check_mark: | Source text field name used to generate embeddings. |
+| `sourceField` | *string*                                     | :heavy_check_mark: | Dot-separated stored string path used to generate embeddings; source indexes are optional. See [source paths and writes](../native-embeddings.md#source-paths-and-writes). |
 | `dimensions`  | *number*                                     | :heavy_minus_sign: | Embedding dimensions. Optional in requests and resolved in stored collection metadata. |
 | `similarity`  | [models.Similarity](../models/similarity.md) | :heavy_minus_sign: | Vector similarity metric. Optional in requests and resolved in stored collection metadata. |
