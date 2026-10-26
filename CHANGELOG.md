@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Aligned Fetch/List documentation with docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
+  and backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`: both support 1000,
+  with List defaulting to 100 and Fetch retaining its per-node JSON budget.
+  Added nullable POST List inputs and public-client routing that preserves explicit
+  nulls, including pagination. Existing server validation and defaults are retained.
+
 - Documented and covered unindexed stored string paths for native embedding
   sources and rerank fields at backend
   `ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481). Examples use vector-only

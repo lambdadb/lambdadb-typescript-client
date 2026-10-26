@@ -98,7 +98,8 @@ The SDK surfaces a final HTTP 503 as `ServiceUnavailableError`; its default
 does not implement a local byte budget or rerank fallback. Downloads still read
 the complete response text and parse the document array in memory, so client
 memory must accommodate the full result. Internal executor streaming requires
-no SDK transport change. Facet bucket, Fetch, and List count limits remain 100.
+no SDK transport change. Facet bucket limits remain 100. Fetch and List now allow 1000; Fetch retains
+a separate 64 MiB per-node JSON budget. See the [read contract](OPENAPI_UPDATE.md#updating-fetch-and-list).
 See the pinned [server resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
 
 ## Default criteria example

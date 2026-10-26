@@ -572,7 +572,9 @@ export class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ) {
-    const useExtendedList = params?.filter != null
+    const useExtendedList = params?.size === null
+      || params?.pageToken === null
+      || params?.filter !== undefined
       || params?.partitionFilter != null
       || params?.fields != null;
     const result = await unwrapAsync(
@@ -597,8 +599,8 @@ export class CollectionDocs {
           this.client,
           {
             collectionName: this.collectionName,
-            size: params?.size,
-            pageToken: params?.pageToken,
+            size: params?.size ?? undefined,
+            pageToken: params?.pageToken ?? undefined,
             includeVectors: params?.includeVectors,
             refKind: params?.ref?.kind,
             refName: params?.ref?.name,
@@ -625,7 +627,9 @@ export class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ): Promise<Result<ListDocsResponse, ListDocsError>> {
-    const useExtendedList = params?.filter != null
+    const useExtendedList = params?.size === null
+      || params?.pageToken === null
+      || params?.filter !== undefined
       || params?.partitionFilter != null
       || params?.fields != null;
     const result = useExtendedList
@@ -649,8 +653,8 @@ export class CollectionDocs {
         this.client,
         {
           collectionName: this.collectionName,
-          size: params?.size,
-          pageToken: params?.pageToken,
+          size: params?.size ?? undefined,
+          pageToken: params?.pageToken ?? undefined,
           includeVectors: params?.includeVectors,
           refKind: params?.ref?.kind,
           refName: params?.ref?.name,
@@ -690,7 +694,7 @@ export class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ): AsyncGenerator<ListDocsResponse> {
-    let pageToken: string | undefined = params?.pageToken;
+    let pageToken: string | null | undefined = params?.pageToken;
     const baseParams: ListDocsInput = {
       size: params?.size,
       pageToken,

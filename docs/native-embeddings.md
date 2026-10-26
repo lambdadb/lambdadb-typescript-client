@@ -38,7 +38,10 @@ console.log(response.docs);
 when writing documents; it is generated from the selected string. Query native
 vectors with `knn.queryText`. The SDK sends the original document without a
 `{text}` wrapper, source remapping, or inferred source indexes.
-For caller-provided vectors, retain top-level dimensions and use `queryVector`.
+For caller-provided vector fields, retain top-level dimensions and use `queryVector`.
+Native embedding fields also accept a direct `queryVector`; each KNN query must
+provide exactly one non-null `queryText` or `queryVector`. Only native embedding
+fields support `queryText`.
 Native dimensions and similarity, when explicit, belong inside `embedding`.
 Bulk upsert remains unsupported for Collections with native embedding fields.
 

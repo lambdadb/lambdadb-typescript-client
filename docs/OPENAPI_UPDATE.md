@@ -88,7 +88,7 @@ Query `size`, dense `knn.k`, Bayesian `candidateSize`, and
 validation aligned, including `size <= candidateSize` and omitted/null defaults.
 Preserve free-form query serialization and server-side validation for ordinary
 query size, KNN, and Bayesian budgets; do not insert defaults or rewrite `k`.
-Facet bucket, Fetch, and List limits remain unchanged at 100.
+Facet bucket limits remain 100. Fetch and List now support 1000; see the read contract below.
 
 Query results and hydrated candidate bodies no longer have aggregate 64 MiB
 limits. Internal transport safeguards and rerank text budgets remain unchanged.
@@ -136,14 +136,35 @@ All four temporary Collections were deleted and their absence verified.
 The 64 MiB rejection boundary and the running server's exact source revision
 were not independently verified. No deployment or publication was performed.
 
+## Updating Fetch and List
+
+The read contract is pinned to docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
+and backend [`0a54b6ecb483ce7df9677ba2071a491f9f9879c9`](https://github.com/lambdadb/lambdadb/blob/0a54b6ecb483ce7df9677ba2071a491f9f9879c9/docs/design/query-result-limits.md).
+Fetch accepts 1–1000 nonblank IDs; GET/POST List accepts size 1–1000 with server
+default 100. Fetch retains its 64 MiB per-node projected JSON budget and unary
+transport limits. Budget exhaustion returns HTTP 400 without partial results;
+request fewer IDs or fields, or disable vectors. Shared temporary storage
+admission failures return HTTP 503. These source pins do not establish deployment.
+
+POST List allows explicit null for size, pageToken, and filter. Preserve these
+values in the body and route public list/listSafe calls containing them to POST;
+GET parameters remain non-nullable. Pagination preserves the initial null token
+and then uses server tokens. Do not insert a size default.
+
+Keep existing server-side validation for Fetch ID counts/nonblank values, List
+bounds, nonempty Collection index configs, write arrays/objects, and delete IDs.
+The OpenAPI constraints document server requirements; adding local rejection
+would change error classification and validation order. Do not trim, deduplicate,
+or truncate inputs. Test wire preservation, nullable routing, pagination, and
+server HTTP 400 propagation using small deterministic fixtures.
+
 ## Updating native reranking
 
-The public OpenAPI at docs revision `961561c379acb079aec20191e13b89809ef096e9`
-does not yet contain native reranking. Use the exact backend source pin and
-DTO/test links in [Native reranking](native-reranking.md); do not claim this
-feature is generated from that older OpenAPI. This checkout has no maintained
-schema generator. Follow the manual model workflow above until upstream OpenAPI
-is available, and reconcile it against these DTOs when it is published.
+The public OpenAPI at docs revision
+[`ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`](https://github.com/lambdadb/docs/blob/ce2d8f7bd8ee2ab4f240be022085aab37cca0b91/reference/api/openapi.json)
+includes native reranking, native stored string paths, and the 1000 query and
+candidate limits. Keep it aligned with the backend pins in
+[Native reranking](native-reranking.md). This SDK remains manually maintained.
 
 Keep `src/models/rerank.ts`, query request/response schemas, public exports,
 reference documentation and package-consumer tests aligned. Null/omitted request
