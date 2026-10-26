@@ -14,8 +14,8 @@ This SDK is intended to be used in JavaScript runtimes that support ECMAScript 2
 Runtime environments that are explicitly supported are:
 
 - Evergreen browsers which include: Chrome, Safari, Edge, Firefox
-- Node.js active and maintenance LTS releases
-  - Currently, this is v18 and v20
+- Node.js active and maintenance LTS releases; see the [official release schedule](https://nodejs.org/en/about/previous-releases).
+  - CI and package publication use Node 24. Node 18 and 20 are end-of-life.
 - Bun v1 and above
 - Deno v1.39
   - Note that Deno does not currently have native support for streaming file uploads backed by the filesystem ([issue link][deno-file-streaming])

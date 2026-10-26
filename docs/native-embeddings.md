@@ -39,9 +39,11 @@ when writing documents; it is generated from the selected string. Query native
 vectors with `knn.queryText`. The SDK sends the original document without a
 `{text}` wrapper, source remapping, or inferred source indexes.
 For caller-provided vector fields, retain top-level dimensions and use `queryVector`.
-Native embedding fields also accept a direct `queryVector`; each KNN query must
-provide exactly one non-null `queryText` or `queryVector`. Only native embedding
-fields support `queryText`.
+Native embedding fields require `queryText` and reject `queryVector`.
+Caller-provided vector fields require `queryVector` and do not support `queryText`.
+Each KNN query must provide exactly one non-null query input. This distinction is
+clarified in [OpenAPI revision `94a7b716`](https://github.com/lambdadb/docs/blob/94a7b71613a3bf217a370d5117b3ff6ddfbae851/reference/api/openapi.json)
+and enforced by the server; the SDK preserves free-form query serialization.
 Native dimensions and similarity, when explicit, belong inside `embedding`.
 Bulk upsert remains unsupported for Collections with native embedding fields.
 
