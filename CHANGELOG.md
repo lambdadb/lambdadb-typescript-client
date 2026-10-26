@@ -1,31 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.9.0
 
-- Aligned Fetch/List documentation with docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
-  and backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`: both support 1000,
-  with List defaulting to 100 and Fetch retaining its per-node JSON budget.
-  Added nullable POST List inputs and public-client routing that preserves explicit
-  nulls, including pagination. Existing server validation and defaults are retained.
-
-- Documented and covered unindexed stored string paths for native embedding
-  sources and rerank fields at backend
-  `ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481). Examples use vector-only
-  schemas and original nested JSON. Clarified scalar source validation, full
-  upserts, partial updates, projection, and deployment compatibility. Runtime
-  schemas, public types, defaults, limits, and package versions are unchanged.
-- Raised native reranking output and candidate limits from 100 to 1000, aligned
-  with backend `963d79e8866833f1deb1393ed00a9825d866c853`. Query `size`, dense
-  `knn.k`, and Bayesian `candidateSize` also support up to 1000 on that contract;
-  their server-side validation and request defaults remain unchanged.
-- Aligned query resource documentation with backend
-  `234f6f97814bf0d60604fa45ab2907f1fce88b5a`: query results and hydrated candidate
-  bodies no longer have aggregate 64 MiB limits. Large results retain the
-  existing `docsUrl` format; shared temporary storage exhaustion returns HTTP
-  503 without partial results or rerank provider fallback. Internal transport
-  and rerank input budgets remain unchanged, as do Facet bucket, Fetch, and
-  List count limits. Source alignment does not establish deployment or package
-  publication.
+- Raised native reranking output and candidate limits to 1000, matching the
+  server's Query size, dense KNN k, and Bayesian candidate limits. Fetch and List
+  also support 1000 on the pinned server contract; List's default remains 100.
+- Added explicit null support for POST List size, pageToken, and filter, including
+  public list/listSafe routing and pagination. Existing GET inputs, defaults,
+  server-side validation, and error classification retain their behavior.
+- Updated native embedding and reranking examples for unindexed stored string
+  paths, with coverage for nested JSON, partial updates, projection, and source
+  validation. Legacy indexed sources and managedEmbedding inputs remain supported.
+- Documented query result spooling without an aggregate 64 MiB result limit,
+  Fetch's retained 64 MiB per-node JSON budget, and HTTP 503 on shared temporary
+  storage admission failure. Rerank text budgets and facet limits are unchanged.
+- Updated contribution guidance for manual SDK maintenance and aligned CI with
+  the Node 24 publication runtime.
+- Clarified that native embedding KNN fields require queryText and reject
+  queryVector, matching the corrected OpenAPI description and server behavior.
+- Clarified write retries and uncertain outcomes. Default retries include all
+  HTTP 5xx responses, including 502/504. Callers that need to reconcile an
+  uncertain write before replay must explicitly disable retries.
+- Pinned the current OpenAPI to docs `94a7b71613a3bf217a370d5117b3ff6ddfbae851`
+  and the read contract to backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`.
+  Native stored string paths use backend `ff13daf3f4ed40487b2b13522a141265c2f459ab`.
+  Server-dependent capabilities require a supporting deployment; source pins and
+  SDK publication alone do not establish production rollout.
 
 ## 0.8.1
 

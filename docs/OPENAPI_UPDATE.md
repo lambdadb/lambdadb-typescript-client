@@ -138,7 +138,7 @@ were not independently verified. No deployment or publication was performed.
 
 ## Updating Fetch and List
 
-The read contract is pinned to docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
+The read contract is pinned to docs `94a7b71613a3bf217a370d5117b3ff6ddfbae851`
 and backend [`0a54b6ecb483ce7df9677ba2071a491f9f9879c9`](https://github.com/lambdadb/lambdadb/blob/0a54b6ecb483ce7df9677ba2071a491f9f9879c9/docs/design/query-result-limits.md).
 Fetch accepts 1–1000 nonblank IDs; GET/POST List accepts size 1–1000 with server
 default 100. Fetch retains its 64 MiB per-node projected JSON budget and unary
@@ -161,7 +161,7 @@ server HTTP 400 propagation using small deterministic fixtures.
 ## Updating native reranking
 
 The public OpenAPI at docs revision
-[`ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`](https://github.com/lambdadb/docs/blob/ce2d8f7bd8ee2ab4f240be022085aab37cca0b91/reference/api/openapi.json)
+[`94a7b71613a3bf217a370d5117b3ff6ddfbae851`](https://github.com/lambdadb/docs/blob/94a7b71613a3bf217a370d5117b3ff6ddfbae851/reference/api/openapi.json)
 includes native reranking, native stored string paths, and the 1000 query and
 candidate limits. Keep it aligned with the backend pins in
 [Native reranking](native-reranking.md). This SDK remains manually maintained.
@@ -175,6 +175,13 @@ remain on the server. Run lint, typecheck and the complete test suite, which
 builds both module formats and tests package declaration consumers.
 
 ## Updating native embeddings
+
+OpenAPI revision `94a7b71613a3bf217a370d5117b3ff6ddfbae851` corrects the
+native KNN input description: native embedding fields require `queryText` and
+reject `queryVector`. Caller-provided vector fields use `queryVector`.
+Backend [`NativeEmbeddingService`](https://github.com/lambdadb/lambdadb/blob/0a54b6ecb483ce7df9677ba2071a491f9f9879c9/runtime-aws/src/main/java/ai/lambdadb/service/embedding/NativeEmbeddingService.java)
+enforces this distinction. Preserve free-form SDK queries and server validation;
+do not introduce a Collection lookup or client-side field inference.
 
 The native embedding and unindexed-source contract is pinned to backend
 `ff13daf3f4ed40487b2b13522a141265c2f459ab` (PR #481); see
@@ -215,7 +222,7 @@ validation and error classification.
 
 ## CI
 
-- **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests.
+- **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests on Node 24.
 - **Publish**: `.github/workflows/publish.yaml` runs on pushes to `develop` for
   automatic npm `dev` publication and on published GitHub Releases for explicit
   dev, RC, or stable publication. A reviewed merge into `develop` authorizes its

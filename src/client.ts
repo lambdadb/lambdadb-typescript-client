@@ -831,7 +831,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Fetch documents by IDs (max 100).
+   * Fetch documents by IDs (max 1000 on the supporting server contract).
    * When the API returns docs via docsUrl (isDocsInline false), documents are
    * fetched from the presigned URL automatically so the response always has docs.
    */

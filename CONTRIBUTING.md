@@ -1,40 +1,41 @@
 # Contributing to This Repository
 
-Thank you for your interest in contributing to this repository. Please note
-that this repository contains generated code. As such, we do not accept direct
-changes or pull requests. Instead, we encourage you to follow the guidelines
-below to report issues and suggest improvements.
+This SDK is maintained manually. Direct fixes and pull requests are welcome,
+including changes to files that retain historical code-generator headers.
+Follow [OpenAPI maintenance](docs/OPENAPI_UPDATE.md) when updating API contracts
+and pin the exact upstream revision used for the change.
 
-## How to Report Issues
+## Reporting issues
 
-If you encounter any bugs or have suggestions for improvements, please open an
-issue on GitHub. When reporting an issue, please provide as much detail as
-possible to help us reproduce the problem. This includes:
+Open a GitHub issue with reproduction steps, expected and actual behavior, the
+SDK and runtime versions, and relevant errors. Remove API keys, authorization
+headers, signed URLs, and private document content from shared evidence.
 
-- A clear and descriptive title
-- Steps to reproduce the issue
-- Expected and actual behavior
-- Any relevant logs, screenshots, or error messages
-- Information about your environment (e.g., operating system, software versions)
-  - For example, this can be collected using the `npx envinfo` command if you
-    have Node.js installed
+## Preparing a pull request
 
-## Issue Triage and Upstream Fixes
+Keep changes focused and preserve existing public API and wire behavior unless
+an intentional contract change requires otherwise. Update relevant examples,
+reference documentation, and tests together. The recommended public entry point
+is `LambdaDBClient`; standalone functions and deprecated clients must retain
+their documented compatibility.
 
-We will review and triage issues as quickly as possible. Our goal is to address
-bugs and incorporate improvements in the upstream source code. Fixes will be
-included in the next generation of the generated code.
+Use the Node.js version in CI (currently Node 24) and run:
 
-## Contact
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm test
+```
 
-If you have any questions or need further assistance, please feel free to reach
-out by opening an issue.
-
-Thank you for your understanding and cooperation!
+`npm test` builds ESM and CommonJS packages, compiles package-consumer type tests,
+and runs the local test suite. Credentialed live tests are separate; use the
+intended environment explicitly and verify cleanup of temporary resources.
+Report which checks ran and distinguish mocked tests from live server results.
+Do not commit generated `dist`, local credentials, or scratch logs.
 
 ## Releases
 
-Maintainers must follow [RELEASING.md](RELEASING.md) for versioning, validation,
-GitHub Release, and npm publishing procedures.
-
-The Maintainers
+Maintainers must follow [RELEASING.md](RELEASING.md) for version alignment,
+package validation, GitHub Releases, and npm publication. Creating a pull request
+does not publish a package.

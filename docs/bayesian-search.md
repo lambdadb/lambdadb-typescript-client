@@ -14,7 +14,7 @@ This source pin does not establish deployment in another environment.
 - Calibration uses the retained retrieval candidates. Scores are heuristic fusion scores, not relevance probabilities.
 - Existing RRF, Min-Max, L2 and request defaults remain unchanged. The SDK does not insert `size`, `knn.k`, or rerank candidate defaults.
 
-The latest dev contract requires a candidate budget only for Bayesian retrieval
+The pinned contract requires a candidate budget only for Bayesian retrieval
 without rerank. Earlier Bayesian requests that omit it return HTTP 400. Ordinary
 text/KNN and RRF/Min-Max/L2 requests retain their existing behavior and must not
 set the top-level field. `candidateSize` controls candidates per signal; `size`
@@ -52,7 +52,9 @@ console.log(retrieval.docs, reranked.rerank?.status);
 ```
 
 Use the dimensions and field names configured on your Collection. For native
-embedding fields, use `knn.queryText` instead of `queryVector`.
+embedding fields, use `knn.queryText`; `knn.queryVector` is rejected by the server.
+For caller-provided vector fields, use `knn.queryVector`. See the
+[native embedding query contract](native-embeddings.md).
 
 Bayesian fusion precedes native reranking. With reranking applied, `score` is
 the final evaluation score and `retrievalScore` preserves the Bayesian score.
