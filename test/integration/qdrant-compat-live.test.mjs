@@ -7,6 +7,7 @@ import {
   models,
 } from "../../dist/esm/compat/qdrant.js";
 
+const padVector = (values) => [...values, ...Array(64 - values.length).fill(0)];
 const shouldRun = process.env.LAMBDADB_RUN_LIVE_TESTS === "1";
 const projectApiKey = process.env.LAMBDADB_PROJECT_API_KEY;
 const projectName = process.env.LAMBDADB_PROJECT_NAME || "playground";
@@ -45,7 +46,7 @@ test("qdrant compatibility live smoke", {
   try {
     await client.createCollection(collectionName, {
       vectorsConfig: new models.VectorParams({
-        size: 3,
+        size: 64,
         distance: models.Distance.COSINE,
       }),
       payloadSchema: {
@@ -59,17 +60,17 @@ test("qdrant compatibility live smoke", {
       points: [
         new models.PointStruct({
           id: 1,
-          vector: [1.0, 0.0, 0.0],
+          vector: padVector([1.0, 0.0, 0.0]),
           payload: { tenant: "acme", title: "alpha" },
         }),
         new models.PointStruct({
           id: 2,
-          vector: [0.0, 1.0, 0.0],
+          vector: padVector([0.0, 1.0, 0.0]),
           payload: { tenant: "acme", title: "beta" },
         }),
         new models.PointStruct({
           id: 3,
-          vector: [0.0, 0.0, 1.0],
+          vector: padVector([0.0, 0.0, 1.0]),
           payload: { tenant: "other", title: "gamma" },
         }),
       ],
@@ -77,7 +78,7 @@ test("qdrant compatibility live smoke", {
     assert.equal(upsertResult.status, models.UpdateStatus.COMPLETED);
 
     const queryResult = await client.queryPoints(collectionName, {
-      query: [1.0, 0.0, 0.0],
+      query: padVector([1.0, 0.0, 0.0]),
       queryFilter: new models.Filter({
         must: [
           new models.FieldCondition({

@@ -33,6 +33,14 @@ For v1, switch the import and client construction explicitly:
 + });
 ```
 
+## Vector constraints
+
+Collection vectors must have 64–4096 dimensions. Only Cosine and Euclid distances
+map to the OpenAPI contract; Dot raises `UnsupportedQdrantFeatureError` before
+creating a Collection. The compatibility model retains `Distance.DOT` for input
+recognition, but the LambdaDB adapter does not support it. Native SDK schemas
+validate Collection dimensions; document/query vector lengths remain server-validated.
+
 ## Basic Usage
 
 Declare payload fields used in filters when the collection is created:
@@ -40,7 +48,7 @@ Declare payload fields used in filters when the collection is created:
 ```ts
 await client.createCollection("docs", {
   vectorsConfig: new models.VectorParams({
-    size: 3,
+    size: 64,
     distance: models.Distance.COSINE,
   }),
   payloadSchema: {
@@ -52,14 +60,14 @@ await client.upsert("docs", {
   points: [
     new models.PointStruct({
       id: 1,
-      vector: [1.0, 0.0, 0.0],
+      vector: [1, ...Array(63).fill(0)],
       payload: { tenant: "acme", title: "alpha" },
     }),
   ],
 });
 
 const result = await client.queryPoints("docs", {
-  query: [1.0, 0.0, 0.0],
+  query: [1, ...Array(63).fill(0)],
   queryFilter: new models.Filter({
     must: [
       new models.FieldCondition({
@@ -155,7 +163,7 @@ Boolean selectors work as expected:
 
 ```ts
 await client.queryPoints("docs", {
-  query: [1.0, 0.0, 0.0],
+  query: [1, ...Array(63).fill(0)],
   withPayload: true,
   withVectors: false,
 });
@@ -166,7 +174,7 @@ also applied to the Qdrant-style response payload:
 
 ```ts
 await client.query("docs", {
-  query: [1.0, 0.0, 0.0],
+  query: [1, ...Array(63).fill(0)],
   with_payload: ["tenant", "title"],
 });
 ```
@@ -176,7 +184,7 @@ Qdrant-style vector object by Qdrant vector name:
 
 ```ts
 await client.query("docs", {
-  query: [1.0, 0.0, 0.0],
+  query: [1, ...Array(63).fill(0)],
   with_vector: ["title"],
 });
 ```

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { BadRequestError, HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
 
+const padVector = (values) => [...values, ...Array(64 - values.length).fill(0)];
 const options = { timeoutMs: 30_000, retries: { strategy: "none" } };
 // Never expose SDK request/response objects, credentials, or signed URLs in failures.
 function safeError(error, stage) {
@@ -12,7 +13,7 @@ function safeError(error, stage) {
   return new Error(`${stage}: ${error?.name ?? "Error"}; HTTP ${error?.statusCode ?? "unavailable"}${message ? `; ${message}` : ""}`);
 }
 const lexical = { queryString: { query: "body:restore AND status:active" } };
-const vector = { knn: { field: "embedding", queryVector: [1, 0], k: 30,
+const vector = { knn: { field: "embedding", queryVector: padVector([1, 0]), k: 30,
   filter: { queryString: { query: "status:active" } } } };
 const query = { bayesian: [lexical, vector] };
 const ids = (response) => response.docs.map((hit) => hit.doc.id);
@@ -57,15 +58,15 @@ test("live Bayesian fusion, legacy methods, validation and applied native rerank
     creating = true;
     await client.createCollection({ collectionName, tags: { purpose: "sdk-bayesian-smoke" }, indexConfigs: {
       body: { type: "text" }, status: { type: "keyword" },
-      embedding: { type: "vector", dimensions: 2, similarity: "cosine" },
+      embedding: { type: "vector", dimensions: 64, similarity: "cosine" },
     } }, options);
     creating = false;
     stage = "write documents";
     await collection.docs.upsert({ docs: [
-      { id: "both", body: "Restore a previous collection version using a branch.", status: "active", embedding: [1, 0] },
+      { id: "both", body: "Restore a previous collection version using a branch.", status: "active", embedding: padVector([1, 0]) },
       { id: "lexical", body: "Restore collection data from a saved snapshot.", status: "active" },
-      { id: "vector", body: "Keep backups with tags for future recovery.", status: "active", embedding: [0.8, 0.2] },
-      { id: "inactive", body: "Restore old collection data.", status: "inactive", embedding: [1, 0] },
+      { id: "vector", body: "Keep backups with tags for future recovery.", status: "active", embedding: padVector([0.8, 0.2]) },
+      { id: "inactive", body: "Restore old collection data.", status: "inactive", embedding: padVector([1, 0]) },
       { id: "unrelated", body: "Bake bread with flour and water.", status: "active" },
     ] }, options);
     const input = { query, size: 5, candidateSize: 30, consistentRead: true };

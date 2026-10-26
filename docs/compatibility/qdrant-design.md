@@ -368,7 +368,7 @@ Distance mapping:
 | Qdrant distance | LambdaDB similarity |
 | --- | --- |
 | `COSINE` / `"Cosine"` | `cosine` |
-| `DOT` / `"Dot"` | `dot_product` |
+| `DOT` / `"Dot"` | unsupported; throws `UnsupportedQdrantFeatureError` |
 | `EUCLID` / `"Euclid"` | `euclidean` |
 | `MANHATTAN` / `"Manhattan"` | throw in v1 |
 

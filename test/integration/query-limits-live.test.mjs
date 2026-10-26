@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { BadRequestError, HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
 
+const padVector = (values) => [...values, ...Array(64 - values.length).fill(0)];
 const options = { timeoutMs: 30_000, retries: { strategy: "none" } };
 const delay = () => new Promise((resolve) => setTimeout(resolve, 2_000));
 function safeError(error, stage) {
@@ -52,17 +53,17 @@ test("live query limits return 1000 distinct documents and reject 1001", { timeo
   try {
     creating = true;
     await client.createCollection({ collectionName, tags: { purpose: "sdk-query-limits-smoke" }, indexConfigs: {
-      body: { type: "text" }, embedding: { type: "vector", dimensions: 2, similarity: "cosine" },
+      body: { type: "text" }, embedding: { type: "vector", dimensions: 64, similarity: "cosine" },
     } }, options);
     creating = false;
     stage = "write 1000 documents";
     const docs = Array.from({ length: 1000 }, (_, index) => ({
-      id: `limit-${index}`, body: "restore", embedding: [1, (index + 1) / 2000],
+      id: `limit-${index}`, body: "restore", embedding: padVector([1, (index + 1) / 2000]),
     }));
     const expectedIds = new Set(docs.map((doc) => doc.id));
     await collection.docs.upsert({ docs }, options);
     const lexical = { queryString: { query: "body:restore" } };
-    const vector = { knn: { field: "embedding", queryVector: [1, 0], k: 1000 } };
+    const vector = { knn: { field: "embedding", queryVector: padVector([1, 0]), k: 1000 } };
     const input = { size: 1000, query: lexical, fields: { include: ["id"] }, consistentRead: true };
     stage = "wait for 1000 visible documents";
     const deadline = Date.now() + 180_000;

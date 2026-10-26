@@ -112,7 +112,7 @@ test("native embedding retains vector conflicts, strict public fields, and calle
     { ...native, embedding: { ...native.embedding, unknown: true } }]) {
     assert.throws(() => indexConfigsUnionToJSON(value));
   }
-  for (const value of [{ type: "vector", dimensions: 2 }, { type: "vector", dimensions: 2, managedEmbedding: false }]) {
+  for (const value of [{ type: "vector", dimensions: 64 }, { type: "vector", dimensions: 64, managedEmbedding: false }]) {
     assert.deepEqual(JSON.parse(indexConfigsUnionToJSON(value)), { ...value, similarity: "cosine" });
   }
   assert.throws(() => indexConfigsManagedEmbeddingVectorToJSON(native));
