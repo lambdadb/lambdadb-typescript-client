@@ -213,7 +213,9 @@ Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
 limit. Large results use the existing `docsUrl` download format; exhaustion of
 the server's shared temporary storage budget returns HTTP 503 without partial results.
 See [query size and byte limits](docs/native-reranking.md#query-size-and-byte-limits).
-Facet buckets, Fetch, and List retain their existing 100-item limits.
+Facet buckets retain their 100-item limit. Fetch and GET/POST List support up to
+1000 IDs/documents; List defaults to 100. Fetch retains a 64 MiB per-node JSON
+budget. See the [read contract](docs/OPENAPI_UPDATE.md#updating-fetch-and-list).
 Source alignment does not establish deployment to your endpoint.
 
 ### Native reranking
