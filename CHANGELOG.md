@@ -14,8 +14,9 @@
 - Documented query result spooling without an aggregate 64 MiB result limit,
   Fetch's retained 64 MiB per-node JSON budget, and HTTP 503 on shared temporary
   storage admission failure. Rerank text budgets and facet limits are unchanged.
-- Clarified write retries and uncertain outcomes, including the absence of
-  automatic HTTP 502/504 retries.
+- Clarified write retries and uncertain outcomes. Default retries include all
+  HTTP 5xx responses, including 502/504. Callers that need to reconcile an
+  uncertain write before replay must explicitly disable retries.
 - Pinned the current OpenAPI to docs `ce2d8f7bd8ee2ab4f240be022085aab37cca0b91`
   and the read contract to backend `0a54b6ecb483ce7df9677ba2071a491f9f9879c9`.
   Native stored string paths use backend `ff13daf3f4ed40487b2b13522a141265c2f459ab`.
