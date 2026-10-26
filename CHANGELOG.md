@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
 
 - Align vector configuration with OpenAPI `94a7b71613a3bf217a370d5117b3ff6ddfbae851`:
   require integer dimensions from 64 to 4096 and allow only cosine/euclidean
