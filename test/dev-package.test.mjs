@@ -80,6 +80,35 @@ test("dev builds continue from the committed release and count first-parent comm
   assert.equal(prepareDevPackage(f.root, { sha }), "0.9.1-dev.1");
 });
 
+test("the tagged stable release commit itself has no development version and is skipped", (t) => {
+  const f = fixture(t, "0.8.0");
+  f.commit("Feature");
+  const sha = f.commit("Release 0.8.0");
+  f.git("tag", "v0.8.0");
+  const before = f.snapshot();
+  assert.equal(prepareDevPackage(f.root, { sha }), undefined);
+  assert.deepEqual(f.snapshot(), before);
+
+  // The CLI succeeds with a notice and reports ready=false; a later commit is ready again.
+  const script = fileURLToPath(new URL("../scripts/prepare-dev-package.mjs", import.meta.url));
+  const output = join(f.root, "github-output");
+  const run = (head) => {
+    writeFileSync(output, "");
+    const result = spawnSync(process.execPath, [script], { cwd: f.root, encoding: "utf8", env: {
+      ...process.env, GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/main", GITHUB_SHA: head, GITHUB_OUTPUT: output,
+    } });
+    return { status: result.status, stdout: result.stdout, output: readFileSync(output, "utf8") };
+  };
+  const skipped = run(sha);
+  assert.equal(skipped.status, 0, skipped.stdout);
+  assert.match(skipped.stdout, /::notice title=Development publication skipped::.* is the tagged stable release v0\.8\.0/);
+  assert.equal(skipped.output, "ready=false\n");
+  assert.deepEqual(f.snapshot(), before);
+  const next = run(f.commit("Feature after the release"));
+  assert.deepEqual([next.status, next.output], [0, "ready=true\n"]);
+  assert.equal(readVersion(f.root), "0.8.1-dev.1");
+});
+
 test("without a stable tag the count starts at the root commit", (t) => {
   const f = fixture(t, "0.1.0-rc.1");
   f.commit("Initial");

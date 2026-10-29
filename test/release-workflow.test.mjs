@@ -80,8 +80,19 @@ test("the run mode follows whether the committed version is tagged on origin", (
   assert.match(run("push", "0.9.0-dev.3"), /failed: .*must be an RC or stable version/);
   assert.match(run("push", "0.9.0-rc.1", join(directory, "missing")), /failed: [\s\S]*Could not query origin for tag v0\.9\.0-rc\.1/);
   assert.equal(run("release", "0.9.0"), "mode=release");
-  assert.match(workflow, /- name: Prepare automatic development version\n\s+if: steps\.mode\.outputs\.mode == 'dev'\n/);
-  assert.match(workflow, /- name: Publish tested tarball\n\s+if: steps\.mode\.outputs\.mode != 'verify'\n/);
+  assert.match(workflow, /- name: Prepare automatic development version\n\s+id: dev\n\s+if: steps\.mode\.outputs\.mode == 'dev'\n/);
+  assert.match(workflow,
+    /- name: Publish tested tarball\n\s+if: steps\.mode\.outputs\.mode != 'verify' && steps\.dev\.outputs\.ready != 'false'\n/);
+});
+
+test("every step after a skipped development preparation is skipped", () => {
+  const steps = workflow.split(/\n(?= {6}- name: )/).slice(1);
+  const index = steps.findIndex((step) => step.startsWith("      - name: Prepare automatic development version\n"));
+  const later = steps.slice(index + 1);
+  assert.ok(later.length >= 13);
+  for (const step of later) {
+    assert.match(step, /\n {8}if: (?:.* && )?steps\.dev\.outputs\.ready != 'false'\n/, step.split("\n")[0]);
+  }
 });
 
 function metadata(version, mode, { prerelease = false, tag = `v${version}`, rootVersion = version,

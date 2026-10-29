@@ -10,7 +10,9 @@
   `X.Y.Z-dev.N` after an RC, with N counting first-parent commits since the
   newest stable tag; a push whose version is not tagged yet is verified against
   production without publishing. A dev build lower than the current `dev`
-  dist-tag is skipped instead of moving the dist-tag backwards. The "Open next
+  dist-tag is skipped instead of moving the dist-tag backwards, and a rerun of
+  a tagged stable release commit's `main` push skips dev publication with a
+  notice. The "Open next
   development version" workflow and its pull requests are removed.
 
 ## 0.11.0

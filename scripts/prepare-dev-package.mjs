@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { compareCores, latestStableTag, parseVersion, readVersion, setVersion, COMMITTED_VERSION, PUBLISHED_VERSION } from "./version.mjs";
@@ -11,6 +11,8 @@ const git = (root, args) => execFileSync("git", args, { cwd: root, encoding: "ut
  * The committed version is the last released RC or stable version. The development version
  * continues from it: `X.Y.Z-rc.N` becomes `X.Y.Z-dev.M` and `X.Y.Z` becomes `X.Y.(Z+1)-dev.M`,
  * where M counts first-parent commits since the newest stable release tag reachable from the commit.
+ * Returns undefined, changing nothing, for the tagged stable release commit itself (M = 0): a rerun
+ * of its main push after tagging has no development version, and its Release publishes it.
  */
 export function prepareDevPackage(root, { sha }) {
   if (!/^[a-f0-9]{40}$/.test(sha ?? "")) throw new Error("Require an exact source SHA");
@@ -29,6 +31,7 @@ export function prepareDevPackage(root, { sha }) {
       `the latest stable release ${tag}`);
   }
   const count = Number(git(root, ["rev-list", "--count", "--first-parent", tag ? `${tag}..HEAD` : "HEAD"]));
+  if (count === 0 && channel === "stable" && tag === `v${committed}`) return undefined;
   if (!Number.isSafeInteger(count) || count < 1) throw new Error("Expected at least one commit since the latest release");
   const version = setVersion(root, `${base}-dev.${count}`, { allowed: PUBLISHED_VERSION });
   const pkgPath = join(root, "package.json");
@@ -43,5 +46,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     throw new Error("Automatic development preparation is only allowed for main pushes");
   }
   const version = prepareDevPackage(process.cwd(), { sha: process.env.GITHUB_SHA });
-  console.log(`Prepared ${version} from ${process.env.GITHUB_SHA}`);
+  if (version) {
+    console.log(`Prepared ${version} from ${process.env.GITHUB_SHA}`);
+  } else {
+    console.log(`::notice title=Development publication skipped::${process.env.GITHUB_SHA} is the tagged stable ` +
+      `release v${readVersion(process.cwd())}; there is no development version to build or publish.`);
+  }
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `ready=${version ? "true" : "false"}\n`);
 }
