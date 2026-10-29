@@ -35,6 +35,10 @@ The following rules are mandatory:
   not be marked as prereleases.
 - Publish development releases from reviewed commits on `develop`. RC and
   stable releases must come from reviewed commits on `main`.
+- Target `develop` with feature, fix, and release-preparation pull requests;
+  only hotfixes target `main` directly. Promote `develop` -> `main` and synchronize `main` -> `develop` only through
+  pull requests merged with **Create a merge commit**; never squash or rebase
+  them.
 - Never replace an existing npm package version or move a published Git tag.
   Publish the next development, RC, or patch version instead.
 - Reviewed merges into `develop` authorize the configured automatic dev

@@ -8,6 +8,38 @@ dev publication. A published GitHub Release starts explicit dev, RC, or stable
 publication. The repository also contains `jsr.json`, but the
 current workflow does not publish to JSR.
 
+## Branches and merges
+
+`develop` is the integration branch. `main` is the default branch and receives
+reviewed releases from `develop`.
+
+1. Branch feature and fix work from the current `develop` and open a pull
+   request targeting `develop`. Select the base explicitly; GitHub defaults to
+   `main`. Merge it with **Squash and merge**.
+2. Prepare a release (version sources, `CHANGELOG.md`, release notes) on a
+   branch from `develop` and merge it into `develop` through a reviewed pull
+   request (squash). Do not add release-only commits directly to `main`.
+3. Promote with a `develop` -> `main` pull request merged with **Create a merge
+   commit**. Tag and publish RC and stable releases from the resulting reviewed
+   `main` commit.
+4. Whenever `main` contains commits absent from `develop`, such as hotfixes,
+   changes merged straight into `main` (for example, Dependabot security
+   updates), or the promotion merge commit itself, open a `main` -> `develop`
+   pull request and merge it with **Create a merge commit**. Never squash or
+   rebase a synchronization pull request: that makes the trees equal without
+   ancestry, so later comparisons show already-synchronized commits again and
+   release tags become unreachable from `develop`. Verify with
+   `git merge-base --is-ancestor <main-commit> origin/develop`.
+5. For a hotfix, branch from `main`, open a pull request into `main` (merge
+   commit), release from `main`, and then synchronize `main` -> `develop` as in
+   step 4.
+
+After lambdadb/lambdadb-iac#22 is applied, organization rulesets enforce this
+on both branches: deletion and force pushes are blocked and changes require a
+pull request. `develop` allows squash and merge commits but not rebase merges;
+`main` allows merge commits only. There are no bypass actors, and tags are not
+affected by these branch rules.
+
 ## Version sources
 
 Every build must use the same canonical SemVer version in all four locations:
@@ -56,8 +88,10 @@ Use a GitHub Actions artifact instead of npm if a build must remain internal.
 
 ## Preparing a version
 
-For an explicit tagged release, create the release version on a reviewed branch.
-Automatic dev publication generates its version in CI instead. For example:
+For an explicit tagged release, create the release version on a reviewed branch
+from `develop` and merge it into `develop` before the `develop` -> `main`
+promotion pull request; a hotfix branches from `main` instead. Automatic dev
+publication generates its version in CI instead. For example:
 
 ```bash
 npm version 0.5.0-dev.1 --no-git-tag-version
@@ -127,9 +161,11 @@ Never reuse a published version or move its tag.
 
 ## Release candidates
 
-Release candidates use a version such as `0.5.0-rc.1`. Complete validation and
-merge the reviewed release commit into `main`. Wait for the Release verification
-workflow to pass on that exact commit before tagging it.
+Release candidates use a version such as `0.5.0-rc.1`. Complete validation,
+merge the reviewed release preparation into `develop`, and promote `develop` to
+`main` with a pull request merged with **Create a merge commit**. Wait for the
+Release verification workflow to pass on the resulting `main` commit before
+tagging it.
 Mark the GitHub Release as a prerelease; the workflow publishes it with npm
 dist-tag `rc`.
 
@@ -140,21 +176,28 @@ npm view @functional-systems/lambdadb@rc version
 npm install @functional-systems/lambdadb@0.5.0-rc.1
 ```
 
-Address feedback in a new commit and increment the RC number.
+Address feedback through `develop`, increment the RC number, and promote again.
+After publication, synchronize `main` -> `develop` as described in
+[Branches and merges](#branches-and-merges).
 
 ## Stable releases
 
 Publish the matching stable version only after prerelease feedback is resolved.
 
-1. Set all version sources to the stable version, such as `0.5.0`.
+1. On a branch from `develop`, set all version sources to the stable version,
+   such as `0.5.0`.
 2. Update release notes and user-facing documentation.
 3. Run the complete validation checklist.
-4. Merge the reviewed release commit into `main`.
-5. Wait for the Release verification workflow to pass on that exact commit.
-6. Tag that exact commit as `v0.5.0`.
-7. Create a GitHub Release that is not marked as a prerelease.
-8. Wait for the workflow to publish with npm dist-tag `latest`.
-9. Verify a clean installation and the registry dist-tags.
+4. Merge the reviewed release preparation into `develop`.
+5. Promote `develop` to `main` with a pull request merged with **Create a merge
+   commit**.
+6. Wait for the Release verification workflow to pass on the resulting `main`
+   commit.
+7. Tag that exact commit as `v0.5.0`.
+8. Create a GitHub Release that is not marked as a prerelease.
+9. Wait for the workflow to publish with npm dist-tag `latest`.
+10. Verify a clean installation and the registry dist-tags.
+11. Synchronize `main` -> `develop` with a merge-commit pull request.
 
 ## Validation checklist
 

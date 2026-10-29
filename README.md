@@ -856,4 +856,4 @@ This SDK is in beta, and there may be breaking changes between versions without 
 
 ## Contributions
 
-We welcome contributions. The recommended API is implemented in `src/client.ts` (LambdaDBClient, collection-scoped). The rest of `src/` (funcs, models, lib) is maintained manually; see [docs/OPENAPI_UPDATE.md](docs/OPENAPI_UPDATE.md) for how API changes are applied. Feel free to open a PR or an issue. 
+We welcome contributions. The recommended API is implemented in `src/client.ts` (LambdaDBClient, collection-scoped). The rest of `src/` (funcs, models, lib) is maintained manually; see [docs/OPENAPI_UPDATE.md](docs/OPENAPI_UPDATE.md) for how API changes are applied. Feel free to open an issue or a PR targeting `develop`; see [CONTRIBUTING.md](CONTRIBUTING.md).
