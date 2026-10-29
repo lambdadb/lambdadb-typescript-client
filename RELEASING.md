@@ -3,10 +3,21 @@
 This document defines the required packaging and release process for the
 `@functional-systems/lambdadb` npm package.
 
-npm is the production distribution channel. A push to `develop` starts automatic
-dev publication. A published GitHub Release starts explicit dev, RC, or stable
-publication. The repository also contains `jsr.json`, but the
-current workflow does not publish to JSR.
+npm is the production distribution channel. Releases are trunk-based: `main` is
+the only long-lived branch. A push to `main` with a development version publishes
+a dev build automatically, a push to `main` with an RC or stable version is
+verified against production, and a published GitHub Release publishes that RC or
+stable version. The repository also contains `jsr.json`, but the current workflow
+does not publish to JSR.
+
+## Branches
+
+- Branch from `main`, open a pull request into `main`, and merge it with
+  **Squash and merge**. The organization ruleset `protect-main` requires a pull
+  request with one approval (the `dev` team may bypass the approval) and blocks
+  deletion and force pushes.
+- There are no `develop`, release, or hotfix branches. Maintenance releases are
+  cut from `main`; anything merged into `main` ships in the next release.
 
 ## Version sources
 
@@ -21,14 +32,18 @@ The local package entry at `packages[".."].version` in
 `examples/package-lock.json` and both the `sdkVersion` and embedded User-Agent
 version in `src/lib/config.ts` must match those four version sources.
 
-Explicit release tags add a leading `v` to the same package version. Automatic
-dev packages have no Git tag or GitHub Release.
+Between releases, `main` carries the next version with the development
+placeholder `X.Y.Z-dev.0`. Number 0 is never published. A release pull request
+sets the RC or stable version, and that exact merge commit is tagged with a
+leading `v`. Development packages have no Git tag or GitHub Release.
 
-| Channel | Package version | Git tag | npm dist-tag | Source branch |
+| Channel | Committed version | Published version | Git tag | npm dist-tag |
 | :-- | :-- | :-- | :-- | :-- |
-| Development | `X.Y.Z-dev.N` | None for automatic; `vX.Y.Z-dev.N` for explicit | `dev` | `develop` |
-| Release candidate | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` | `main` |
-| Stable | `X.Y.Z` | `vX.Y.Z` | `latest` | `main` |
+| Development | `X.Y.Z-dev.0` | `X.Y.Z-dev.N` (N ≥ 1, assigned by CI) | None | `dev` |
+| Release candidate | `X.Y.Z-rc.N` | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` |
+| Stable | `X.Y.Z` | `X.Y.Z` | `vX.Y.Z` | `latest` |
+
+All packages come from commits on `main`.
 
 Use a unique version for every publication. npm does not allow replacing an
 existing package version.
@@ -56,112 +71,84 @@ Use a GitHub Actions artifact instead of npm if a build must remain internal.
 
 ## Preparing a version
 
-For an explicit tagged release, create the release version on a reviewed branch.
-Automatic dev publication generates its version in CI instead. For example:
+Change every version source at once with the version script, which keeps each
+file's formatting and fails unless all sources agree afterwards:
 
 ```bash
-npm version 0.5.0-dev.1 --no-git-tag-version
+node scripts/version.mjs get                 # print the committed version
+node scripts/version.mjs set 0.12.0-rc.1     # release pull request
+node scripts/version.mjs set 0.12.0-dev.0    # next development version
 ```
 
-Then update `version` in `jsr.json` to the same value. Confirm all sources:
-
-```bash
-node -e '
-const p = require("./package.json");
-const l = require("./package-lock.json");
-const e = require("./examples/package-lock.json");
-const j = require("./jsr.json");
-console.log(
-  p.version,
-  l.version,
-  l.packages[""].version,
-  j.version,
-  e.packages[".."].version,
-);
-'
-```
-
-Also update `SDK_METADATA.sdkVersion` and the embedded version in
-`SDK_METADATA.userAgent` in `src/lib/config.ts`. The publish workflow and test
-suite reject a mismatch.
-
-Commit the version update before creating an explicit release tag. For tagged
-releases, the publish workflow validates committed versions without rewriting
-them. For automatic dev packages, it first checks that committed versions agree,
-then updates every version source in the disposable checkout.
+It accepts only committed forms: `X.Y.Z-dev.0`, `X.Y.Z-rc.N`, and `X.Y.Z`. The
+publish workflow and test suite reject sources that disagree.
 
 ## Development packages
 
-Reviewed pushes to `develop` publish automatically after lint, typechecking,
-tests, clean tarball installation, and deployed docsUrl smoke checks pass. A
-merge into `main` is not required. Protect `develop` so only reviewed changes
-reach this publication trigger; merging into it authorizes automatic dev
-publication under this policy.
+Every reviewed push to `main` whose committed version is `X.Y.Z-dev.0` publishes
+a dev build after lint, typechecking, tests, clean tarball installation, and
+deployed live smoke tests against the dev environment pass. Merging into `main`
+authorizes this automatic dev publication.
 
-The workflow checks out the exact push SHA and generates `X.Y.Z-dev.N`, where
-`X.Y.Z` is the committed package version's core and `N` is
-`GITHUB_RUN_ID * 1000 + GITHUB_RUN_ATTEMPT`. Maintainers control the core version
-through reviewed changes. Each rerun gets a new immutable version. The workflow
-updates package and lockfile versions, `jsr.json`, SDK metadata, and User-Agent
-only in its disposable checkout. It creates no version commit, Git tag, or
-GitHub Release. The published `package.json` includes `lambdadbSourceCommit`.
+The workflow checks out the exact push SHA and publishes `X.Y.Z-dev.N`, where N
+is the number of first-parent commits on `main` since the newest stable release
+tag (`vA.B.C`) reachable from that commit, or since the root commit when there is
+none. N is the same on every rerun of a commit, restarts at 1 after each stable
+release, and keeps increasing across the RCs of one version. The workflow fails
+unless `X.Y.Z` is newer than the newest stable tag, so a missed next-version
+change cannot publish a lower version. It updates package and lockfile versions,
+`jsr.json`, SDK metadata, and User-Agent only in its disposable checkout and
+creates no commit, tag, or GitHub Release. The published `package.json` includes
+`lambdadbSourceCommit`.
 
-Automatic pushes and explicit dev Releases share one concurrency group, so dev
-publications cannot overlap. RC/stable releases retain their tag-specific groups.
-Immediately before automatic publication, the workflow
-fetches `develop` and skips a commit that is no longer its head.
+`main` pushes share one concurrency group.
 [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
-may replace a pending run with a newer push; not every intermediate commit is
-published. This pending-run replacement also applies to an explicit dev Release;
-if it is canceled before publication, rerun its workflow when that selected
-version is still needed and remains unpublished. The `dev` dist-tag points to
-the latest successfully published build. Failed validation leaves the previously
-published dev version in place.
-The exact tarball and npm pack manifest are retained as workflow artifacts.
+may replace a pending run with a newer push, so not every intermediate commit is
+published. Immediately before publication, the workflow skips a commit that is
+no longer the head of `main`, and skips a version already published from the
+same commit (a rerun). A version published from a different commit fails the
+run. The `dev` dist-tag points to the latest successfully published build;
+failed validation leaves it in place. The exact tarball and npm pack manifest are
+retained as workflow artifacts.
 
-An explicit dev GitHub Release remains supported when a manually selected
-version is needed: align all committed version sources, complete validation,
-merge into `develop`, obtain publication approval, tag that exact commit, and
-publish a GitHub prerelease. Explicit RC and stable releases still use `main`.
-Never reuse a published version or move its tag.
+## Release candidates and stable releases
 
-## Release candidates
+1. Open a release pull request into `main` that sets the version with
+   `node scripts/version.mjs set 0.12.0-rc.1` (or `0.12.0`) and updates
+   `CHANGELOG.md`, release notes, and user-facing documentation. Run the complete
+   validation checklist.
+2. Merge it. That `main` push runs the publish workflow in verification mode: the
+   same checks plus live smoke tests against production, with no publication.
+   Do not merge other pull requests until the release is tagged, or tag the
+   release pull request's merge commit explicitly.
+3. After verification passes, tag that exact merge commit (`v0.12.0-rc.1` or
+   `v0.12.0`) and publish a GitHub Release. Mark RCs as prereleases and stable
+   releases as not prereleases. The workflow runs the production live smoke
+   tests again and publishes with npm dist-tag `rc` or `latest`.
+4. When publication succeeds, the "Open next development version" workflow opens
+   a pull request that restores the placeholder: the same `X.Y.Z-dev.0` after an
+   RC, or the next patch `X.Y.(Z+1)-dev.0` after a stable release. Change it with
+   `node scripts/version.mjs set` if the next release is a minor or major version,
+   then merge it. Pull requests opened by GitHub Actions do not trigger CI; the
+   publish workflow runs the full checks when it merges.
+5. Verify the registry:
 
-Release candidates use a version such as `0.5.0-rc.1`. Complete validation and
-merge the reviewed release commit into `main` before tagging that exact commit.
-Mark the GitHub Release as a prerelease; the workflow publishes it with npm
-dist-tag `rc`.
+   ```bash
+   npm view @functional-systems/lambdadb@rc version
+   npm install @functional-systems/lambdadb@0.12.0-rc.1
+   ```
 
-Verify the candidate explicitly:
-
-```bash
-npm view @functional-systems/lambdadb@rc version
-npm install @functional-systems/lambdadb@0.5.0-rc.1
-```
-
-Address feedback in a new commit and increment the RC number.
-
-## Stable releases
-
-Publish the matching stable version only after prerelease feedback is resolved.
-
-1. Set all version sources to the stable version, such as `0.5.0`.
-2. Update release notes and user-facing documentation.
-3. Run the complete validation checklist.
-4. Merge the reviewed release commit into `main`.
-5. Tag that exact commit as `v0.5.0`.
-6. Create a GitHub Release that is not marked as a prerelease.
-7. Wait for the workflow to publish with npm dist-tag `latest`.
-8. Verify a clean installation and the registry dist-tags.
+Address RC feedback in new pull requests into `main` and release the next RC
+number. Never reuse a published version or move its tag.
 
 ## Validation checklist
 
 Before publishing any development, RC, or stable package:
 
-- Confirm the source checkout is the exact reviewed commit on `develop` for
-  dev or `main` for RC/stable. Explicit tagged releases require a clean working
-  tree and matching tag target. Automatic dev builds may modify only generated
-  version metadata in the disposable checkout.
+- Confirm the source checkout is the exact reviewed commit on `main`. Tagged
+  releases require a clean working tree and a tag on the release pull request's
+  merge commit. Automatic dev builds may modify only generated version metadata
+  in the disposable checkout.
 - Pin and record the API contract revision used for implementation.
 - Confirm the target API is deployed in the intended test environment.
 - Confirm all version locations agree and any explicit release tag matches.
@@ -174,24 +161,27 @@ Before publishing any development, RC, or stable package:
 - Install the generated tarball in a clean directory.
 - Verify both ESM `import` and CommonJS `require` from that installation.
 - Complete applicable live and third-party integration smoke tests.
-- Run `npm run test:live:docs-url` against the intended deployed endpoint before
-  every publication. This creates a temporary Collection with two 3 MiB
-  documents and requires real `docsUrl` array downloads for Query, Fetch, GET/POST
-  List, and their Safe methods, then verifies Collection deletion. An inline-only
-  response or missing environment variables is a failure, not a skipped check.
+- Run `npm run test:live` against the intended deployed endpoint before every
+  publication: the dev environment for dev packages and production for RC and
+  stable packages. This runs every `test/integration/*-live.test.mjs` file one
+  at a time; concurrent bulk writes can exceed writer capacity and return HTTP
+  429. Each file creates its own temporary Collections and verifies their
+  deletion. The
+  docsUrl test requires real `docsUrl` array downloads; an inline-only response
+  is a failure. Missing environment variables are a failure, not a skipped check.
   Record the environment, SDK commit, observed behavior, and cleanup result;
   source revision alone does not establish the deployed server revision.
 - For explicit releases, review release notes before publishing the GitHub Release.
 
-The docsUrl smoke reads `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
+The live tests read `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
 `LAMBDADB_PROJECT_API_KEY` from the environment or `.env.local`. Use a project
 where temporary test Collections may be created and deleted. For a worktree
 without its own environment file, load the original checkout's file explicitly:
 
 ```bash
 npm run build
-node --env-file=/absolute/path/to/original-checkout/.env.local \
-  --test test/integration/docs-url-live.test.mjs
+LAMBDADB_RUN_LIVE_TESTS=1 node --env-file=/absolute/path/to/original-checkout/.env.local \
+  --test --test-concurrency=1 test/integration/*-live.test.mjs
 ```
 
 This credentialed test is separate from the ordinary PR CI. Missing credentials
@@ -211,11 +201,19 @@ For a prerelease, the first command must show the existing stable version under
 
 ## Workflow authentication and boundaries
 
-- `.github/workflows/publish.yaml` handles `develop` pushes and published GitHub
-  Releases. Ordinary PR CI has no credentials and cannot publish.
+- `.github/workflows/publish.yaml` handles `main` pushes and published GitHub
+  Releases. A `main` push with `X.Y.Z-dev.0` publishes a dev build; a `main` push
+  with an RC or stable version only verifies it; a Release publishes its RC or
+  stable version. Dev versions are never published through GitHub Releases.
+  Ordinary PR CI has no credentials, runs no live tests, and cannot publish.
+- `.github/workflows/next-dev-version.yaml` runs after a successful Release
+  publication and opens the next development version pull request with
+  `contents: write` and `pull-requests: write`. It never publishes.
+- Dev builds run the live smoke tests against the dev environment. Release
+  verification and RC/stable Releases run them against production.
 - Metadata and ancestry checks reject unsupported versions, mismatches,
-  incorrect prerelease flags, dev commits outside `develop`, and RC/stable
-  commits outside `main`. Automatic dev metadata must identify the exact push.
+  incorrect prerelease flags, and commits outside `main`. Automatic dev metadata
+  must identify the exact push.
 - Only the tarball that passed lint, typechecking, tests, package installation,
   module loading, and deployed smoke checks is published.
 - npm Trusted Publishing supplies a short-lived OIDC credential without a
@@ -226,33 +224,49 @@ For a prerelease, the first command must show the existing stable version under
   source files, artifacts, or GitHub Secrets. Missing configuration or a failed
   secret read prevents publication.
 
-Configure the following repository Variables before enabling publication:
+Configure the following repository Variables before enabling publication. The
+`LAMBDADB_DEV_` Variables serve dev builds; the `LAMBDADB_PROD_` Variables serve
+release verification and RC/stable Releases. A missing Variable fails the run; it
+never falls back to the other environment.
 
 | Variable | Value |
 | :-- | :-- |
-| `LAMBDADB_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
-| `LAMBDADB_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
-| `LAMBDADB_SMOKE_AWS_ROLE_ARN` | Dedicated AWS OIDC role ARN |
-| `LAMBDADB_SMOKE_SECRET_ARN` | Exact ARN of the project's API key secret |
+| `LAMBDADB_DEV_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
+| `LAMBDADB_DEV_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
+| `LAMBDADB_DEV_SMOKE_AWS_ROLE_ARN` | Dedicated dev AWS OIDC role ARN |
+| `LAMBDADB_DEV_SMOKE_SECRET_ARN` | Exact ARN of the dev project's API key secret |
+| `LAMBDADB_PROD_BASE_URL` | `https://aws-ap-northeast-2-v3.lambdadb.ai` |
+| `LAMBDADB_PROD_PROJECT_NAME` | Dedicated SDK smoke project in `prod-aws-apne2-v3` |
+| `LAMBDADB_PROD_SMOKE_AWS_ROLE_ARN` | Dedicated production AWS OIDC role ARN |
+| `LAMBDADB_PROD_SMOKE_SECRET_ARN` | Exact ARN of the production project's API key secret |
 
-Store the project key as a plain SecretString in `ap-northeast-2`. Use a
-project where test Collections may be created and deleted. Do not grant the
-workflow the stack admin key, project creation, deployment, or secret write
+Store each project key as a plain SecretString in `ap-northeast-2`. Use a
+dedicated project where test Collections may be created and deleted. Set its
+`rateLimit` to at least 100 requests per second; the sequential live suite peaks
+at about 25 requests per second, and a lower limit returns HTTP 429. Do not grant
+the workflow the stack admin key, project creation, deployment, or secret write
 permissions. Key rotation updates the AWS secret without changing this workflow.
 
-Provision the role with an OIDC trust condition for audience `sts.amazonaws.com`
-and only these subject patterns:
+Provision each role with an OIDC trust condition for audience
+`sts.amazonaws.com` and only these subject patterns. The dev role:
 
 ```text
-repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/develop
+repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/main
+```
+
+The production role (release verification on `main`, Releases on tags):
+
+```text
+repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/main
 repo:lambdadb/lambdadb-typescript-client:ref:refs/tags/v*
 ```
 
-Its permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
-secret ARN. Add `kms:Decrypt` on the exact key only if using a customer-managed
-KMS key. No `ListSecrets` permission is required by the CLI reader. Provisioning
-the role, project, key, and repository Variables is a separate environment
-setup step; adding the workflow alone does not establish working AWS access.
+Each permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
+secret ARN of its own environment. Add `kms:Decrypt` on the exact key only if
+using a customer-managed KMS key. No `ListSecrets` permission is required by the
+CLI reader. Provisioning the roles, projects, keys, and repository Variables is
+a separate environment setup step; adding the workflow alone does not establish
+working AWS access.
 
 For additional administrative protection, configure a protected GitHub
 Environment for npm publishing and update the npm Trusted Publisher settings to

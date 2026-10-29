@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+- Releases are trunk-based on `main`; `develop` is retired. `main` carries the
+  next version as `X.Y.Z-dev.0` (now `0.11.0-dev.0`), and each merge publishes
+  `X.Y.Z-dev.N`, where N counts first-parent commits since the newest stable tag
+  and restarts after each stable release. A merge that sets an RC or stable
+  version is verified against production, and its GitHub Release publishes it.
+  After publication, a workflow opens the next development version pull request.
+  `scripts/version.mjs` updates every version source. Explicit dev GitHub
+  Releases and the separate Release verification workflow are removed.
+- Release workflows now run every deployed live test file sequentially
+  (`npm run test:live`) instead of only the docsUrl smoke. Dev packages are
+  verified against the dev environment; every `main` push and RC/stable Release
+  is verified against production. Dev smoke Variables are renamed with a
+  `LAMBDADB_DEV_` prefix, and production Variables use `LAMBDADB_PROD_`; a
+  missing Variable fails the run instead of falling back to another environment.
+- The Data Versioning live test derives branch source timestamps from server
+  snapshot times, so local clock skew no longer causes false failures.
+
 ## 0.10.0
 
 - Align vector configuration with OpenAPI `94a7b71613a3bf217a370d5117b3ff6ddfbae851`:

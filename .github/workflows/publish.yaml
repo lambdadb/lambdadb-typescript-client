@@ -1,9 +1,10 @@
-# Publish development commits automatically and explicit GitHub Releases.
+# Publish development builds from main pushes, verify release commits on main,
+# and publish RC/stable GitHub Releases.
 name: Publish to npm
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
   release:
     types: [published]
 
@@ -12,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: npm-sdk-${{ (github.event_name == 'push' || contains(github.event.release.tag_name, '-dev.')) && 'develop' || github.event.release.tag_name }}
+  group: npm-sdk-${{ github.event_name == 'push' && 'main' || github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
@@ -32,8 +33,28 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
+      # A main push with the committed X.Y.Z-dev.0 placeholder publishes a dev build; a main
+      # push with an RC/stable version (a release PR merge) is verified against production only.
+      - name: Select the run mode
+        id: mode
+        env:
+          PUBLISH_EVENT: ${{ github.event_name }}
+        run: |
+          VERSION=$(node scripts/version.mjs get)
+          if [ "$PUBLISH_EVENT" != "push" ]; then
+            MODE=release
+          else
+            case "$VERSION" in
+              *-dev.0) MODE=dev ;;
+              *-dev.*) echo "Committed version $VERSION must use the -dev.0 placeholder" >&2; exit 1 ;;
+              *) MODE=verify ;;
+            esac
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Committed version $VERSION; run mode $MODE"
+
       - name: Prepare automatic development version
-        if: github.event_name == 'push'
+        if: steps.mode.outputs.mode == 'dev'
         run: node scripts/prepare-dev-package.mjs
 
       - name: Validate release metadata
@@ -41,7 +62,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
-          PUBLISH_EVENT: ${{ github.event_name }}
+          RUN_MODE: ${{ steps.mode.outputs.mode }}
         run: |
           node <<'NODE'
           const fs = require("node:fs");
@@ -66,7 +87,7 @@ jobs:
             "src/lib/config.ts SDK_METADATA": sdkVersionMatch[1],
           };
 
-          const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(dev|rc)\.(0|[1-9]\d*))?$/;
+          const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(dev|rc)\.([1-9]\d*))?$/;
           const match = pattern.exec(version);
           if (!match) {
             throw new Error(`Unsupported release version: ${version}`);
@@ -81,31 +102,44 @@ jobs:
             throw new Error(`src/lib/config.ts userAgent does not contain ${version}`);
           }
 
-          const expectedTag = `v${version}`;
-          const automatic = process.env.PUBLISH_EVENT === "push";
-          if (automatic) {
-            if (match[4] !== "dev" || process.env.GITHUB_REF !== "refs/heads/develop" ||
-                !process.env.GITHUB_SHA || packageJson.lambdadbSourceCommit !== process.env.GITHUB_SHA) {
-              throw new Error("Automatic publication requires a dev package from the exact develop push");
-            }
-          } else if (process.env.RELEASE_TAG !== expectedTag) {
-            throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match ${expectedTag}`);
-          }
-
+          const mode = process.env.RUN_MODE;
           const channel = match[4] ?? "stable";
-          const prerelease = automatic || process.env.RELEASE_PRERELEASE === "true";
-          if ((channel !== "stable") !== prerelease) {
-            throw new Error(
-              `${channel} version ${version} requires GitHub prerelease=${channel !== "stable"}`,
-            );
+          const expectedTag = `v${version}`;
+          if (mode === "dev") {
+            if (channel !== "dev" || process.env.GITHUB_REF !== "refs/heads/main" ||
+                !process.env.GITHUB_SHA || packageJson.lambdadbSourceCommit !== process.env.GITHUB_SHA) {
+              throw new Error("Automatic publication requires a dev package from the exact main push");
+            }
+          } else if (mode === "verify") {
+            if (channel === "dev" || process.env.GITHUB_REF !== "refs/heads/main") {
+              throw new Error("Release verification requires an RC or stable version committed on main");
+            }
+          } else if (mode === "release") {
+            if (channel === "dev") {
+              throw new Error("Development versions publish automatically from main pushes, not GitHub Releases");
+            }
+            if (process.env.RELEASE_TAG !== expectedTag) {
+              throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match ${expectedTag}`);
+            }
+            if ((channel !== "stable") !== (process.env.RELEASE_PRERELEASE === "true")) {
+              throw new Error(
+                `${channel} version ${version} requires GitHub prerelease=${channel !== "stable"}`,
+              );
+            }
+          } else {
+            throw new Error(`Unknown run mode ${mode}`);
           }
 
-          const distTag = channel === "stable" ? "latest" : channel;
-          const sourceBranch = channel === "dev" ? "develop" : "main";
+          // Verification never publishes, so it has no dist-tag.
+          const distTag = mode === "verify" ? "" : channel === "stable" ? "latest" : channel;
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_branch=${sourceBranch}\n`);
-          console.log(`Validated ${version}; npm dist-tag=${distTag}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_branch=main\n`);
+          // Dev builds are smoke-tested against the dev environment; RC/stable releases and
+          // release verification against production.
+          const smokePrefix = mode === "dev" ? "LAMBDADB_DEV_" : "LAMBDADB_PROD_";
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `smoke_prefix=${smokePrefix}\n`);
+          console.log(`Validated ${version} (${mode}); npm dist-tag=${distTag || "none"}`);
           NODE
 
       - name: Verify release commit belongs to its channel branch
@@ -162,16 +196,18 @@ jobs:
       - name: Authenticate smoke tests to AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.LAMBDADB_SMOKE_AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars[format('{0}SMOKE_AWS_ROLE_ARN', steps.release.outputs.smoke_prefix)] }}
           aws-region: ap-northeast-2
           role-session-name: sdk-smoke-${{ github.run_id }}
 
-      - name: Validate deployed docsUrl behavior
+      - name: Run deployed live smoke tests
         env:
-          LAMBDADB_BASE_URL: ${{ vars.LAMBDADB_BASE_URL }}
-          LAMBDADB_PROJECT_NAME: ${{ vars.LAMBDADB_PROJECT_NAME }}
-          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars.LAMBDADB_SMOKE_SECRET_ARN }}
-        run: node scripts/run-live-smoke.mjs
+          LAMBDADB_BASE_URL: ${{ vars[format('{0}BASE_URL', steps.release.outputs.smoke_prefix)] }}
+          LAMBDADB_PROJECT_NAME: ${{ vars[format('{0}PROJECT_NAME', steps.release.outputs.smoke_prefix)] }}
+          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars[format('{0}SMOKE_SECRET_ARN', steps.release.outputs.smoke_prefix)] }}
+        run: |
+          echo "Live smoke target: $LAMBDADB_BASE_URL"
+          node scripts/run-live-smoke.mjs
 
       - name: Record publication evidence
         uses: actions/upload-artifact@v7
@@ -183,16 +219,27 @@ jobs:
           if-no-files-found: error
 
       - name: Publish tested tarball
+        if: steps.mode.outputs.mode != 'verify'
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+          VERSION: ${{ steps.release.outputs.version }}
           PUBLISH_EVENT: ${{ github.event_name }}
         run: |
           if [ "$PUBLISH_EVENT" = "push" ]; then
-            git fetch origin develop
-            if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]; then
+            git fetch origin main
+            if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
               echo "Skipping superseded development commit $(git rev-parse HEAD)"
               exit 0
+            fi
+            # A dev version is derived from its commit, so a rerun after publication finds it.
+            PUBLISHED_COMMIT=$(npm view "@functional-systems/lambdadb@$VERSION" lambdadbSourceCommit 2>/dev/null || true)
+            if [ "$PUBLISHED_COMMIT" = "$(git rev-parse HEAD)" ]; then
+              echo "$VERSION is already published from this commit"
+              exit 0
+            elif [ -n "$PUBLISHED_COMMIT" ]; then
+              echo "$VERSION is already published from $PUBLISHED_COMMIT" >&2
+              exit 1
             fi
           fi
           echo "Publishing $TARBALL with npm dist-tag $DIST_TAG"

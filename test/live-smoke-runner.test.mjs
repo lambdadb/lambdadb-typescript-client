@@ -16,7 +16,7 @@ test("smoke keys are read through AWS, masked, and passed only to the test child
   }, (command, args, options) => {
     calls.push("test");
     assert.equal(command, "npm");
-    assert.deepEqual(args, ["run", "test:live:docs-url"]);
+    assert.deepEqual(args, ["run", "test:live"]);
     assert.equal(options.env.LAMBDADB_PROJECT_API_KEY, "synthetic%test-key");
     return { status: 0 };
   }, (value) => { calls.push("mask"); assert.equal(value, "::add-mask::synthetic%25test-key"); });
@@ -38,6 +38,6 @@ test("missing configuration, secret read failures, and invalid keys fail before 
 
 test("smoke process failures prevent publication", () => {
   for (const result of [{ status: 1 }, { status: null, signal: "SIGTERM" }, { error: new Error("spawn failed") }]) {
-    assert.throws(() => runLiveSmoke(env, () => "synthetic-key", () => result, () => {}), /docsUrl smoke failed/);
+    assert.throws(() => runLiveSmoke(env, () => "synthetic-key", () => result, () => {}), /live smoke failed/);
   }
 });

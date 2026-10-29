@@ -2,48 +2,44 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { compareCores, latestStableTag, parseVersion, readVersion, setVersion, PUBLISHED_VERSION } from "./version.mjs";
 
-/** Update only a disposable CI checkout; repository version sources stay committed as reviewed. */
-export function prepareDevPackage(root, { sha, runId, attempt }) {
-  if (!/^[a-f0-9]{40}$/.test(sha ?? "") || !/^[1-9]\d*$/.test(runId ?? "") ||
-      !/^[1-9]\d{0,2}$/.test(attempt ?? "")) {
-    throw new Error("Require an exact source SHA, positive run ID, and attempt in 1..999");
+const git = (root, args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+
+/**
+ * Update only a disposable CI checkout; repository version sources stay committed as reviewed.
+ * The committed `X.Y.Z-dev.0` placeholder becomes `X.Y.Z-dev.N`, where N counts first-parent
+ * commits since the newest stable release tag reachable from the commit.
+ */
+export function prepareDevPackage(root, { sha }) {
+  if (!/^[a-f0-9]{40}$/.test(sha ?? "")) throw new Error("Require an exact source SHA");
+  if (git(root, ["rev-parse", "HEAD"]) !== sha) {
+    throw new Error("Development source SHA does not match the checked-out commit");
   }
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-  if (head !== sha) throw new Error("Development source SHA does not match the checked-out commit");
-  const paths = ["package.json", "package-lock.json", "examples/package-lock.json", "jsr.json"];
-  const [pkg, lock, examples, jsr] = paths.map((path) => JSON.parse(readFileSync(join(root, path), "utf8")));
-  const configPath = join(root, "src/lib/config.ts");
-  const config = readFileSync(configPath, "utf8");
-  const pattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:dev|rc)\.(0|[1-9]\d*))?$/;
-  const match = pattern.exec(pkg.version);
-  if (!match) throw new Error("Unsupported committed package version");
-  const sdkVersion = /sdkVersion:\s*"([^"]+)"/.exec(config)?.[1];
-  if ([lock.version, lock.packages?.[""]?.version, examples.packages?.[".."]?.version,
-    jsr.version, sdkVersion].some((version) => version !== pkg.version) ||
-    !config.includes(`speakeasy-sdk/typescript ${pkg.version} `)) {
-    throw new Error("Committed version sources must agree before generating a development package");
+  const committed = readVersion(root);
+  if (!/-dev\.0$/.test(committed)) {
+    throw new Error(`Development builds require a committed X.Y.Z-dev.0 version, found ${committed}`);
   }
-  // GitHub run IDs are unique; attempts give each rerun a new immutable package identity.
-  const number = BigInt(runId) * 1000n + BigInt(attempt);
-  const version = `${match[1]}.${match[2]}.${match[3]}-dev.${number}`;
-  const versionedConfig = config.replace(/(sdkVersion:\s*")[^"]+(")/, (_text, start, end) => `${start}${version}${end}`)
-    .replace(`speakeasy-sdk/typescript ${pkg.version} `, `speakeasy-sdk/typescript ${version} `);
-  pkg.version = lock.version = lock.packages[""].version = examples.packages[".."].version = jsr.version = version;
+  const { core, text } = parseVersion(committed);
+  const tag = latestStableTag(git(root, ["tag", "--merged", "HEAD", "--list", "v*"]).split("\n").filter(Boolean));
+  if (tag && compareCores(core, parseVersion(tag.slice(1)).core) <= 0) {
+    throw new Error(`Committed ${committed} must be newer than the latest stable release ${tag}; ` +
+      "merge the next development version first");
+  }
+  const count = Number(git(root, ["rev-list", "--count", "--first-parent", tag ? `${tag}..HEAD` : "HEAD"]));
+  if (!Number.isSafeInteger(count) || count < 1) throw new Error("Expected at least one commit since the latest release");
+  const version = setVersion(root, `${text}-dev.${count}`, { allowed: PUBLISHED_VERSION });
+  const pkgPath = join(root, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
   pkg.lambdadbSourceCommit = sha;
-  for (const [index, data] of [pkg, lock, examples, jsr].entries()) {
-    writeFileSync(join(root, paths[index]), `${JSON.stringify(data, null, 2)}\n`);
-  }
-  writeFileSync(configPath, versionedConfig);
+  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
   return version;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  if (process.env.GITHUB_EVENT_NAME !== "push" || process.env.GITHUB_REF !== "refs/heads/develop") {
-    throw new Error("Automatic development preparation is only allowed for develop pushes");
+  if (process.env.GITHUB_EVENT_NAME !== "push" || process.env.GITHUB_REF !== "refs/heads/main") {
+    throw new Error("Automatic development preparation is only allowed for main pushes");
   }
-  const version = prepareDevPackage(process.cwd(), {
-    sha: process.env.GITHUB_SHA, runId: process.env.GITHUB_RUN_ID, attempt: process.env.GITHUB_RUN_ATTEMPT,
-  });
+  const version = prepareDevPackage(process.cwd(), { sha: process.env.GITHUB_SHA });
   console.log(`Prepared ${version} from ${process.env.GITHUB_SHA}`);
 }
