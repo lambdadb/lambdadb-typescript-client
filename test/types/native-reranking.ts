@@ -1,5 +1,6 @@
 import {
   createQueryInput,
+  type CohereRerankConfig,
   type CollectionHandle,
   type QueryCollectionInput,
   type RerankConfig,
@@ -27,16 +28,26 @@ export async function queryRerank(collection: CollectionHandle): Promise<number 
   const retrievalScore: number | undefined = response.docs[0]?.retrievalScore;
   const safe = await collection.querySafe(custom);
   if (safe.ok && safe.value.rerank?.status === "applied") {
-    const criteriaVersion: "default-relevance-v1" | "custom" | undefined = safe.value.rerank.criteriaVersion;
+    const criteriaVersion: "default-relevance-v1" | "custom" | "cohere-relevance-v1" | undefined =
+      safe.value.rerank.criteriaVersion;
     void criteriaVersion;
   }
   void [body, model, legacy, metadata];
   return retrievalScore;
 }
+const cohere: CohereRerankConfig = {
+  provider: "cohere", model: "rerank-v5.0-fast", queryText: "Restore a version",
+  fields: ["body"], candidateSize: 100, onFailure: "returnOriginal", criteria: null,
+};
+const cohereInput: QueryCollectionInput = { query, rerank: { ...cohere, model: "rerank-v5.0-pro" } };
+// @ts-expect-error Providers accept only their own models.
+const mismatched: RerankConfig = { ...rerank, provider: "cohere" };
+// @ts-expect-error Cohere reranking does not support criteria.
+const cohereCriteria: RerankConfig = { ...cohere, criteria: ["Not useful", "Useful"] };
 // @ts-expect-error Unsupported providers are not part of the request contract.
-const unsupported: RerankConfig = { ...rerank, provider: "cohere" };
+const unsupported: RerankConfig = { ...rerank, provider: "voyage" };
 // @ts-expect-error Caller weights are unsupported.
 const weights: RerankConfig = { ...rerank, weights: [0, 1] };
 // @ts-expect-error Structured descriptions are unsupported.
 const structured: RerankConfig = { ...rerank, criteria: [{ description: "low" }] };
-void [unsupported, weights, structured];
+void [cohereInput, mismatched, cohereCriteria, unsupported, weights, structured];

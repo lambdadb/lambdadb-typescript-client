@@ -106,7 +106,7 @@ async function run() {
   await collection.docs.list({ size: 20 });
   await collection.docs.upsert({ docs: [{ id: "1", text: "hello" }] });
   // For large document sets (up to 200MB), use bulkUpsertDocs for a single-call flow.
-  // Bulk upsert is not supported for collections with native embedding vector fields.
+  // Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
   // await collection.docs.bulkUpsertDocs({ docs: largeDocArray });
 }
 
@@ -221,10 +221,12 @@ Source alignment does not establish deployment to your endpoint.
 ### Native reranking
 
 Pass an optional per-query `rerank` object to `query` or `querySafe` with
-`provider: "typesafe"`, `model: "jev-1.13.0"`, nonblank `queryText` and stored
-scalar text `fields`. The server manages credentials. Optional `criteria` selects
-2–10 ordered custom descriptions; omission/null uses the default criteria.
-See [Native reranking](docs/native-reranking.md) for default/custom examples,
+`provider: "typesafe"` and `model: "jev-1.13.0"`, or `provider: "cohere"` and
+`model: "rerank-v5.0-pro"` / `"rerank-v5.0-fast"`, plus nonblank `queryText`
+and stored scalar text `fields`. The server manages credentials. For TypeSafe,
+optional `criteria` selects 2–10 ordered custom descriptions; omission/null uses
+the default criteria. Cohere does not accept criteria.
+See [Native reranking](docs/native-reranking.md) for default/custom/Cohere examples,
 candidate limits, response fields and eligible fallback behavior. An applied
 `score` is the final evaluation score in [0,1], not a relevance probability;
 `retrievalScore` retains the original search score outside `doc`. Inspect
@@ -354,8 +356,8 @@ npm run test:external:qdrant
 
 ### Native embeddings
 
-Native embedding vector fields generate vectors from a configured stored string
-path. The source and its object ancestors need no index declarations. Declare
+Native embedding vector fields generate vectors from configured stored JSON
+paths. The sources and their object ancestors need no index declarations. Declare
 the vector field, write the original JSON, and query with `knn.queryText`:
 
 ```typescript
@@ -371,7 +373,7 @@ await client.createCollection({
       embedding: {
         provider: "openai",
         model: "text-embedding-3-small",
-        sourceField: "article.body",
+        sources: [{ field: "article.body", type: "text" }],
       },
     },
   },
@@ -394,6 +396,10 @@ const result = await collection.query({
 });
 ```
 
+The legacy `sourceField: "article.body"` form remains supported. Cohere
+(`embed-v5.0-pro` / `embed-v5.0-fast`) also accepts ordered text and image
+`sources` and mixed `knn.queryInputs`; see
+[ordered and image sources](docs/native-embeddings.md#ordered-and-image-sources).
 `rerank.fields` can select the same unindexed string path. Add appropriate source
 indexes when you also need lexical search, filtering, or sorting on those fields.
 This requires the [pinned native embedding contract](docs/native-embeddings.md)
@@ -448,9 +454,9 @@ run();
 
 * [listDocs](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 * [upsert](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.
-* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list. Not supported for collections with native embedding vector fields.
-* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
-* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
+* [bulkUpsertDocs](docs/sdks/docs/README.md#bulkupsertdocs) - Bulk upsert documents in one call (up to 200MB); use this for best DX when you have a document list. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
+* [getBulkUpsert](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
+* [bulkUpsert](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
 * [update](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 * [delete](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 * [fetch](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
@@ -489,10 +495,10 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 
 - [`collectionsCreate`](docs/sdks/collections/README.md#create) - Create a collection.
 - [`collectionsDelete`](docs/sdks/collections/README.md#delete) - Delete an existing collection.
-- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
+- [`collectionsDocsBulkUpsert`](docs/sdks/docs/README.md#bulkupsert) - Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
 - [`collectionsDocsDelete`](docs/sdks/docs/README.md#delete) - Delete documents by exactly one of document IDs or query filter.
 - [`collectionsDocsFetch`](docs/sdks/docs/README.md#fetch) - Lookup and return documents by document IDs from a collection.
-- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
+- [`collectionsDocsGetBulkUpsert`](docs/sdks/docs/README.md#getbulkupsert) - Request required info to upload documents. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
 - [`collectionsDocsListDocs`](docs/sdks/docs/README.md#listdocs) - List documents in a collection.
 - [`collectionsDocsUpdate`](docs/sdks/docs/README.md#update) - Update documents in a collection. Note that the maximum supported payload size is 6MB.
 - [`collectionsDocsUpsert`](docs/sdks/docs/README.md#upsert) - Upsert documents into a collection. Note that the maximum supported payload size is 6MB.

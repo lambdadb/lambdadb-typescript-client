@@ -89,6 +89,25 @@ for (const extra of [
   });
 }
 
+for (const safe of [false, true]) {
+  test(`Cohere rerank models preserve options without criteria, safe=${safe}`, async () => {
+    const reply = { took: 9, total: 2, docs, isDocsInline: true, maxScore: docs[0].score,
+      rerank: { ...metadata, provider: "cohere", model: "rerank-v5.0-fast", criteriaVersion: "cohere-relevance-v1" } };
+    const { handle, calls } = collection(() => json(reply));
+    const inputs = [
+      { query, size: 10, rerank: cohere },
+      { query, size: 10, rerank: { ...cohere, model: "rerank-v5.0-fast", candidateSize: null, onFailure: null, criteria: null } },
+      { query, size: 10, rerank: { ...cohere, candidateSize: 1000, onFailure: "returnOriginal" } },
+    ];
+    for (const input of inputs) {
+      const result = safe ? await handle.querySafe(input, options) : await handle.query(input, options);
+      if (safe) assert.equal(result.ok, true);
+      assert.deepEqual((safe ? result.value : result).rerank, reply.rerank);
+    }
+    assert.deepEqual(calls, inputs.map((input) => ({ ...input, consistentRead: false, includeVectors: false })));
+  });
+}
+
 test("legacy and explicit null rerank requests preserve wire behavior and facet-only support", () => {
   for (const extra of [{}, { rerank: null }]) {
     assert.deepEqual(JSON.parse(queryCollectionRequestBodyToJSON({ query, ...extra })), {
@@ -100,7 +119,7 @@ test("legacy and explicit null rerank requests preserve wire behavior and facet-
 
 const invalidConfigs = [
   ...["provider", "model", "queryText", "fields"].map((key) => ({ [key]: undefined })),
-  { provider: "cohere" }, { model: "unknown" }, { queryText: "" }, { queryText: "\u3000" },
+  { provider: "cohere" }, { model: "unknown" }, { model: "rerank-v5.0-pro" }, { queryText: "" }, { queryText: "\u3000" },
   { queryText: "é".repeat(4097) }, { fields: [] }, { fields: ["body", "body"] },
   { fields: ["body..title"] }, { fields: [" "] }, { fields: Array.from({ length: 9 }, (_, i) => `f${i}`) },
   ...[0, 9, 1001, 1.5, "50"].map((candidateSize) => ({ candidateSize })),
@@ -109,8 +128,15 @@ const invalidConfigs = [
     Array.from({ length: 5 }, (_, i) => `${i}${"é".repeat(1000)}`)].map((criteria) => ({ criteria })),
   { weights: [0, 1] }, { threshold: 0.5 }, { apiKey: "not-a-client-option" },
 ];
+// Cohere rerank contract: lambdadb 1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+const cohere = { ...rerank, provider: "cohere", model: "rerank-v5.0-pro" };
+const invalidCohere = [
+  { model: "jev-1.13.0" }, { model: "rerank-v4.0-pro" }, { criteria: [] }, { criteria: ["Low", "High"] },
+  { queryText: " " }, { fields: [] }, { candidateSize: 1001 }, { weights: [0, 1] },
+];
 const invalidInputs = [
   ...invalidConfigs.map((extra) => ({ query, size: 10, rerank: { ...rerank, ...extra } })),
+  ...invalidCohere.map((extra) => ({ query, size: 10, rerank: { ...cohere, ...extra } })),
   ...[0, -1, 1001].map((size) => ({ query, size, facets: { tags: {} }, rerank })),
   ...[{ size: 102, candidateSize: 101 }, { size: 1000, candidateSize: 999 }].map(({ size, candidateSize }) => (
     { query, size, rerank: { ...rerank, candidateSize } }

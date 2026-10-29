@@ -62,8 +62,23 @@ export type IndexConfigsVector = {
 
 export const EmbeddingProvider = {
   Openai: "openai",
+  Cohere: "cohere",
 } as const;
 export type EmbeddingProvider = ClosedEnum<typeof EmbeddingProvider>;
+
+/**
+ * One ordered embedding input mapping from the original stored JSON.
+ */
+export type EmbeddingSource = {
+  /**
+   * Unique dotted path in the original stored JSON; no index declaration is required.
+   */
+  field: string;
+  /**
+   * Text sources are scalar strings. Cohere image sources are strings or flat string arrays.
+   */
+  type: "text" | "image";
+};
 
 /**
  * Native embedding configuration for vector fields.
@@ -78,11 +93,15 @@ export type EmbeddingConfig = {
    */
   model: string;
   /**
-   * Dot-separated stored string path used to generate embeddings; source indexes are optional.
+   * Legacy single-text source path in the original JSON. Use exactly one non-null sourceField or sources.
    */
-  sourceField: string;
+  sourceField?: string | null | undefined;
   /**
-   * Embedding dimensions: an integer from 64 to 4096, within the model maximum. Optional in requests and resolved in stored metadata.
+   * 1–16 ordered source mappings. OpenAI requires exactly one text source; Cohere accepts text and image sources.
+   */
+  sources?: Array<EmbeddingSource> | null | undefined;
+  /**
+   * Embedding dimensions: an integer from 64 to 4096, within the model maximum. Cohere accepts 256, 512, 768, 1024, 1536 or 2048. Optional in requests and resolved in stored metadata.
    */
   dimensions?: number | undefined;
   /**
@@ -274,6 +293,7 @@ export function indexConfigsFromJSON(
 }
 
 // OpenAPI: lambdadb/docs@94a7b71613a3bf217a370d5117b3ff6ddfbae851.
+// Provider-specific dimension sets remain server-validated.
 const vectorDimensionsSchema = z.number().int().min(64).max(4096);
 
 /** @internal */
@@ -340,6 +360,29 @@ export const EmbeddingProvider$outboundSchema: z.ZodNativeEnum<
   typeof EmbeddingProvider
 > = EmbeddingProvider$inboundSchema;
 
+// OpenAPI: lambdadb/lambdadb@1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+// Path syntax, uniqueness and provider/model combinations remain server-validated.
+const EmbeddingSource$schema = z.object({
+  field: z.string(),
+  type: z.enum(["text", "image"]),
+}).strict();
+const embeddingSourcesSchema = z.array(EmbeddingSource$schema).min(1).max(16);
+
+/** @internal */
+export const EmbeddingSource$inboundSchema: z.ZodType<
+  EmbeddingSource,
+  z.ZodTypeDef,
+  unknown
+> = EmbeddingSource$schema;
+/** @internal */
+export type EmbeddingSource$Outbound = EmbeddingSource;
+/** @internal */
+export const EmbeddingSource$outboundSchema: z.ZodType<
+  EmbeddingSource$Outbound,
+  z.ZodTypeDef,
+  EmbeddingSource
+> = EmbeddingSource$schema;
+
 /** @internal */
 export const EmbeddingConfig$inboundSchema: z.ZodType<
   EmbeddingConfig,
@@ -348,7 +391,8 @@ export const EmbeddingConfig$inboundSchema: z.ZodType<
 > = z.object({
   provider: EmbeddingProvider$inboundSchema,
   model: z.string(),
-  sourceField: z.string(),
+  sourceField: nullToUndefined(z.string().optional()),
+  sources: nullToUndefined(embeddingSourcesSchema.optional()),
   dimensions: nullToUndefined(vectorDimensionsSchema.optional()),
   similarity: nullToUndefined(Similarity$inboundSchema.optional()),
 });
@@ -356,7 +400,8 @@ export const EmbeddingConfig$inboundSchema: z.ZodType<
 export type EmbeddingConfig$Outbound = {
   provider: string;
   model: string;
-  sourceField: string;
+  sourceField?: string | null | undefined;
+  sources?: Array<EmbeddingSource$Outbound> | null | undefined;
   dimensions?: number | undefined;
   similarity?: string | undefined;
 };
@@ -369,10 +414,14 @@ export const EmbeddingConfig$outboundSchema: z.ZodType<
 > = z.object({
   provider: EmbeddingProvider$outboundSchema,
   model: z.string(),
-  sourceField: z.string(),
+  sourceField: z.string().nullable().optional(),
+  sources: embeddingSourcesSchema.nullable().optional(),
   dimensions: vectorDimensionsSchema.optional(),
   similarity: Similarity$outboundSchema.optional(),
-}).strict();
+}).strict().refine(
+  (config) => (config.sourceField != null) !== (config.sources != null),
+  "Use exactly one non-null sourceField or sources",
+);
 
 export function embeddingConfigToJSON(
   embeddingConfig: EmbeddingConfig,

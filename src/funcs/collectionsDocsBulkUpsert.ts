@@ -27,7 +27,7 @@ import { APICall, APIPromise } from "../types/async.js";
 import { Result } from "../types/fp.js";
 
 /**
- * Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
+ * Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
  */
 export function collectionsDocsBulkUpsert(
   client: LambdaDBCore,

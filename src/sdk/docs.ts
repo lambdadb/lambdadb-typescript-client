@@ -47,7 +47,7 @@ export class Docs extends ClientSDK {
   }
 
   /**
-   * Request required info to upload documents. Bulk upsert is not supported for collections with native embedding vector fields.
+   * Request required info to upload documents. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async getBulkUpsert(
     request: operations.GetBulkUpsertDocsRequest,
@@ -61,7 +61,7 @@ export class Docs extends ClientSDK {
   }
 
   /**
-   * Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Bulk upsert is not supported for collections with native embedding vector fields.
+   * Bulk upsert documents into a collection. Note that the maximum supported object size is 200MB. Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async bulkUpsert(
     request: operations.BulkUpsertDocsRequest,

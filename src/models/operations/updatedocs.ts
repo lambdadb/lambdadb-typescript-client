@@ -7,7 +7,7 @@ import { remap as remap$ } from "../../lib/primitives.js";
 
 export type UpdateDocsRequestBody = {
   /**
-   * A list of documents to update. Each document must contain 'id' field to be updated. For native embedding vector fields, omit the generated vector. Patches merge with stored JSON on the server; omitted or unchanged source text preserves its vector, while changed source text regenerates it.
+   * A list of documents to update. Each document must contain 'id' field to be updated. For native embedding vector fields, a supplied vector takes precedence; otherwise patches merge with stored JSON on the server, unchanged source input preserves its vector, and changed source input regenerates it.
    */
   docs: Array<{ [k: string]: any }>;
   /** Write target Branch. Omitting it writes to main. */

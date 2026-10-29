@@ -13,5 +13,5 @@ let value: EmbeddingProvider = "openai";
 ## Values
 
 ```typescript
-"openai"
+"openai" | "cohere"
 ```
