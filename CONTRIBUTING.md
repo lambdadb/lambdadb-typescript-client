@@ -16,8 +16,8 @@ headers, signed URLs, and private document content from shared evidence.
 Branch from the current `develop` and open the pull request against `develop`;
 select the base explicitly because GitHub defaults to `main`. Feature and fix
 pull requests are merged with **Squash and merge**. See
-[Branches and merges](RELEASING.md#branches-and-merges) for release promotion
-and `main` -> `develop` synchronization.
+[Branches and merges](RELEASING.md#branches-and-merges) for release and hotfix
+branches, promotion to `main`, and `main` -> `develop` back-merges.
 
 Keep changes focused and preserve existing public API and wire behavior unless
 an intentional contract change requires otherwise. Update relevant examples,
