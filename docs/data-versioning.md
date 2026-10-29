@@ -240,7 +240,9 @@ New top-level fields and nested children at any object depth are supported.
 Include all existing fields, retaining their types, analyzers, vector settings,
 and embedding configuration. Removing or changing existing fields is rejected
 by the API; the SDK passes the full schema through without fetching the current
-schema first.
+schema first. Collection responses include the server-managed top-level `id`
+field as `{ type: "keyword" }`; requests may send it back unchanged or omit it,
+so `indexConfigs` read from `get()` can be reused as the base of an update.
 
 Collection `numDocs` and optional `dataUpdatedAt` describe the default `main`
 Branch's committed head, not all Branches or a selected ref. A commit without a

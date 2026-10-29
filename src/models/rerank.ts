@@ -2,10 +2,7 @@
 import * as z from "zod/v3";
 import { nullToUndefined } from "../lib/schemas.js";
 
-/** Per-query fixed native reranking model; the server supplies provider credentials. */
-export type RerankConfig = {
-  provider: "typesafe";
-  model: "jev-1.13.0";
+type RerankOptions = {
   /** Nonblank text, at most 8 KiB UTF-8; sent unchanged. */
   queryText: string;
   /** 1–8 unique stored scalar text paths, in model input order. */
@@ -14,9 +11,25 @@ export type RerankConfig = {
   candidateSize?: number | null | undefined;
   /** Server default: error. Only eligible provider failures can returnOriginal. */
   onFailure?: "error" | "returnOriginal" | null | undefined;
+};
+
+/** TypeSafe/Jev reranking with optional relevance criteria. */
+export type TypesafeRerankConfig = RerankOptions & {
+  provider: "typesafe";
+  model: "jev-1.13.0";
   /** 2–10 distinct nonblank descriptions, lowest to highest relevance; null uses defaults. */
   criteria?: string[] | null | undefined;
 };
+
+/** Cohere text reranking; criteria are unsupported. */
+export type CohereRerankConfig = RerankOptions & {
+  provider: "cohere";
+  model: "rerank-v5.0-pro" | "rerank-v5.0-fast";
+  criteria?: null | undefined;
+};
+
+/** Per-query fixed native reranking model; the server supplies provider credentials. */
+export type RerankConfig = TypesafeRerankConfig | CohereRerankConfig;
 
 export type RerankResponse = {
   status: "applied" | "skipped" | "fallback";
@@ -27,8 +40,8 @@ export type RerankResponse = {
   scoredCount: number;
   /** Rerank stage duration in milliseconds. */
   took: number;
-  /** Only applied results report this marker; custom is not a content identity. */
-  criteriaVersion?: "default-relevance-v1" | "custom" | undefined;
+  /** Only applied results report this marker; custom is not a content identity. Cohere uses cohere-relevance-v1. */
+  criteriaVersion?: "default-relevance-v1" | "custom" | "cohere-relevance-v1" | undefined;
   reason?: string | undefined;
 };
 
@@ -38,25 +51,38 @@ const blank = /^[\u0009-\u000d\u001c-\u0020\u1680\u2000-\u2006\u2008-\u200a\u202
 const nonblank = z.string().refine((text) => !blank.test(text), "Must be nonblank");
 const bytes = (text: string) => new TextEncoder().encode(text).length;
 
-/** @internal */
-export const RerankConfig$outboundSchema: z.ZodType<RerankConfig> = z.object({
-  provider: z.literal("typesafe"),
-  model: z.literal("jev-1.13.0"),
+// OpenAPI: lambdadb/lambdadb@1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+const rerankOptions = {
   queryText: nonblank.refine((text) => bytes(text) <= 8192, "queryText exceeds 8 KiB UTF-8"),
   fields: z.array(nonblank.refine(
     (path) => path.split(".").every((part) => !blank.test(part)), "Invalid field path",
   )).min(1).max(8).refine((paths) => new Set(paths).size === paths.length, "Fields must be unique"),
   candidateSize: z.number().int().min(1).max(1000).nullable().optional(),
   onFailure: z.enum(["error", "returnOriginal"]).nullable().optional(),
-  criteria: z.array(nonblank.refine(
-    (text) => bytes(text) <= 2048, "Criterion exceeds 2 KiB UTF-8",
-  )).min(2).max(10).refine(
-    (texts) => new Set(texts).size === texts.length, "Criteria must be distinct",
-  ).refine(
-    (texts) => texts.reduce((total, text) => total + bytes(text), 0) <= 8192,
-    "Criteria exceed 8 KiB total UTF-8",
-  ).nullable().optional(),
-}).strict();
+};
+
+/** @internal */
+export const RerankConfig$outboundSchema: z.ZodType<RerankConfig> = z.discriminatedUnion("provider", [
+  z.object({
+    provider: z.literal("typesafe"),
+    model: z.literal("jev-1.13.0"),
+    ...rerankOptions,
+    criteria: z.array(nonblank.refine(
+      (text) => bytes(text) <= 2048, "Criterion exceeds 2 KiB UTF-8",
+    )).min(2).max(10).refine(
+      (texts) => new Set(texts).size === texts.length, "Criteria must be distinct",
+    ).refine(
+      (texts) => texts.reduce((total, text) => total + bytes(text), 0) <= 8192,
+      "Criteria exceed 8 KiB total UTF-8",
+    ).nullable().optional(),
+  }).strict(),
+  z.object({
+    provider: z.literal("cohere"),
+    model: z.enum(["rerank-v5.0-pro", "rerank-v5.0-fast"]),
+    ...rerankOptions,
+    criteria: z.null().optional(),
+  }).strict(),
+]);
 
 /** @internal */
 export const RerankResponse$inboundSchema: z.ZodType<RerankResponse, z.ZodTypeDef, unknown> = z.object({
@@ -67,7 +93,7 @@ export const RerankResponse$inboundSchema: z.ZodType<RerankResponse, z.ZodTypeDe
   candidateCount: z.number().int().nonnegative(),
   scoredCount: z.number().int().nonnegative(),
   took: z.number().int().nonnegative(),
-  criteriaVersion: nullToUndefined(z.enum(["default-relevance-v1", "custom"]).optional()),
+  criteriaVersion: nullToUndefined(z.enum(["default-relevance-v1", "custom", "cohere-relevance-v1"]).optional()),
   reason: nullToUndefined(z.string().optional()),
 });
 

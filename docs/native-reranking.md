@@ -14,19 +14,22 @@ the query DTOs and contract tests, and the
 This includes the query/candidate limit increase in PR #469 and unindexed stored
 string paths in PR #481 (included in backend `main` at
 `242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
+Cohere reranking follows the public OpenAPI at backend `main`
+[`1c3e7d453cca296a7b2af85a375b4c5016504101`](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/api/openapi.json)
+(added in PR #483) and its [design contract](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/docs/design/native-reranking.md).
 A source pin is not evidence of deployment to your endpoint or a published SDK package.
 
 ## Request reference
 
 | `rerank` field | Type | Contract |
 | --- | --- | --- |
-| `provider` | `"typesafe"` | Required. |
-| `model` | `"jev-1.13.0"` | Required. |
+| `provider` | `"typesafe" \| "cohere"` | Required. |
+| `model` | `"jev-1.13.0"` for `typesafe`; `"rerank-v5.0-pro" \| "rerank-v5.0-fast"` for `cohere` | Required exact provider/model pair. |
 | `queryText` | `string` | Required nonblank text, up to 8 KiB UTF-8; also required for raw vector queries. |
 | `fields` | `string[]` | Required 1–8 unique stored scalar text paths, in model input order. Index declarations are optional; declared leaves must be text/keyword with object ancestors. The backend validates actual stored values. |
 | `candidateSize` | `number \| null` | Optional integer; omitted/null defaults to `max(50, size)`. Require `size <= candidateSize <= 1000`. |
 | `onFailure` | `"error" \| "returnOriginal" \| null` | Optional; omitted/null defaults to `error`. Applies only to eligible provider failures. |
-| `criteria` | `string[] \| null` | Optional 2–10 distinct nonblank descriptions, lowest to highest relevance. Omitted/null uses the default criteria. Each description is at most 2 KiB, with at most 8 KiB total UTF-8. |
+| `criteria` | `string[] \| null` | TypeSafe/Jev only. Optional 2–10 distinct nonblank descriptions, lowest to highest relevance. Omitted/null uses the default criteria. Each description is at most 2 KiB, with at most 8 KiB total UTF-8. Cohere requires omitted or null criteria. |
 
 The SDK preserves text, criteria order, nulls and omission without inserting
 server defaults. It rejects unsupported rerank options and invalid local bounds
@@ -174,6 +177,29 @@ This continues the default example. `criteria: null` selects the defaults.
 The same custom descriptions can produce different scores under a different
 model; retain the original request when comparing results.
 
+## Cohere example
+
+Cohere Rerank 5 scores the same rendered text fields with its native relevance
+scores. It does not accept `criteria`; the SDK rejects criteria, including an
+empty list, before HTTP. Reranking is text-only, so image or mixed
+`knn.queryInputs` queries still need an explicit `rerank.queryText`.
+
+```typescript
+const cohereResult = await collection.query({
+  ...input,
+  rerank: {
+    provider: "cohere",
+    model: "rerank-v5.0-fast",
+    queryText: "How do I restore a previous collection version?",
+    fields: ["title", "body"],
+  },
+});
+console.log(cohereResult.rerank?.criteriaVersion); // "cohere-relevance-v1" when applied
+```
+
+Cohere availability depends on the endpoint's provider configuration; an
+unconfigured provider returns a server error rather than a fallback.
+
 ## Response reference
 
 `score` is the final sorting value in the document envelope. With
@@ -196,7 +222,7 @@ Both scores and metadata survive automatic `docsUrl` downloads.
 | `candidateCount` | Yes | Actual unique candidates in the stage. |
 | `scoredCount` | Yes | Complete accepted scores; equals candidateCount on applied, zero on skipped/fallback. |
 | `took` | Yes | Stage milliseconds. |
-| `criteriaVersion` | No | Only applied: `default-relevance-v1` or `custom`. |
+| `criteriaVersion` | No | Only applied: `default-relevance-v1` or `custom` for TypeSafe/Jev; `cohere-relevance-v1` for Cohere. |
 | `reason` | No | Skip/fallback reason code. |
 
 `custom` indicates caller-provided criteria; it is not a content hash or unique

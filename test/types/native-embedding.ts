@@ -1,4 +1,4 @@
-import type { CreateCollectionInput, IndexConfigsUnion, IndexConfigsNativeEmbeddingVector, IndexConfigsManagedEmbeddingVector,
+import type { CreateCollectionInput, EmbeddingConfig, EmbeddingSource, IndexConfigsUnion, IndexConfigsNativeEmbeddingVector, IndexConfigsManagedEmbeddingVector,
   LambdaDBClient } from "@functional-systems/lambdadb";
 import type { IndexConfigsNativeEmbeddingVector as ModelNative } from "@functional-systems/lambdadb/models";
 
@@ -57,3 +57,15 @@ const dot: IndexConfigsUnion = { type: "vector", dimensions: 64, similarity: "do
 // @ts-expect-error Native embeddings use the same restricted similarity enum.
 const inner: ModelNative = { type: "vector", embedding: { ...native.embedding, similarity: "max_inner_product" } };
 void [dot, inner];
+
+const sources: EmbeddingSource[] = [{ field: "product.description", type: "text" }, { field: "product.images", type: "image" }];
+const cohere: IndexConfigsNativeEmbeddingVector = { type: "vector", embedding: {
+  provider: "cohere", model: "embed-v5.0-fast", dimensions: 1024, sources, sourceField: null,
+} };
+const singleText: EmbeddingConfig = { ...native.embedding, sourceField: undefined, sources: [{ field: "body", type: "text" }] };
+const storedSource: string | null | undefined = singleText.sourceField;
+// @ts-expect-error Source types are text or image.
+const audio: EmbeddingSource = { field: "audio", type: "audio" };
+// @ts-expect-error Unsupported providers are outside the public enum.
+const voyage: EmbeddingConfig = { ...singleText, provider: "voyage" };
+void [cohere, storedSource, audio, voyage];

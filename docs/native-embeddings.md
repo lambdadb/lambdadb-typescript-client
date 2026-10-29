@@ -5,7 +5,12 @@ preserves the omitted legacy flag and leaves dimensions/similarity defaults to
 the server. The contract is pinned to backend
 [ff13daf3f4ed40487b2b13522a141265c2f459ab](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/docs/design/native-embedding-config.md)
 (backend PR #481, included in `main` at `242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
-This source pin does not establish deployment to any endpoint.
+Cohere providers, ordered `sources`, image inputs, `knn.queryInputs`, direct
+vectors on native fields, and native-field bulk imports follow the public
+OpenAPI at backend `main`
+[`1c3e7d453cca296a7b2af85a375b4c5016504101`](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/api/openapi.json)
+(added in PR #483); see its [design contract](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/docs/design/native-embedding-config.md).
+These source pins do not establish deployment to any endpoint.
 
 ```typescript
 import { LambdaDBClient, type IndexConfigsNativeEmbeddingVector } from "@functional-systems/lambdadb";
@@ -34,47 +39,109 @@ console.log(response.docs);
 ```
 
 `sourceField` selects a dot-separated path in the original stored JSON. Neither
-`article` nor `article.body` needs an index declaration. Omit the native vector
-when writing documents; it is generated from the selected string. Query native
-vectors with `knn.queryText`. The SDK sends the original document without a
-`{text}` wrapper, source remapping, or inferred source indexes.
+`article` nor `article.body` needs an index declaration. The equivalent
+`sources: [{ field: "article.body", type: "text" }]` form is preferred for new
+bindings; use exactly one non-null `sourceField` or `sources`. Omit the native
+vector when writing documents; it is generated from the selected sources. Query
+native vectors with `knn.queryText` or `knn.queryInputs`. The SDK sends the
+original document without a `{text}` wrapper, source remapping, or inferred
+source indexes.
 For caller-provided vector fields, retain top-level dimensions and use `queryVector`.
-Native embedding fields require `queryText` and reject `queryVector`.
-Caller-provided vector fields require `queryVector` and do not support `queryText`.
-Each KNN query must provide exactly one non-null query input. This distinction is
-clarified in [OpenAPI revision `94a7b716`](https://github.com/lambdadb/docs/blob/94a7b71613a3bf217a370d5117b3ff6ddfbae851/reference/api/openapi.json)
-and enforced by the server; the SDK preserves free-form query serialization.
+Caller-provided vector fields require `queryVector` and do not support
+`queryText` or `queryInputs`. Native fields also accept `queryVector`, which
+skips inference; the vector must come from a compatible embedding space.
+Each KNN query must provide exactly one non-null `queryText`, `queryInputs`, or
+`queryVector`. The server enforces these rules; the SDK preserves free-form query
+serialization.
 Native dimensions and similarity, when explicit, belong inside `embedding`.
 Dimensions must be an integer from 64 to 4096, and similarity must be `cosine`
 or `euclidean`. The server also enforces each model's supported maximum.
 Omitted native dimensions and similarity remain omitted on the wire.
-Bulk upsert remains unsupported for Collections with native embedding fields.
+
+## Ordered and image sources
+
+`provider: "cohere"` supports `embed-v5.0-pro` and `embed-v5.0-fast` with
+dimensions 256, 512, 768, 1024, 1536, or 2048 (server default 2048, cosine).
+`sources` lists 1–16 original JSON paths in model-input order, each with an
+explicit `text` or `image` type. All present parts combine into one vector.
+OpenAI requires exactly one text source.
+
+```typescript
+await client.createCollection({
+  collectionName: "products",
+  indexConfigs: {
+    productVector: {
+      type: "vector",
+      embedding: {
+        provider: "cohere",
+        model: "embed-v5.0-pro",
+        dimensions: 1024,
+        sources: [
+          { field: "product.description", type: "text" },
+          { field: "product.images", type: "image" },
+        ],
+      },
+    },
+  },
+});
+const products = client.collection("products");
+await products.docs.upsert({ docs: [{ id: "jacket", product: {
+  description: "Blue waterproof jacket",
+  images: ["https://example.com/front.png", "https://example.com/back.png"],
+} }] });
+await products.query({ query: { knn: { field: "productVector", k: 10, queryInputs: [
+  { type: "text", value: "A similar jacket in red" },
+  { type: "image", value: "https://example.com/reference.png" },
+] } } });
+```
+
+An image source is a public HTTPS URL or a complete PNG, JPEG, GIF, or WebP
+`data:` URI, either as a string or a flat string array. Each input allows at
+most 16 effective parts, 8 images, 1 MiB of decoded image bytes, and
+4,194,304 pixels per image. Query `queryInputs` uses the same part limits;
+OpenAI accepts one text part. The stored document keeps URLs and data URIs
+unchanged. Use versioned URLs: an unchanged URL does not detect replaced content.
+
+The SDK validates the source list shape locally: 1–16 entries, known types, no
+extra members, and exactly one of `sources` or `sourceField`. Path syntax,
+duplicate paths, provider/model pairs, provider dimension sets, URLs, image
+formats, and byte/pixel limits remain server validations. Cohere availability
+depends on the endpoint's provider configuration.
 
 ## Source paths and writes
 
 Paths support top-level strings and traversal through objects. Empty path
-segments, array traversal, wildcards, and combining multiple source fields are
-unsupported. Declared source leaves must be `text` or `keyword`, and declared
-ancestors must be objects. An unindexed source is checked against the document;
-its value must be a scalar string. Explicit null, arrays, numbers, booleans, and
-whole objects are rejected before inference for newly supported source paths.
-URL-looking strings are literal text. Other stored values retain their existing
+segments, array traversal, and wildcards are unsupported; only Cohere combines
+multiple sources. Declared source leaves must be `text` or `keyword`, and declared
+ancestors must be objects. An unindexed text source is checked against the
+document; its value must be a scalar string. Explicit null, arrays, numbers,
+booleans, and whole objects are rejected before inference for newly supported
+source paths. URL-looking strings in text sources are literal text; images
+require an explicit `image` source. Other stored values retain their existing
 validation and storage behavior.
 
 A missing source on a full upsert skips its vector and inference call. Full
 upserts replace the document, so omission does not retain a previous source or
-vector. A misspelled unindexed path may therefore be treated as absent rather
+vector. A document may instead supply the native vector field directly, with or
+without its sources; the supplied vector takes precedence and skips inference. A misspelled unindexed path may therefore be treated as absent rather
 than rejected when creating the Collection.
 
 Partial updates merge with the stored document on the server before evaluating
 the source. An omitted or unchanged source preserves the existing vector;
-changed text generates a new one. An empty ancestor patch such as
+changed text generates a new one. An explicitly supplied vector takes precedence,
+and later metadata-only updates retain it. Removing the last source removes an
+inherited vector. An empty ancestor patch such as
 `{ id: "one", article: {} }` preserves existing text, and an unselected sibling
 update does not regenerate the vector. An invalid merged source is rejected.
 The SDK sends patches unchanged; it does not read, merge, or embed locally.
 Both the original and vector-materialized document retain the server's existing
 5 MiB document limit. Source/model bindings remain immutable, with no automatic
 reembedding or migration.
+
+Bulk upsert accepts Collections with native embedding fields but never generates
+embeddings. Include a compatible precomputed vector for every binding whose
+sources are present; a present source without its vector fails before any
+documents are committed. Use ordinary upsert to generate embeddings.
 
 ## Reranking and projection
 
@@ -150,6 +217,64 @@ node --env-file=/absolute/path/to/checkout/.env.local \
 
 It requires the same credentials and an endpoint supporting backend #481.
 Its assertions do not measure provider call counts or inference billing.
+
+The Cohere smoke covers ordered text/image sources, typed query inputs, direct
+vectors, partial-update vector lifecycle, Cohere reranking, bulk import with caller
+vectors and its pre-commit rejection, the OpenAI `sources` form, Cohere legacy
+`sourceField`, and HTTP 400 for provider rules the SDK leaves to the server:
+
+```bash
+npm run build
+node --env-file=/absolute/path/to/checkout/.env.local \
+  --test test/integration/cohere-native-live.test.mjs
+```
+
+It requires an endpoint with Cohere configured and generates its PNG data URIs
+in the test. It does not exercise HTTPS image retrieval.
+
+### Cohere validation on 2026-10-29
+
+The SDK branch based on `44e67c900929a1f2bbfa838dbaade9f537b8b594`, with this
+update, passed both Cohere smoke tests against
+`https://aws-ap-northeast-2-v3.lambdadb.ai`, project `stest`, in 41.7 seconds
+without skips.
+
+- A Collection with `embed-v5.0-fast`, 256 dimensions, and text/image `sources`
+  round-tripped its metadata (`sources` only, cosine). Text-only, image-only,
+  and mixed documents received vectors; the stored data URI was unchanged, and
+  a directly supplied vector was retained.
+- KNN `queryText` and `queryVector` returned the expected top documents; mixed
+  and image-only `queryInputs` returned an image-bearing document first.
+- `rerank-v5.0-fast` and `rerank-v5.0-pro` applied with `cohere-relevance-v1`
+  and scores in [0,1].
+- Metadata-only updates retained direct and update-supplied vectors, a changed
+  source regenerated the vector, an update-supplied vector took precedence, and
+  emptying the last image source removed the inherited vector.
+- Bulk import committed a caller vector and skipped an empty image array. A
+  payload with a present source and no vector returned `BadRequestError` (HTTP
+  400), and its valid sibling record was not committed.
+- OpenAI `sources` and Cohere legacy `sourceField` (default 2048 dimensions)
+  round-tripped. Collection creation returned HTTP 400 for an OpenAI image
+  source, two OpenAI sources, Cohere dimensions 1000, an unknown Cohere model,
+  duplicate source paths, and a blank path. OpenAI image `queryInputs` returned
+  HTTP 400.
+
+All nine temporary Collections were deleted and verified absent with HTTP 404.
+The existing native-embedding, stored-text, and native-reranking smokes also
+passed against the same endpoint.
+
+Separate probes showed that the server applies field- and provider-dependent
+KNN input checks only when the read target has committed data. On an empty
+Collection, `queryText`/`queryInputs` on a caller-vector field, OpenAI image or
+multi-part `queryInputs`, and Cohere raw base64 or `http://` image values
+returned HTTP 200 with no documents; with `consistentRead: true` they returned
+HTTP 400. After a write, OpenAI image input returned HTTP 200 until the document
+became visible to ordinary reads (42 seconds), then HTTP 400. Generic checks
+(empty list, blank value, unknown type) always returned HTTP 400. The cause is
+the empty-target return in backend `DocumentQueryService.queryDocuments`, which
+precedes native embedding preparation. The SDK forwards the server
+response unchanged. The running server's exact source revision, provider call
+counts, and billing were not independently verified.
 
 ### Stored-source validation on 2026-10-26
 

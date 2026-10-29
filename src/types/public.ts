@@ -146,6 +146,7 @@ export type {
   IndexConfigsNativeEmbeddingVector,
   EmbeddingConfig,
   EmbeddingProvider,
+  EmbeddingSource,
   PartitionConfig,
   PartitionFilter,
   FieldsSelectorUnion,
@@ -278,4 +279,4 @@ export function aliasDetailsWithDate(details: AliasDetailsModel): AliasDetails {
 
 export type { FacetRequest, FacetBucket, FacetResult } from "../models/operations/querycollection.js";
 
-export type { RerankConfig, RerankResponse } from "../models/rerank.js";
+export type { RerankConfig, TypesafeRerankConfig, CohereRerankConfig, RerankResponse } from "../models/rerank.js";

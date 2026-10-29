@@ -890,7 +890,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Get presigned URL and metadata for bulk upload (up to 200MB). Not supported for collections with native embedding vector fields.
+   * Get presigned URL and metadata for bulk upload (up to 200MB). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async getBulkUpsert(
     options?: RequestOptions,
@@ -919,7 +919,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Get presigned URL and metadata for bulk upload (Safe: returns Result instead of throwing). Not supported for collections with native embedding vector fields.
+   * Get presigned URL and metadata for bulk upload (Safe: returns Result instead of throwing). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async getBulkUpsertSafe(
     options?: RequestOptions,
@@ -946,7 +946,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Trigger bulk upsert with an object key from getBulkUpsert(). Not supported for collections with native embedding vector fields.
+   * Trigger bulk upsert with an object key from getBulkUpsert(). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async bulkUpsert(
     body: BulkUpsertInput,
@@ -965,7 +965,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Trigger bulk upsert (Safe: returns Result instead of throwing). Not supported for collections with native embedding vector fields.
+   * Trigger bulk upsert (Safe: returns Result instead of throwing). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    */
   async bulkUpsertSafe(
     body: BulkUpsertInput,
@@ -979,7 +979,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Bulk upsert documents in one call (up to 200MB). Not supported for collections with native embedding vector fields. Abstracts getBulkUpsert,
+   * Bulk upsert documents in one call (up to 200MB). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings. Abstracts getBulkUpsert,
    * S3 upload via presigned URL, and bulkUpsert. Use this for better DX when
    * you have a document list; use getBulkUpsert + bulkUpsert for low-level control. The create-only
    * signed PUT is not retried, and a failed upload is not finalized.
@@ -1030,7 +1030,7 @@ export class CollectionDocs {
   }
 
   /**
-   * Bulk upsert documents in one call (Safe: returns Result instead of throwing). Not supported for collections with native embedding vector fields.
+   * Bulk upsert documents in one call (Safe: returns Result instead of throwing). Native embedding fields require caller-supplied vectors; bulk upsert never generates embeddings.
    * May return Error for local failures (serialization, payload size, upload). API errors use GetBulkUpsertDocsError or BulkUpsertDocsError.
    */
   async bulkUpsertDocsSafe(

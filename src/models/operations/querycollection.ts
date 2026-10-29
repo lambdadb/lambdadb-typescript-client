@@ -26,7 +26,7 @@ export type QueryCollectionRequestBody = {
   candidateSize?: number | undefined;
   /**
    * Query object. BayesianQuery provides an optional typed top-level hybrid query.
-   * For native embedding vector fields, use knn.queryText; knn.queryVector is not supported. For caller-provided vector fields, use knn.queryVector. Each KNN query requires exactly one non-null query input.
+   * For native embedding vector fields, use knn.queryText or ordered knn.queryInputs parts ({ type: "text" | "image", value }); knn.queryVector skips inference. For caller-provided vector fields, use knn.queryVector. Each KNN query requires exactly one non-null queryText, queryInputs or queryVector.
    */
   query?: { [k: string]: any } | undefined;
   facets?: Record<string, FacetRequest> | undefined;

@@ -117,3 +117,82 @@ test("native embedding retains vector conflicts, strict public fields, and calle
   }
   assert.throws(() => indexConfigsManagedEmbeddingVectorToJSON(native));
 });
+
+// Cohere and ordered sources: lambdadb 1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+const cohere = { type: "vector", embedding: {
+  provider: "cohere", model: "embed-v5.0-pro", dimensions: 1024,
+  sources: [{ field: "product.description", type: "text" }, { field: "product.images", type: "image" }],
+} };
+
+test("ordered sources and Cohere settings round-trip without reordering or defaults", () => {
+  const sixteen = Array.from({ length: 16 }, (_, i) => ({ field: `part${i}`, type: i % 2 ? "image" : "text" }));
+  for (const embedding of [
+    cohere.embedding,
+    { ...cohere.embedding, sourceField: null },
+    { ...native.embedding, sourceField: undefined, sources: [{ field: "body", type: "text" }] },
+    { ...native.embedding, sources: null },
+    { ...cohere.embedding, sources: sixteen },
+  ]) {
+    const value = { type: "vector", embedding };
+    const wire = JSON.parse(JSON.stringify(value));
+    assert.deepEqual(JSON.parse(indexConfigsNativeEmbeddingVectorToJSON(value)), wire);
+    assert.deepEqual(JSON.parse(indexConfigsUnionToJSON(value)), wire);
+  }
+  const stored = { ...cohere, managedEmbedding: true, embedding: { ...cohere.embedding, similarity: "cosine" } };
+  assert.deepEqual(indexConfigsUnionFromJSON(JSON.stringify(stored)).value, stored);
+  // Optional null source forms normalize to undefined in responses.
+  const parsed = indexConfigsUnionFromJSON(JSON.stringify({ ...stored,
+    embedding: { ...stored.embedding, sourceField: null } })).value;
+  assert.equal(parsed.embedding.sourceField, undefined);
+  assert.deepEqual(parsed.embedding.sources, cohere.embedding.sources);
+});
+
+test("embedding source shape and exclusivity fail locally; path and model rules stay on the server", () => {
+  const { sourceField: _unused, ...withoutSource } = native.embedding;
+  for (const embedding of [
+    withoutSource, { ...withoutSource, sourceField: null, sources: null },
+    { ...cohere.embedding, sourceField: "body" }, { ...cohere.embedding, sources: [] },
+    { ...cohere.embedding, sources: Array.from({ length: 17 }, (_, i) => ({ field: `f${i}`, type: "text" })) },
+    { ...cohere.embedding, sources: [{ field: "body", type: "audio" }] },
+    { ...cohere.embedding, sources: [{ field: "body" }] },
+    { ...cohere.embedding, sources: [{ field: "body", type: "text", weight: 1 }] },
+    { ...cohere.embedding, sources: { field: "body", type: "text" } },
+    { ...cohere.embedding, provider: "voyage" },
+  ]) {
+    assert.throws(() => indexConfigsUnionToJSON({ type: "vector", embedding }), JSON.stringify(embedding));
+  }
+  // Duplicate/blank paths, provider-model pairs and provider dimension sets are server-validated.
+  for (const embedding of [
+    { ...cohere.embedding, sources: [{ field: "body", type: "text" }, { field: "body", type: "image" }] },
+    { ...cohere.embedding, sources: [{ field: " ", type: "text" }] },
+    { ...cohere.embedding, model: "text-embedding-3-small", dimensions: 1000 },
+    { ...native.embedding, sourceField: undefined, sources: cohere.embedding.sources },
+  ]) {
+    const value = { type: "vector", embedding };
+    assert.deepEqual(JSON.parse(indexConfigsUnionToJSON(value)), JSON.parse(JSON.stringify(value)));
+  }
+});
+
+for (const safe of [false, true]) {
+  test(`native KNN query inputs and direct vectors pass through unchanged, safe=${safe}`, async () => {
+    const calls = [];
+    const client = new LambdaDBClient({ baseUrl: "https://api.test", projectName: "project",
+      projectApiKey: "test-key", httpClient: new HTTPClient({ fetcher: async (request) => {
+        calls.push(await request.json());
+        return json({ took: 0, total: 0, docs: [], isDocsInline: true });
+      } }) });
+    const handle = client.collection("products");
+    const queries = [
+      { knn: { field: "vector", k: 10, queryInputs: [
+        { type: "text", value: "red shoes" }, { type: "image", value: "https://example.com/shoe.png" },
+      ] } },
+      { knn: { field: "vector", k: 10, queryInputs: [{ type: "image", value: "data:image/png;base64,AA==" }] } },
+      { knn: { field: "vector", k: 10, queryVector: [0.1, 0.2] } },
+    ];
+    for (const query of queries) {
+      const result = safe ? await handle.querySafe({ query }, options) : await handle.query({ query }, options);
+      if (safe) assert.equal(result.ok, true);
+    }
+    assert.deepEqual(calls.map((call) => call.query), queries);
+  });
+}

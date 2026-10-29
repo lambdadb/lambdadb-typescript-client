@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Align native embeddings and reranking with backend OpenAPI
+  `1c3e7d453cca296a7b2af85a375b4c5016504101` (PR #483). Add the `cohere`
+  embedding provider and ordered text/image `embedding.sources` (new
+  `EmbeddingSource` type); `sourceField` remains supported, and requests must
+  use exactly one of the two. `EmbeddingConfig.sourceField` is now optional and
+  nullable because stored configurations may use `sources`.
+- Add Cohere reranking (`rerank-v5.0-pro`, `rerank-v5.0-fast`) without criteria.
+  `RerankConfig` is now a union of `TypesafeRerankConfig` and `CohereRerankConfig`,
+  and `criteriaVersion` includes `cohere-relevance-v1`.
+- Document `knn.queryInputs`, direct vectors on native fields, and bulk imports
+  of precomputed vectors into native Collections. Queries and documents remain
+  free-form; provider availability depends on the deployed endpoint.
+- Document that Collection responses include the server-managed `id` field as
+  `{ type: "keyword" }` in `indexConfigs`, and that create/update requests may
+  send it back unchanged or omit it (backend PR #515). An `id`-only schema is
+  accepted. Other `id` configurations remain server-rejected.
 - Releases are trunk-based on `main`; `develop` is retired. `main` carries the
   next version as `X.Y.Z-dev.0` (now `0.11.0-dev.0`), and each merge publishes
   `X.Y.Z-dev.N`, where N counts first-parent commits since the newest stable tag
