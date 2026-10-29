@@ -133,6 +133,9 @@ test("the next development version workflow runs only after a successful release
   assert.match(nextDevWorkflow, /node scripts\/version\.mjs next-dev "\$RELEASED"/);
   assert.match(nextDevWorkflow, /node scripts\/version\.mjs set "\$NEXT"/);
   assert.match(nextDevWorkflow, /gh pr create --base main/);
+  // A rerun reuses an existing branch and opens the pull request only when none exists.
+  assert.doesNotMatch(nextDevWorkflow, /already exists"\n\s+exit 0/);
+  assert.match(nextDevWorkflow, /gh pr list --head "\$BRANCH" --base main --state all/);
 });
 
 test("release commits must be on main and only the current main head publishes a dev build", (t) => {
