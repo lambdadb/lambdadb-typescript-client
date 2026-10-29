@@ -13,6 +13,9 @@ headers, signed URLs, and private document content from shared evidence.
 
 ## Preparing a pull request
 
+Branch from `main` and open the pull request against `main`; maintainers merge
+it with **Squash and merge**. There is no `develop` branch.
+
 Keep changes focused and preserve existing public API and wire behavior unless
 an intentional contract change requires otherwise. Update relevant examples,
 reference documentation, and tests together. The recommended public entry point
@@ -38,4 +41,4 @@ Do not commit generated `dist`, local credentials, or scratch logs.
 
 Maintainers must follow [RELEASING.md](RELEASING.md) for version alignment,
 package validation, GitHub Releases, and npm publication. Creating a pull request
-does not publish a package.
+does not publish a package; merging into `main` publishes an automatic dev build.

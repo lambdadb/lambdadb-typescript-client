@@ -241,10 +241,10 @@ validation and error classification.
 ## CI
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests on Node 24.
-- **Publish**: `.github/workflows/publish.yaml` runs on pushes to `develop` for
-  automatic npm `dev` publication and on published GitHub Releases for explicit
-  dev, RC, or stable publication. A reviewed merge into `develop` authorizes its
-  automatic preview after package checks and deployed docsUrl smoke tests pass;
-  no Git tag or GitHub Release is created for that preview. Explicit dev releases
-  come from `develop`; RC/stable releases come from `main`, selecting `rc`/`latest`.
+- **Publish**: `.github/workflows/publish.yaml` runs on pushes to `main` and on
+  published GitHub Releases. A reviewed merge into `main` with the committed
+  `X.Y.Z-dev.0` placeholder publishes an npm `dev` build after package checks and
+  deployed live smoke tests pass; no Git tag or GitHub Release is created for it.
+  A merge that sets an RC or stable version is verified against production, and
+  its GitHub Release publishes with `rc`/`latest`.
   Follow [RELEASING.md](../RELEASING.md); no Speakeasy step is involved.
