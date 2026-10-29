@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.0-rc.1
 
 - Align native embeddings and reranking with backend OpenAPI
   `1c3e7d453cca296a7b2af85a375b4c5016504101` (PR #483). Add the `cohere`
