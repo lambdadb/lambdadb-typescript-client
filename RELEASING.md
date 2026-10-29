@@ -39,8 +39,9 @@ releases through promotion pull requests.
 5. For a hotfix, cut `hotfix/X.Y.Z` from `main`, open a pull request into `main`
    (merge commit), tag and publish, and then back-merge `main` -> `develop` as in
    step 4.
-6. Delete `release/*` and `hotfix/*` branches after their promotion pull request
-   merges.
+6. Delete a `hotfix/*` branch after its promotion pull request merges. Keep
+   `release/X.Y.Z` through RC stabilization and delete it after the final
+   stable promotion pull request merges.
 
 After lambdadb/lambdadb-iac#22 is applied, organization rulesets enforce the
 `develop` and `main` rules: deletion and force pushes are blocked and changes
