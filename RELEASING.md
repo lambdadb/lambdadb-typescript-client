@@ -4,10 +4,11 @@ This document defines the required packaging and release process for the
 `@functional-systems/lambdadb` npm package.
 
 npm is the production distribution channel. Releases are trunk-based: `main` is
-the only long-lived branch. A push to `main` with a development version publishes
-a dev build automatically, a push to `main` with an RC or stable version is
-verified against production, and a published GitHub Release publishes that RC or
-stable version. The repository also contains `jsr.json`, but the current workflow
+the only long-lived branch. A push to `main` whose committed version is already
+tagged publishes a dev build automatically, a push to `main` whose committed RC or
+stable version is not tagged yet (a release pull request merge) is verified
+against production, and a published GitHub Release publishes that RC or stable
+version. The repository also contains `jsr.json`, but the current workflow
 does not publish to JSR.
 
 ## Branches
@@ -32,14 +33,16 @@ The local package entry at `packages[".."].version` in
 `examples/package-lock.json` and both the `sdkVersion` and embedded User-Agent
 version in `src/lib/config.ts` must match those four version sources.
 
-Between releases, `main` carries the next version with the development
-placeholder `X.Y.Z-dev.0`. Number 0 is never published. A release pull request
-sets the RC or stable version, and that exact merge commit is tagged with a
-leading `v`. Development packages have no Git tag or GitHub Release.
+The committed version is always an RC or stable version: between releases it
+keeps the most recently released version, whose `v<version>` tag exists. Only a
+release pull request changes it, setting the next RC or stable version, and that
+exact merge commit is tagged with a leading `v`. A development version is never
+committed; CI derives it from the committed version and the tags. Development
+packages have no Git tag or GitHub Release.
 
 | Channel | Committed version | Published version | Git tag | npm dist-tag |
 | :-- | :-- | :-- | :-- | :-- |
-| Development | `X.Y.Z-dev.0` | `X.Y.Z-dev.N` (N ≥ 1, assigned by CI) | None | `dev` |
+| Development | Last released `X.Y.Z` or `X.Y.Z-rc.N` (tagged) | `X.Y.(Z+1)-dev.N` after a stable release, `X.Y.Z-dev.N` after an RC (N ≥ 1, assigned by CI) | None | `dev` |
 | Release candidate | `X.Y.Z-rc.N` | `X.Y.Z-rc.N` | `vX.Y.Z-rc.N` | `rc` |
 | Stable | `X.Y.Z` | `X.Y.Z` | `vX.Y.Z` | `latest` |
 
@@ -77,26 +80,35 @@ file's formatting and fails unless all sources agree afterwards:
 ```bash
 node scripts/version.mjs get                 # print the committed version
 node scripts/version.mjs set 0.12.0-rc.1     # release pull request
-node scripts/version.mjs set 0.12.0-dev.0    # next development version
+node scripts/version.mjs set 0.12.0          # stable release pull request
 ```
 
-It accepts only committed forms: `X.Y.Z-dev.0`, `X.Y.Z-rc.N`, and `X.Y.Z`. The
-publish workflow and test suite reject sources that disagree.
+It accepts only committed forms: `X.Y.Z-rc.N` and `X.Y.Z`. Development forms are
+rejected. The publish workflow and test suite reject sources that disagree. Only
+release pull requests change the version.
 
 ## Development packages
 
-Every reviewed push to `main` whose committed version is `X.Y.Z-dev.0` publishes
-a dev build after lint, typechecking, tests, clean tarball installation, and
-deployed live smoke tests against the dev environment pass. Merging into `main`
-authorizes this automatic dev publication.
+Every reviewed push to `main` whose committed version already has its
+`v<version>` tag on `origin` is a development commit. It publishes a dev build
+after lint, typechecking, tests, clean tarball installation, and deployed live
+smoke tests against the dev environment pass. Merging into `main` authorizes this
+automatic dev publication. The workflow queries the tags on `origin`, so a tag
+that exists only in a local checkout does not count.
 
-The workflow checks out the exact push SHA and publishes `X.Y.Z-dev.N`, where N
-is the number of first-parent commits on `main` since the newest stable release
+The workflow checks out the exact push SHA and derives the development version
+from the committed version:
+
+- After a stable release `X.Y.Z`, it publishes `X.Y.(Z+1)-dev.N`.
+- After an RC `X.Y.Z-rc.M`, it publishes `X.Y.Z-dev.N`, which sorts below the RC.
+
+N is the number of first-parent commits on `main` since the newest stable release
 tag (`vA.B.C`) reachable from that commit, or since the root commit when there is
 none. N is the same on every rerun of a commit, restarts at 1 after each stable
-release, and keeps increasing across the RCs of one version. The workflow fails
-unless `X.Y.Z` is newer than the newest stable tag, so a missed next-version
-change cannot publish a lower version. It updates package and lockfile versions,
+release, and keeps increasing across the RCs of one version. For example, after
+`v0.11.0` the next `main` push publishes `0.11.1-dev.1`; after `v0.12.0-rc.1` it
+publishes `0.12.0-dev.N`. The workflow fails unless the development version is
+newer than the newest stable tag. It updates package and lockfile versions,
 `jsr.json`, SDK metadata, and User-Agent only in its disposable checkout and
 creates no commit, tag, or GitHub Release. The published `package.json` includes
 `lambdadbSourceCommit`.
@@ -107,8 +119,11 @@ may replace a pending run with a newer push, so not every intermediate commit is
 published. Immediately before publication, the workflow skips a commit that is
 no longer the head of `main`, and skips a version already published from the
 same commit (a rerun). A version published from a different commit fails the
-run. The `dev` dist-tag points to the latest successfully published build;
-failed validation leaves it in place. The exact tarball and npm pack manifest are
+run. The `dev` dist-tag never moves backwards: a version lower than the current
+`dev` dist-tag by SemVer (for example, after a release with a lower version than
+earlier dev builds) is skipped with a workflow notice, not a failure. The `dev`
+dist-tag points to the highest successfully published build; failed validation
+leaves it in place. The exact tarball and npm pack manifest are
 retained as workflow artifacts.
 
 ## Release candidates and stable releases
@@ -117,21 +132,17 @@ retained as workflow artifacts.
    `node scripts/version.mjs set 0.12.0-rc.1` (or `0.12.0`) and updates
    `CHANGELOG.md`, release notes, and user-facing documentation. Run the complete
    validation checklist.
-2. Merge it. That `main` push runs the publish workflow in verification mode: the
-   same checks plus live smoke tests against production, with no publication.
-   Do not merge other pull requests until the release is tagged, or tag the
-   release pull request's merge commit explicitly.
+2. Merge it. Its version has no tag yet, so that `main` push runs the publish
+   workflow in verification mode: the same checks plus live smoke tests against
+   production, with no publication. Until the release is tagged, every `main`
+   push is verified the same way and publishes no dev build. Do not merge other
+   pull requests until the release is tagged, or tag the release pull request's
+   merge commit explicitly.
 3. After verification passes, tag that exact merge commit (`v0.12.0-rc.1` or
    `v0.12.0`) and publish a GitHub Release. Mark RCs as prereleases and stable
    releases as not prereleases. The workflow runs the production live smoke
    tests again and publishes with npm dist-tag `rc` or `latest`.
-4. When publication succeeds, the "Open next development version" workflow opens
-   a pull request that restores the placeholder: the same `X.Y.Z-dev.0` after an
-   RC, or the next patch `X.Y.(Z+1)-dev.0` after a stable release. Change it with
-   `node scripts/version.mjs set` if the next release is a minor or major version,
-   then merge it. Pull requests opened by GitHub Actions do not trigger CI; the
-   publish workflow runs the full checks when it merges.
-5. Verify the registry:
+4. Verify the registry:
 
    ```bash
    npm view @functional-systems/lambdadb@rc version
@@ -202,13 +213,13 @@ For a prerelease, the first command must show the existing stable version under
 ## Workflow authentication and boundaries
 
 - `.github/workflows/publish.yaml` handles `main` pushes and published GitHub
-  Releases. A `main` push with `X.Y.Z-dev.0` publishes a dev build; a `main` push
-  with an RC or stable version only verifies it; a Release publishes its RC or
-  stable version. Dev versions are never published through GitHub Releases.
-  Ordinary PR CI has no credentials, runs no live tests, and cannot publish.
-- `.github/workflows/next-dev-version.yaml` runs after a successful Release
-  publication and opens the next development version pull request with
-  `contents: write` and `pull-requests: write`. It never publishes.
+  Releases. A `main` push whose committed version is tagged on `origin`
+  publishes a dev build; a `main` push whose committed version is not tagged
+  yet only verifies it, and a committed development form fails the run; a
+  Release publishes its RC or stable version. Dev versions are never published
+  through GitHub Releases. Ordinary PR CI has no credentials, runs no live
+  tests, and cannot publish. No workflow writes to the repository or opens
+  pull requests.
 - Dev builds run the live smoke tests against the dev environment. Release
   verification and RC/stable Releases run them against production.
 - Metadata and ancestry checks reject unsupported versions, mismatches,

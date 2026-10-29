@@ -27,9 +27,11 @@ The following rules are mandatory:
 - Keep the versions in `package.json`, both version locations in
   `package-lock.json`, and `jsr.json` identical.
 - Use canonical SemVer versions: `X.Y.Z-dev.N` for development packages,
-  `X.Y.Z-rc.N` for release candidates, and `X.Y.Z` for stable releases. Between
-  releases, commit the placeholder `X.Y.Z-dev.0`; CI assigns N. Change versions
-  with `node scripts/version.mjs set`.
+  `X.Y.Z-rc.N` for release candidates, and `X.Y.Z` for stable releases. The
+  committed version is always the last released RC or stable version, or the
+  next one set by a release pull request; never commit a development version.
+  CI derives `X.Y.Z-dev.N` from the committed version and the tags. Change
+  versions only in release pull requests, with `node scripts/version.mjs set`.
 - Publish development packages with npm dist-tag `dev`, release candidates with
   `rc`, and stable releases with `latest`. Never assign `latest` to a
   prerelease.
@@ -40,11 +42,10 @@ The following rules are mandatory:
   packages come from reviewed commits on `main`.
 - Never replace an existing npm package version or move a published Git tag.
   Publish the next development, RC, or patch version instead.
-- Reviewed merges into `main` with a committed `X.Y.Z-dev.0` version authorize
-  the configured automatic dev publication after all release checks pass.
-  Generate the published dev version only in the disposable CI checkout; do not
-  commit dev numbers or create dev tags. The bot-opened next-version pull request
-  is reviewed and merged like any other change.
+- Reviewed merges into `main` whose committed version is already tagged
+  authorize the configured automatic dev publication after all release checks
+  pass. Generate the published dev version only in the disposable CI checkout;
+  do not commit dev versions or create dev tags.
 - Outside that automatic dev workflow, never create or push a tag, publish or
   edit a GitHub Release, publish to npm, change an npm dist-tag, deprecate a
   package, or unpublish a package without explicit user approval.

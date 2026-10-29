@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Development versions are derived from tags instead of a committed placeholder.
+  The committed version always holds the last released RC or stable version (or
+  the next one set by a release pull request), and `scripts/version.mjs set`
+  rejects development forms. A `main` push whose committed version is already
+  tagged on `origin` publishes `X.Y.(Z+1)-dev.N` after a stable release or
+  `X.Y.Z-dev.N` after an RC, with N counting first-parent commits since the
+  newest stable tag; a push whose version is not tagged yet is verified against
+  production without publishing. A dev build lower than the current `dev`
+  dist-tag is skipped instead of moving the dist-tag backwards. The "Open next
+  development version" workflow and its pull requests are removed.
+
 ## 0.11.0
 
 Stable release of `0.11.0-rc.1` with no SDK changes. The release candidate

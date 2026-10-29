@@ -33,8 +33,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      # A main push with the committed X.Y.Z-dev.0 placeholder publishes a dev build; a main
-      # push with an RC/stable version (a release PR merge) is verified against production only.
+      # The committed version is always an RC or stable version. A main push whose version is
+      # already tagged on origin is a development commit and publishes a dev build; a main push
+      # whose version has no tag yet (a release PR merge) is verified against production only.
+      # Query origin rather than local tags so a stale checkout cannot misclassify the commit.
       - name: Select the run mode
         id: mode
         env:
@@ -45,9 +47,15 @@ jobs:
             MODE=release
           else
             case "$VERSION" in
-              *-dev.0) MODE=dev ;;
-              *-dev.*) echo "Committed version $VERSION must use the -dev.0 placeholder" >&2; exit 1 ;;
-              *) MODE=verify ;;
+              *-dev.*) echo "Committed version $VERSION must be an RC or stable version" >&2; exit 1 ;;
+            esac
+            # Exit status 2 means the tag does not exist.
+            STATUS=0
+            git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null || STATUS=$?
+            case "$STATUS" in
+              0) MODE=dev ;;
+              2) MODE=verify ;;
+              *) echo "Could not query origin for tag v$VERSION" >&2; exit 1 ;;
             esac
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
@@ -240,6 +248,15 @@ jobs:
             elif [ -n "$PUBLISHED_COMMIT" ]; then
               echo "$VERSION is already published from $PUBLISHED_COMMIT" >&2
               exit 1
+            fi
+            # Never move the dev dist-tag backwards, e.g. after a release with a lower version.
+            CURRENT_DEV=$(npm view "@functional-systems/lambdadb" dist-tags.dev)
+            if [ -n "$CURRENT_DEV" ]; then
+              ORDER=$(node scripts/version.mjs compare "$VERSION" "$CURRENT_DEV")
+              if [ "$ORDER" -lt 0 ]; then
+                echo "::notice::Skipping $VERSION: it is lower than the current dev dist-tag $CURRENT_DEV"
+                exit 0
+              fi
             fi
           fi
           echo "Publishing $TARBALL with npm dist-tag $DIST_TAG"

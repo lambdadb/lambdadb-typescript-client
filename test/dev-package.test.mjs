@@ -6,11 +6,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { prepareDevPackage } from "../scripts/prepare-dev-package.mjs";
-import { nextDevVersion, readVersion, setVersion } from "../scripts/version.mjs";
+import { compareVersions, readVersion, setVersion } from "../scripts/version.mjs";
 
 const paths = ["package.json", "package-lock.json", "examples/package-lock.json", "jsr.json", "src/lib/config.ts"];
 
-function fixture(t, version = "0.8.1-dev.0") {
+function fixture(t, version = "0.8.0") {
   const root = mkdtempSync(join(tmpdir(), "lambdadb-dev-package-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "examples"));
@@ -37,14 +37,14 @@ function fixture(t, version = "0.8.1-dev.0") {
   return { root, git, commit, snapshot, read };
 }
 
-test("dev builds count first-parent commits since the newest stable tag and record the source commit", (t) => {
+test("dev builds continue from the committed release and count first-parent commits since the newest stable tag", (t) => {
   const f = fixture(t, "0.8.0");
   f.commit("Release 0.8.0");
   f.git("tag", "v0.8.0");
-  setVersion(f.root, "0.8.1-dev.0");
-  f.commit("Next development version");
-  let sha = f.commit("Feature");
+  f.commit("Feature");
+  let sha = f.commit("Fix");
   const before = f.snapshot();
+  // A stable committed version continues as the next patch.
   assert.equal(prepareDevPackage(f.root, { sha }), "0.8.1-dev.2");
   assert.equal(readVersion(f.root), "0.8.1-dev.2");
   assert.deepEqual(f.read("package.json"), { name: "test-package", version: "0.8.1-dev.2",
@@ -57,46 +57,50 @@ test("dev builds count first-parent commits since the newest stable tag and reco
   for (const [path, text] of Object.entries(before)) writeFileSync(join(f.root, path), text);
   assert.equal(prepareDevPackage(f.root, { sha }), "0.8.1-dev.2");
 
-  // RC tags do not reset the count; the next stable tag does.
+  // An RC continues with the same core, below the RC; RC tags do not reset the count.
   for (const [path, text] of Object.entries(before)) writeFileSync(join(f.root, path), text);
-  setVersion(f.root, "0.8.1-rc.1");
-  f.commit("Release 0.8.1-rc.1");
-  f.git("tag", "v0.8.1-rc.1");
-  setVersion(f.root, "0.8.1-dev.0");
-  sha = f.commit("Back to development");
-  assert.equal(prepareDevPackage(f.root, { sha }), "0.8.1-dev.4");
+  setVersion(f.root, "0.9.0-rc.1");
+  f.commit("Release 0.9.0-rc.1");
+  f.git("tag", "v0.9.0-rc.1");
+  sha = f.commit("Feature after the RC");
+  assert.equal(prepareDevPackage(f.root, { sha }), "0.9.0-dev.4");
+  assert.ok(compareVersions("0.9.0-dev.4", "0.9.0-rc.1") < 0);
 
-  setVersion(f.root, "0.8.1-dev.0");
-  setVersion(f.root, "0.8.1");
-  f.commit("Release 0.8.1");
-  f.git("tag", "v0.8.1");
-  setVersion(f.root, "0.9.0-dev.0");
-  sha = f.commit("Next development version");
-  assert.equal(prepareDevPackage(f.root, { sha }), "0.9.0-dev.1");
+  // A stable tag restarts the count; merge commits count once on the first-parent line.
+  f.git("checkout", "--", ".");
+  setVersion(f.root, "0.9.0");
+  f.commit("Release 0.9.0");
+  f.git("tag", "v0.9.0");
+  f.git("checkout", "-q", "-b", "topic");
+  f.commit("Topic 1");
+  f.commit("Topic 2");
+  f.git("checkout", "-q", "main");
+  f.git("merge", "--no-ff", "topic", "-m", "Merge topic");
+  sha = f.git("rev-parse", "HEAD");
+  assert.equal(prepareDevPackage(f.root, { sha }), "0.9.1-dev.1");
 });
 
 test("without a stable tag the count starts at the root commit", (t) => {
-  const f = fixture(t, "0.1.0-dev.0");
+  const f = fixture(t, "0.1.0-rc.1");
   f.commit("Initial");
   const sha = f.commit("Second");
   assert.equal(prepareDevPackage(f.root, { sha }), "0.1.0-dev.2");
 });
 
-test("dev builds reject non-placeholder versions, regressions, mismatches and wrong commits without mutation", (t) => {
-  for (const version of ["0.8.0", "0.8.0-rc.1"]) {
-    const f = fixture(t, version);
-    const sha = f.commit("Release commit");
-    const before = f.snapshot();
-    assert.throws(() => prepareDevPackage(f.root, { sha }), /require a committed X\.Y\.Z-dev\.0/);
-    assert.deepEqual(f.snapshot(), before);
-  }
+test("dev builds reject dev forms, regressions, mismatches and wrong commits without mutation", (t) => {
+  const devForm = fixture(t, "0.8.1-dev.0");
+  let sha = devForm.commit("Committed dev form");
+  let before = devForm.snapshot();
+  assert.throws(() => prepareDevPackage(devForm.root, { sha }), /require a committed RC or stable version/);
+  assert.deepEqual(devForm.snapshot(), before);
 
+  // An RC whose stable version is already tagged would publish below the stable release.
   const regressed = fixture(t, "0.8.0");
   regressed.commit("Release 0.8.0");
   regressed.git("tag", "v0.8.0");
-  setVersion(regressed.root, "0.8.0-dev.0");
-  let sha = regressed.commit("Forgot to bump");
-  let before = regressed.snapshot();
+  setVersion(regressed.root, "0.8.0-rc.2");
+  sha = regressed.commit("Version regressed");
+  before = regressed.snapshot();
   assert.throws(() => prepareDevPackage(regressed.root, { sha }), /must be newer than the latest stable release v0\.8\.0/);
   assert.deepEqual(regressed.snapshot(), before);
 
@@ -132,14 +136,25 @@ test("the preparation CLI only runs for main pushes", (t) => {
   }
 });
 
-test("set-version accepts only committed forms and next-dev follows RC and stable releases", (t) => {
+test("set-version accepts only RC and stable forms, and versions compare by SemVer", (t) => {
   const f = fixture(t);
-  for (const version of ["0.8.1-dev.3", "0.8.1-dev", "0.8.1-beta.1", "v0.8.1", "0.8.1-rc.0"]) {
+  for (const version of ["0.8.1-dev.0", "0.8.1-dev.3", "0.8.1-dev", "0.8.1-beta.1", "v0.8.1", "0.8.1-rc.0"]) {
     assert.throws(() => setVersion(f.root, version), /Unsupported version/);
   }
+  assert.equal(readVersion(f.root), "0.8.0");
   assert.equal(setVersion(f.root, "0.8.1-rc.2"), "0.8.1-rc.2");
   assert.equal(setVersion(f.root, "1.0.0"), "1.0.0");
-  assert.equal(nextDevVersion("0.8.1-rc.2"), "0.8.1-dev.0");
-  assert.equal(nextDevVersion("0.8.1"), "0.8.2-dev.0");
-  assert.throws(() => nextDevVersion("0.8.1-dev.4"), /Expected an RC or stable version/);
+
+  const ascending = ["0.9.0", "0.9.1-dev.1", "0.9.1-dev.2", "0.9.1-dev.10", "0.9.1-rc.1", "0.9.1-rc.2", "0.9.1",
+    "0.10.0-dev.1"];
+  for (let i = 0; i < ascending.length; i += 1) {
+    for (let j = 0; j < ascending.length; j += 1) {
+      assert.equal(Math.sign(compareVersions(ascending[i], ascending[j])), Math.sign(i - j), `${ascending[i]} vs ${ascending[j]}`);
+    }
+  }
+  assert.throws(() => compareVersions("0.9.1", "0.9.1-beta.1"), /Unsupported version/);
+  const script = fileURLToPath(new URL("../scripts/version.mjs", import.meta.url));
+  const compare = (a, b) => spawnSync(process.execPath, [script, "compare", a, b], { encoding: "utf8" }).stdout.trim();
+  assert.deepEqual([compare("0.11.1-dev.1", "0.11.0-dev.6"), compare("0.11.0-dev.6", "0.11.0-dev.6"),
+    compare("0.11.0-dev.6", "0.11.0-rc.1")], ["1", "0", "-1"]);
 });
