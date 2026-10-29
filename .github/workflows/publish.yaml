@@ -33,8 +33,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
-      # A main push with the committed X.Y.Z-dev.0 placeholder publishes a dev build; a main
-      # push with an RC/stable version (a release PR merge) is verified against production only.
+      # The committed version is always an RC or stable version. A main push whose version is
+      # already tagged on origin is a development commit and publishes a dev build; a main push
+      # whose version has no tag yet (a release PR merge) is verified against production only.
+      # Query origin rather than local tags so a stale checkout cannot misclassify the commit.
       - name: Select the run mode
         id: mode
         env:
@@ -45,20 +47,30 @@ jobs:
             MODE=release
           else
             case "$VERSION" in
-              *-dev.0) MODE=dev ;;
-              *-dev.*) echo "Committed version $VERSION must use the -dev.0 placeholder" >&2; exit 1 ;;
-              *) MODE=verify ;;
+              *-dev.*) echo "Committed version $VERSION must be an RC or stable version" >&2; exit 1 ;;
+            esac
+            # Exit status 2 means the tag does not exist.
+            STATUS=0
+            git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null || STATUS=$?
+            case "$STATUS" in
+              0) MODE=dev ;;
+              2) MODE=verify ;;
+              *) echo "Could not query origin for tag v$VERSION" >&2; exit 1 ;;
             esac
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "Committed version $VERSION; run mode $MODE"
 
+      # A rerun of a stable release commit after its tag exists has no development version
+      # (N = 0); the step reports ready=false with a notice and every later step is skipped.
       - name: Prepare automatic development version
+        id: dev
         if: steps.mode.outputs.mode == 'dev'
         run: node scripts/prepare-dev-package.mjs
 
       - name: Validate release metadata
         id: release
+        if: steps.dev.outputs.ready != 'false'
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
@@ -143,6 +155,7 @@ jobs:
           NODE
 
       - name: Verify release commit belongs to its channel branch
+        if: steps.dev.outputs.ready != 'false'
         env:
           SOURCE_BRANCH: ${{ steps.release.outputs.source_branch }}
         run: |
@@ -153,19 +166,24 @@ jobs:
           fi
 
       - name: Install dependencies
+        if: steps.dev.outputs.ready != 'false'
         run: npm ci
 
       - name: Lint
+        if: steps.dev.outputs.ready != 'false'
         run: npm run lint
 
       - name: Typecheck
+        if: steps.dev.outputs.ready != 'false'
         run: npm run typecheck
 
       - name: Test
+        if: steps.dev.outputs.ready != 'false'
         run: npm test
 
       - name: Build package tarball
         id: pack
+        if: steps.dev.outputs.ready != 'false'
         run: |
           npm pack --json > npm-pack.json
           TARBALL=$(node -p "require('./npm-pack.json')[0].filename")
@@ -173,6 +191,7 @@ jobs:
           npm pack --dry-run
 
       - name: Verify packed package
+        if: steps.dev.outputs.ready != 'false'
         env:
           EXPECTED_VERSION: ${{ steps.release.outputs.version }}
           TARBALL: ${{ steps.pack.outputs.tarball }}
@@ -189,11 +208,13 @@ jobs:
           test "$INSTALLED_VERSION" = "$EXPECTED_VERSION"
 
       - name: Verify publish toolchain
+        if: steps.dev.outputs.ready != 'false'
         run: |
           node --version
           npm --version
 
       - name: Authenticate smoke tests to AWS
+        if: steps.dev.outputs.ready != 'false'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars[format('{0}SMOKE_AWS_ROLE_ARN', steps.release.outputs.smoke_prefix)] }}
@@ -201,6 +222,7 @@ jobs:
           role-session-name: sdk-smoke-${{ github.run_id }}
 
       - name: Run deployed live smoke tests
+        if: steps.dev.outputs.ready != 'false'
         env:
           LAMBDADB_BASE_URL: ${{ vars[format('{0}BASE_URL', steps.release.outputs.smoke_prefix)] }}
           LAMBDADB_PROJECT_NAME: ${{ vars[format('{0}PROJECT_NAME', steps.release.outputs.smoke_prefix)] }}
@@ -210,6 +232,7 @@ jobs:
           node scripts/run-live-smoke.mjs
 
       - name: Record publication evidence
+        if: steps.dev.outputs.ready != 'false'
         uses: actions/upload-artifact@v7
         with:
           name: npm-${{ steps.release.outputs.version }}-${{ github.sha }}
@@ -219,7 +242,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish tested tarball
-        if: steps.mode.outputs.mode != 'verify'
+        if: steps.mode.outputs.mode != 'verify' && steps.dev.outputs.ready != 'false'
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           DIST_TAG: ${{ steps.release.outputs.dist_tag }}
@@ -240,6 +263,15 @@ jobs:
             elif [ -n "$PUBLISHED_COMMIT" ]; then
               echo "$VERSION is already published from $PUBLISHED_COMMIT" >&2
               exit 1
+            fi
+            # Never move the dev dist-tag backwards, e.g. after a release with a lower version.
+            CURRENT_DEV=$(npm view "@functional-systems/lambdadb" dist-tags.dev)
+            if [ -n "$CURRENT_DEV" ]; then
+              ORDER=$(node scripts/version.mjs compare "$VERSION" "$CURRENT_DEV")
+              if [ "$ORDER" -lt 0 ]; then
+                echo "::notice::Skipping $VERSION: it is lower than the current dev dist-tag $CURRENT_DEV"
+                exit 0
+              fi
             fi
           fi
           echo "Publishing $TARBALL with npm dist-tag $DIST_TAG"

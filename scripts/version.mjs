@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const core = String.raw`(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)`;
-/** Versions that may be committed: the dev placeholder between releases, or an RC/stable release. */
-export const COMMITTED_VERSION = new RegExp(`^${core}(?:-dev\\.0|-rc\\.([1-9]\\d*))?$`);
+/** Versions that may be committed: an RC or stable release. Development versions exist only in CI. */
+export const COMMITTED_VERSION = new RegExp(`^${core}(?:-rc\\.([1-9]\\d*))?$`);
 /** Versions that may be published: automatic dev builds, RCs, and stable releases. */
 export const PUBLISHED_VERSION = new RegExp(`^${core}(?:-(dev|rc)\\.([1-9]\\d*))?$`);
 const STABLE_TAG = new RegExp(`^v${core}$`);
@@ -67,9 +67,10 @@ export function setVersion(root, version, { allowed = COMMITTED_VERSION } = {}) 
 }
 
 export function parseVersion(version) {
-  const match = PUBLISHED_VERSION.exec(version) ?? COMMITTED_VERSION.exec(version);
+  const match = PUBLISHED_VERSION.exec(version);
   if (!match) throw new Error(`Unsupported version ${version}`);
-  return { core: [Number(match[1]), Number(match[2]), Number(match[3])], text: `${match[1]}.${match[2]}.${match[3]}` };
+  return { core: [Number(match[1]), Number(match[2]), Number(match[3])], text: `${match[1]}.${match[2]}.${match[3]}`,
+    channel: match[4] ?? "stable", number: match[5] === undefined ? 0 : Number(match[5]) };
 }
 
 export function compareCores(a, b) {
@@ -83,12 +84,11 @@ export function latestStableTag(tags) {
     .sort((a, b) => compareCores(parseVersion(a.slice(1)).core, parseVersion(b.slice(1)).core)).at(-1);
 }
 
-/** The committed dev placeholder that follows a published RC (same version) or stable release (next patch). */
-export function nextDevVersion(released) {
-  if (/-rc\.[1-9]\d*$/.test(released)) return `${parseVersion(released).text}-dev.0`;
-  if (!/^\d+\.\d+\.\d+$/.test(released)) throw new Error(`Expected an RC or stable version, got ${released}`);
-  const [major, minor, patch] = parseVersion(released).core;
-  return `${major}.${minor}.${patch + 1}-dev.0`;
+/** SemVer order of two published versions: negative, zero, or positive. `dev` sorts below `rc`. */
+export function compareVersions(a, b) {
+  const [left, right] = [parseVersion(a), parseVersion(b)];
+  const rank = { dev: 0, rc: 1, stable: 2 };
+  return compareCores(left.core, right.core) || rank[left.channel] - rank[right.channel] || left.number - right.number;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -97,10 +97,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log(readVersion(process.cwd()));
   } else if (command === "set" && value) {
     console.log(setVersion(process.cwd(), value));
-  } else if (command === "next-dev" && value) {
-    console.log(nextDevVersion(value));
+  } else if (command === "compare" && value && process.argv[4]) {
+    console.log(Math.sign(compareVersions(value, process.argv[4])));
   } else {
-    console.error("Usage: node scripts/version.mjs get | set <version> | next-dev <released-version>");
+    console.error("Usage: node scripts/version.mjs get | set <version> | compare <version> <version>");
     process.exit(2);
   }
 }

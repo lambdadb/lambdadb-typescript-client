@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 
 const workflow = readFileSync(new URL("../.github/workflows/publish.yaml", import.meta.url), "utf8");
-const nextDevWorkflow = readFileSync(new URL("../.github/workflows/next-dev-version.yaml", import.meta.url), "utf8");
 const metadataScript = workflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE\n/)[1];
 const stepScript = (name) => workflow.match(new RegExp(`- name: ${name}\\n[\\s\\S]*?run: \\|\\n([\\s\\S]*?)\\n\\s+- name:`))[1];
 const modeScript = stepScript("Select the run mode");
@@ -38,25 +37,62 @@ test("main pushes share one concurrency group while RC/stable releases keep tag 
   assert.match(workflow, /on:\n {2}push:\n {4}branches: \[main\]\n {2}release:\n {4}types: \[published\]\n/);
 });
 
-test("the run mode follows the committed version on main pushes", (t) => {
+function gitRepo(directory) {
+  mkdirSync(directory, { recursive: true });
+  const git = (...args) => {
+    const result = spawnSync("git", ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false",
+      "-c", "user.name=Release Test", "-c", "user.email=release-test@example.com", ...args],
+    { cwd: directory, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  git("init", "-q", "--initial-branch=main");
+  return git;
+}
+
+test("the run mode follows whether the committed version is tagged on origin", (t) => {
   const directory = temp(t);
   const bin = stub(directory, "node", 'echo "$COMMITTED_VERSION"');
-  const run = (event, version) => {
+  // The checkout has a tag that origin lacks, so only origin's tags may decide the mode.
+  const originGit = gitRepo(join(directory, "origin"));
+  originGit("commit", "--allow-empty", "-m", "Release 0.9.0-rc.1");
+  originGit("tag", "v0.9.0-rc.1");
+  const checkout = join(directory, "checkout");
+  const git = gitRepo(checkout);
+  git("remote", "add", "origin", join(directory, "origin"));
+  git("fetch", "-q", "origin", "main");
+  git("checkout", "-q", "FETCH_HEAD");
+  git("tag", "v0.9.0");
+  const run = (event, version, origin = join(directory, "origin")) => {
+    git("remote", "set-url", "origin", origin);
     const output = join(directory, "output");
     rmSync(output, { force: true });
-    const result = spawnSync("bash", ["-e", "-c", modeScript], { encoding: "utf8", env: {
+    const result = spawnSync("bash", ["-e", "-c", modeScript], { cwd: checkout, encoding: "utf8", env: {
       ...process.env, PATH: `${bin}:${process.env.PATH}`, GITHUB_OUTPUT: output,
       PUBLISH_EVENT: event, COMMITTED_VERSION: version,
     } });
     return result.status === 0 ? readFileSync(output, "utf8").trim() : `failed: ${result.stderr.trim()}`;
   };
-  assert.equal(run("push", "0.9.0-dev.0"), "mode=dev");
-  assert.equal(run("push", "0.9.0-rc.1"), "mode=verify");
+  assert.equal(run("push", "0.9.0-rc.1"), "mode=dev");
   assert.equal(run("push", "0.9.0"), "mode=verify");
-  assert.match(run("push", "0.9.0-dev.3"), /failed: .*-dev\.0 placeholder/);
+  assert.equal(run("push", "0.9.1-rc.1"), "mode=verify");
+  assert.match(run("push", "0.9.0-dev.0"), /failed: .*must be an RC or stable version/);
+  assert.match(run("push", "0.9.0-dev.3"), /failed: .*must be an RC or stable version/);
+  assert.match(run("push", "0.9.0-rc.1", join(directory, "missing")), /failed: [\s\S]*Could not query origin for tag v0\.9\.0-rc\.1/);
   assert.equal(run("release", "0.9.0"), "mode=release");
-  assert.match(workflow, /- name: Prepare automatic development version\n\s+if: steps\.mode\.outputs\.mode == 'dev'\n/);
-  assert.match(workflow, /- name: Publish tested tarball\n\s+if: steps\.mode\.outputs\.mode != 'verify'\n/);
+  assert.match(workflow, /- name: Prepare automatic development version\n\s+id: dev\n\s+if: steps\.mode\.outputs\.mode == 'dev'\n/);
+  assert.match(workflow,
+    /- name: Publish tested tarball\n\s+if: steps\.mode\.outputs\.mode != 'verify' && steps\.dev\.outputs\.ready != 'false'\n/);
+});
+
+test("every step after a skipped development preparation is skipped", () => {
+  const steps = workflow.split(/\n(?= {6}- name: )/).slice(1);
+  const index = steps.findIndex((step) => step.startsWith("      - name: Prepare automatic development version\n"));
+  const later = steps.slice(index + 1);
+  assert.ok(later.length >= 13);
+  for (const step of later) {
+    assert.match(step, /\n {8}if: (?:.* && )?steps\.dev\.outputs\.ready != 'false'\n/, step.split("\n")[0]);
+  }
 });
 
 function metadata(version, mode, { prerelease = false, tag = `v${version}`, rootVersion = version,
@@ -126,20 +162,6 @@ test("live smoke Variables come from the selected environment without a fallback
   assert.doesNotMatch(workflow, /vars\.LAMBDADB_/);
 });
 
-test("the next development version workflow runs only after a successful release publication", () => {
-  assert.match(nextDevWorkflow, /workflow_run:\n\s+workflows: \["Publish to npm"\]\n\s+types: \[completed\]/);
-  assert.ok(nextDevWorkflow.includes(
-    "if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release'"));
-  assert.match(nextDevWorkflow, /node scripts\/version\.mjs next-dev "\$RELEASED"/);
-  assert.match(nextDevWorkflow, /node scripts\/version\.mjs set "\$NEXT"/);
-  assert.match(nextDevWorkflow, /gh pr create --base main/);
-  // A rerun reuses an existing branch and opens the pull request only when none exists.
-  assert.doesNotMatch(nextDevWorkflow, /already exists"\n\s+exit 0/);
-  assert.match(nextDevWorkflow, /gh pr list --head "\$BRANCH" --base main --state all/);
-  // Consecutive RCs restore the same version, so the branch is keyed by the release tag.
-  assert.match(nextDevWorkflow, /BRANCH="chore\/next-dev-after-\$RELEASE_TAG"/);
-});
-
 test("release commits must be on main and only the current main head publishes a dev build", (t) => {
   const directory = temp(t);
   function git(...args) {
@@ -168,23 +190,46 @@ test("release commits must be on main and only the current main head publishes a
   // Execute the real final publication step using a local npm stub, never the registry.
   const log = join(directory, "npm-publish");
   const bin = stub(directory, "npm",
-    'if [ "$1" = view ]; then [ -n "$PUBLISHED_COMMIT" ] && echo "$PUBLISHED_COMMIT"; exit 0; fi\n' +
+    'if [ "$1" = view ]; then case "$3" in\n' +
+    '  lambdadbSourceCommit) [ -n "$PUBLISHED_COMMIT" ] && echo "$PUBLISHED_COMMIT"; exit 0 ;;\n' +
+    '  dist-tags.dev) [ "$CURRENT_DEV" = fail ] && exit 1; echo "$CURRENT_DEV"; exit 0 ;;\n' +
+    '  *) exit 3 ;;\n' +
+    'esac; fi\n' +
     'printf "%s\\n" "$@" > "$NPM_CALL_LOG"');
-  const publish = (commit, event, publishedCommit = "") => {
+  // The step runs the version script from the checkout; untracked files survive checkouts.
+  mkdirSync(join(directory, "scripts"));
+  copyFileSync(new URL("../scripts/version.mjs", import.meta.url), join(directory, "scripts/version.mjs"));
+  const publish = (commit, event, publishedCommit = "", currentDev = "0.8.1-dev.1") => {
     git("checkout", "--detach", commit);
     rmSync(log, { force: true });
     const result = spawnSync("bash", ["-e", "-c", publishScript], { cwd: directory, encoding: "utf8", env: {
       ...process.env, PATH: `${bin}:${process.env.PATH}`, NPM_CALL_LOG: log, PUBLISHED_COMMIT: publishedCommit,
-      PUBLISH_EVENT: event, TARBALL: "tested-package.tgz", VERSION: "0.8.1-dev.2",
+      CURRENT_DEV: currentDev, PUBLISH_EVENT: event, TARBALL: "tested-package.tgz", VERSION: "0.8.1-dev.2",
       DIST_TAG: event === "push" ? "dev" : "latest",
     } });
-    return { status: result.status, published: existsSync(log) ? readFileSync(log, "utf8") : undefined };
+    return { status: result.status, published: existsSync(log) ? readFileSync(log, "utf8") : undefined,
+      stdout: result.stdout };
   };
-  assert.deepEqual(publish(head, "push"), { status: 0,
-    published: "publish\ntested-package.tgz\n--access\npublic\n--tag\ndev\n--provenance\n" });
-  assert.deepEqual(publish(older, "push"), { status: 0, published: undefined });
-  assert.deepEqual(publish(head, "push", head), { status: 0, published: undefined });
+  const devPublication = "publish\ntested-package.tgz\n--access\npublic\n--tag\ndev\n--provenance\n";
+  assert.equal(publish(head, "push").published, devPublication);
+  assert.equal(publish(older, "push").published, undefined);
+  assert.equal(publish(head, "push", head).published, undefined);
   assert.equal(publish(head, "push", older).status, 1);
-  assert.deepEqual(publish(older, "release"), { status: 0,
-    published: "publish\ntested-package.tgz\n--access\npublic\n--tag\nlatest\n--provenance\n" });
+  // The dev dist-tag never moves backwards: a lower version is skipped without failing.
+  for (const currentDev of ["", "0.8.0", "0.8.1-dev.1"]) {
+    assert.equal(publish(head, "push", "", currentDev).published, devPublication, currentDev);
+  }
+  for (const currentDev of ["0.8.1-dev.3", "0.8.1-rc.1", "0.9.0-dev.1"]) {
+    const result = publish(head, "push", "", currentDev);
+    assert.deepEqual([result.status, result.published], [0, undefined], currentDev);
+    assert.match(result.stdout, new RegExp(`::notice::Skipping 0\\.8\\.1-dev\\.2: it is lower than the current dev dist-tag ${currentDev}`));
+  }
+  // A failed dist-tag lookup or an unparseable dist-tag fails instead of publishing.
+  for (const currentDev of ["fail", "0.8.1-beta.1"]) {
+    const result = publish(head, "push", "", currentDev);
+    assert.deepEqual([result.status !== 0, result.published], [true, undefined], currentDev);
+  }
+  // Releases publish their own dist-tag without the dev guard.
+  assert.equal(publish(older, "release", "", "9.9.9-dev.1").published,
+    "publish\ntested-package.tgz\n--access\npublic\n--tag\nlatest\n--provenance\n");
 });

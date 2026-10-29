@@ -277,8 +277,8 @@ validation and error classification.
 
 - **CI**: `.github/workflows/ci.yaml` runs lint, typecheck, build, and tests on Node 24.
 - **Publish**: `.github/workflows/publish.yaml` runs on pushes to `main` and on
-  published GitHub Releases. A reviewed merge into `main` with the committed
-  `X.Y.Z-dev.0` placeholder publishes an npm `dev` build after package checks and
+  published GitHub Releases. A reviewed merge into `main` whose committed version
+  is already tagged publishes an npm `dev` build after package checks and
   deployed live smoke tests pass; no Git tag or GitHub Release is created for it.
   A merge that sets an RC or stable version is verified against production, and
   its GitHub Release publishes with `rc`/`latest`.
