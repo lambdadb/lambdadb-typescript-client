@@ -15,7 +15,10 @@ export function runLiveSmoke(env, execute = execFileSync, spawn = spawnSync, mas
     throw new Error("Unable to read the dedicated smoke project key from Secrets Manager");
   }
   if (!key || key === "None" || /[\r\n]/.test(key)) throw new Error("Expected a single project API key in SecretString");
-  mask(`::add-mask::${key.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A")}`);
+  // The mask command echoes the key, so emit it only where GitHub Actions consumes it.
+  if (env.GITHUB_ACTIONS === "true") {
+    mask(`::add-mask::${key.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A")}`);
+  }
   // Keep the key out of files, command arguments, and the rest of the publishing job.
   const result = spawn("npm", ["run", "test:live"], {
     stdio: "inherit", env: { ...env, LAMBDADB_PROJECT_API_KEY: key },

@@ -3,7 +3,8 @@ import test from "node:test";
 import { runLiveSmoke } from "../scripts/run-live-smoke.mjs";
 
 const env = { LAMBDADB_BASE_URL: "https://test.example", LAMBDADB_PROJECT_NAME: "sdk-smoke",
-  LAMBDADB_SMOKE_SECRET_ARN: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:smoke-key", PATH: "/bin" };
+  LAMBDADB_SMOKE_SECRET_ARN: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:smoke-key", PATH: "/bin",
+  GITHUB_ACTIONS: "true" };
 
 test("smoke keys are read through AWS, masked, and passed only to the test child environment", () => {
   const calls = [];
@@ -26,7 +27,7 @@ test("smoke keys are read through AWS, masked, and passed only to the test child
 
 test("missing configuration, secret read failures, and invalid keys fail before starting a smoke", () => {
   const unexpected = () => assert.fail("Must not start smoke");
-  for (const name of Object.keys(env).filter((name) => name !== "PATH")) {
+  for (const name of Object.keys(env).filter((name) => !["PATH", "GITHUB_ACTIONS"].includes(name))) {
     assert.throws(() => runLiveSmoke({ ...env, [name]: "" }, unexpected, unexpected), /Missing smoke configuration/);
   }
   assert.throws(() => runLiveSmoke(env, () => { throw new Error("sensitive output"); }, unexpected),
@@ -40,4 +41,11 @@ test("smoke process failures prevent publication", () => {
   for (const result of [{ status: 1 }, { status: null, signal: "SIGTERM" }, { error: new Error("spawn failed") }]) {
     assert.throws(() => runLiveSmoke(env, () => "synthetic-key", () => result, () => {}), /live smoke failed/);
   }
+});
+
+test("outside GitHub Actions the key is never printed", () => {
+  const calls = [];
+  runLiveSmoke({ ...env, GITHUB_ACTIONS: undefined }, () => "synthetic-key", () => { calls.push("test"); return { status: 0 }; },
+    () => calls.push("mask"));
+  assert.deepEqual(calls, ["test"]);
 });
