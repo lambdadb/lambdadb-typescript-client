@@ -142,9 +142,10 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     });
     assert.equal(createdCandidate.parentBranch.name, "main");
     // Candidate still shares main's snapshot: the direct source must be candidate.
+    // Derive timestamps from server snapshot times; the local clock may lag the server.
     const inherited = await collection.branches.createSafe({
       branchName: "inherited-probe",
-      source: branchSource("candidate", Date.now() + 1_000),
+      source: branchSource("candidate", createdCandidate.headSnapshot.snapshotCommittedAt.getTime() + 1_000),
     });
     assert.equal(inherited.ok, true);
     assert.equal(inherited.value.branch.parentBranch.name, "candidate");
@@ -247,7 +248,7 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     });
     await collection.branches.create({
       branchName: "recovery-check",
-      source: branchSource("candidate", new Date(Date.now() + 1_000)),
+      source: branchSource("candidate", new Date(candidate.headSnapshot.snapshotCommittedAt.getTime() + 1_000)),
     });
 
     for (const ref of [

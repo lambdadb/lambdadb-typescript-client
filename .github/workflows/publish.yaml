@@ -105,6 +105,9 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `dist_tag=${distTag}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_branch=${sourceBranch}\n`);
+          // RC and stable packages are smoke-tested against production; dev packages against dev.
+          const smokePrefix = sourceBranch === "main" ? "LAMBDADB_PROD_" : "LAMBDADB_DEV_";
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `smoke_prefix=${smokePrefix}\n`);
           console.log(`Validated ${version}; npm dist-tag=${distTag}`);
           NODE
 
@@ -162,16 +165,18 @@ jobs:
       - name: Authenticate smoke tests to AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.LAMBDADB_SMOKE_AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars[format('{0}SMOKE_AWS_ROLE_ARN', steps.release.outputs.smoke_prefix)] }}
           aws-region: ap-northeast-2
           role-session-name: sdk-smoke-${{ github.run_id }}
 
-      - name: Validate deployed docsUrl behavior
+      - name: Run deployed live smoke tests
         env:
-          LAMBDADB_BASE_URL: ${{ vars.LAMBDADB_BASE_URL }}
-          LAMBDADB_PROJECT_NAME: ${{ vars.LAMBDADB_PROJECT_NAME }}
-          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars.LAMBDADB_SMOKE_SECRET_ARN }}
-        run: node scripts/run-live-smoke.mjs
+          LAMBDADB_BASE_URL: ${{ vars[format('{0}BASE_URL', steps.release.outputs.smoke_prefix)] }}
+          LAMBDADB_PROJECT_NAME: ${{ vars[format('{0}PROJECT_NAME', steps.release.outputs.smoke_prefix)] }}
+          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars[format('{0}SMOKE_SECRET_ARN', steps.release.outputs.smoke_prefix)] }}
+        run: |
+          echo "Live smoke target: $LAMBDADB_BASE_URL"
+          node scripts/run-live-smoke.mjs
 
       - name: Record publication evidence
         uses: actions/upload-artifact@v7

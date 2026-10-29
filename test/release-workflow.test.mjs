@@ -7,6 +7,8 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 
 const workflow = readFileSync(new URL("../.github/workflows/publish.yaml", import.meta.url), "utf8");
+const verificationWorkflow = readFileSync(
+  new URL("../.github/workflows/release-verification.yaml", import.meta.url), "utf8");
 const metadataScript = workflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE\n/)[1];
 const branchScript = workflow.match(/- name: Verify release commit belongs to its channel branch\n[\s\S]*?run: \|\n([\s\S]*?)\n\s+- name:/)[1];
 const concurrencyExpression = workflow.match(/group: npm-sdk-\$\{\{\s*(.*?)\s*\}\}/)[1];
@@ -49,21 +51,34 @@ function metadata(version, prerelease, tag = `v${version}`, rootVersion = versio
 }
 
 test("release metadata routes dev to develop and keeps RC/stable on main with their dist-tags", () => {
-  for (const [version, prerelease, distTag, branch] of [
-    ["0.8.0-dev.1", true, "dev", "develop"],
-    ["0.8.0-rc.1", true, "rc", "main"],
-    ["0.8.0", false, "latest", "main"],
+  for (const [version, prerelease, distTag, branch, smokePrefix] of [
+    ["0.8.0-dev.1", true, "dev", "develop", "LAMBDADB_DEV_"],
+    ["0.8.0-rc.1", true, "rc", "main", "LAMBDADB_PROD_"],
+    ["0.8.0", false, "latest", "main", "LAMBDADB_PROD_"],
   ]) {
-    assert.deepEqual(metadata(version, prerelease), { version, dist_tag: distTag, source_branch: branch });
+    assert.deepEqual(metadata(version, prerelease),
+      { version, dist_tag: distTag, source_branch: branch, smoke_prefix: smokePrefix });
   }
   assert.ok(workflow.includes("SOURCE_BRANCH: ${{ steps.release.outputs.source_branch }}"));
+});
+
+test("live smoke Variables come from the channel's environment without a dev fallback", () => {
+  // Indexing by a non-empty literal name keeps a missing production Variable empty.
+  for (const name of ["SMOKE_AWS_ROLE_ARN", "BASE_URL", "PROJECT_NAME", "SMOKE_SECRET_ARN"]) {
+    assert.ok(workflow.includes(`\${{ vars[format('{0}${name}', steps.release.outputs.smoke_prefix)] }}`), name);
+    assert.ok(verificationWorkflow.includes(`\${{ vars.LAMBDADB_PROD_${name} }}`), name);
+  }
+  assert.doesNotMatch(workflow, /vars\.LAMBDADB_/);
+  assert.match(verificationWorkflow, /push:\n\s+branches: \[main\]\n/);
+  assert.ok(verificationWorkflow.includes("run: |\n          echo \"Live smoke target: $LAMBDADB_BASE_URL\"\n          node scripts/run-live-smoke.mjs"));
+  assert.doesNotMatch(verificationWorkflow, /npm publish|registry-url/);
 });
 
 test("automatic publication only accepts an exact develop push and always selects dev", () => {
   const sha = "a".repeat(40);
   const event = { name: "push", ref: "refs/heads/develop", sha, sourceCommit: sha };
   assert.deepEqual(metadata("0.8.0-dev.42001", false, "", "0.8.0-dev.42001", event), {
-    version: "0.8.0-dev.42001", dist_tag: "dev", source_branch: "develop",
+    version: "0.8.0-dev.42001", dist_tag: "dev", source_branch: "develop", smoke_prefix: "LAMBDADB_DEV_",
   });
   for (const override of [{ ref: "refs/heads/main" }, { sha: undefined }, { sourceCommit: "b".repeat(40) }]) {
     assert.throws(() => metadata("0.8.0-dev.1", false, "", "0.8.0-dev.1", { ...event, ...override }), /exact develop push/);

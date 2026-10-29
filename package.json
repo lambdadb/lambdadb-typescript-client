@@ -46,6 +46,7 @@
     "test:live:qdrant": "npm run build && node --env-file-if-exists=.env --test test/integration/qdrant-compat-live.test.mjs",
     "test:live:data-versioning": "npm run build && node --env-file-if-exists=.env.local --test test/integration/data-versioning-live.test.mjs",
     "test:live:docs-url": "npm run build && node --env-file-if-exists=.env.local --test test/integration/docs-url-live.test.mjs",
+    "test:live": "npm run build && LAMBDADB_RUN_LIVE_TESTS=1 node --env-file-if-exists=.env.local --test --test-concurrency=1 test/integration/*-live.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
