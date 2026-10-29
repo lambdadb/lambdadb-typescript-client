@@ -111,7 +111,10 @@ publishes `0.12.0-dev.N`. The workflow fails unless the development version is
 newer than the newest stable tag. A rerun of a stable release commit's `main`
 push after its tag exists has no development version (N would be 0): the run
 succeeds with a notice and skips every later step, including the live smoke
-tests and publication; the GitHub Release publishes that commit.
+tests and publication; the GitHub Release publishes that commit. If the
+committed version's tag was pushed after the job's checkout, preparation fetches
+exactly that tag from `origin` before numbering, so run-mode selection and N use
+the same tag; if it is missing on `origin` as well, preparation fails.
 
 The workflow updates package and lockfile versions, `jsr.json`, SDK metadata, and
 User-Agent only in its disposable checkout and creates no commit, tag, or GitHub

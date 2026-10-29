@@ -23,6 +23,17 @@ export function prepareDevPackage(root, { sha }) {
   if (!COMMITTED_VERSION.test(committed)) {
     throw new Error(`Development builds require a committed RC or stable version, found ${committed}`);
   }
+  // Run-mode selection found v<committed> on origin. A tag pushed after this checkout is missing
+  // locally, so fetch it first; otherwise numbering would start from an older stable tag.
+  const committedTag = `v${committed}`;
+  if (!git(root, ["tag", "--list", committedTag])) {
+    try {
+      git(root, ["fetch", "--quiet", "--no-tags", "origin", `refs/tags/${committedTag}:refs/tags/${committedTag}`]);
+    } catch (error) {
+      throw new Error(`Development builds require the tag ${committedTag} of the committed version; ` +
+        `it is missing locally and could not be fetched from origin`, { cause: error });
+    }
+  }
   const { core: [major, minor, patch], channel, text } = parseVersion(committed);
   const base = channel === "stable" ? `${major}.${minor}.${patch + 1}` : text;
   const tag = latestStableTag(git(root, ["tag", "--merged", "HEAD", "--list", "v*"]).split("\n").filter(Boolean));

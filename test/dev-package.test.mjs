@@ -109,9 +109,39 @@ test("the tagged stable release commit itself has no development version and is 
   assert.equal(readVersion(f.root), "0.8.1-dev.1");
 });
 
+test("a committed version tag pushed after the checkout is fetched from origin before numbering", (t) => {
+  const f = fixture(t, "0.7.0");
+  f.commit("Release 0.7.0");
+  f.git("tag", "v0.7.0");
+  setVersion(f.root, "0.8.0");
+  const sha = f.commit("Release 0.8.0");
+  const origin = mkdtempSync(join(tmpdir(), "lambdadb-dev-package-origin-"));
+  t.after(() => rmSync(origin, { recursive: true, force: true }));
+  f.git("init", "-q", "--bare", origin);
+  f.git("remote", "add", "origin", origin);
+  // Origin has v0.8.0 (so run-mode selection chose development), but the checkout predates the tag.
+  f.git("tag", "v0.8.0");
+  f.git("push", "-q", "origin", "main", "v0.8.0");
+  f.git("tag", "-d", "v0.8.0");
+  const before = f.snapshot();
+  // Without the fetch, numbering would count from v0.7.0 and publish 0.8.1-dev.1 from the release commit.
+  assert.equal(prepareDevPackage(f.root, { sha }), undefined);
+  assert.deepEqual(f.snapshot(), before);
+  assert.equal(f.git("rev-parse", "v0.8.0^{commit}"), sha);
+
+  // A committed version whose tag exists neither locally nor on origin fails without mutation.
+  setVersion(f.root, "0.9.0-rc.1");
+  const untagged = f.commit("Untagged release candidate");
+  const untaggedBefore = f.snapshot();
+  assert.throws(() => prepareDevPackage(f.root, { sha: untagged }),
+    /require the tag v0\.9\.0-rc\.1 of the committed version; it is missing locally and could not be fetched from origin/);
+  assert.deepEqual(f.snapshot(), untaggedBefore);
+});
+
 test("without a stable tag the count starts at the root commit", (t) => {
   const f = fixture(t, "0.1.0-rc.1");
   f.commit("Initial");
+  f.git("tag", "v0.1.0-rc.1");
   const sha = f.commit("Second");
   assert.equal(prepareDevPackage(f.root, { sha }), "0.1.0-dev.2");
 });
@@ -129,6 +159,7 @@ test("dev builds reject dev forms, regressions, mismatches and wrong commits wit
   regressed.git("tag", "v0.8.0");
   setVersion(regressed.root, "0.8.0-rc.2");
   sha = regressed.commit("Version regressed");
+  regressed.git("tag", "v0.8.0-rc.2");
   before = regressed.snapshot();
   assert.throws(() => prepareDevPackage(regressed.root, { sha }), /must be newer than the latest stable release v0\.8\.0/);
   assert.deepEqual(regressed.snapshot(), before);
