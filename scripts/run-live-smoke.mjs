@@ -17,10 +17,10 @@ export function runLiveSmoke(env, execute = execFileSync, spawn = spawnSync, mas
   if (!key || key === "None" || /[\r\n]/.test(key)) throw new Error("Expected a single project API key in SecretString");
   mask(`::add-mask::${key.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A")}`);
   // Keep the key out of files, command arguments, and the rest of the publishing job.
-  const result = spawn("npm", ["run", "test:live:docs-url"], {
+  const result = spawn("npm", ["run", "test:live"], {
     stdio: "inherit", env: { ...env, LAMBDADB_PROJECT_API_KEY: key },
   });
-  if (result.error || result.status !== 0) throw new Error("Deployed docsUrl smoke failed");
+  if (result.error || result.status !== 0) throw new Error("Deployed live smoke failed");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

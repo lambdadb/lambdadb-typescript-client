@@ -93,10 +93,10 @@ then updates every version source in the disposable checkout.
 ## Development packages
 
 Reviewed pushes to `develop` publish automatically after lint, typechecking,
-tests, clean tarball installation, and deployed docsUrl smoke checks pass. A
-merge into `main` is not required. Protect `develop` so only reviewed changes
-reach this publication trigger; merging into it authorizes automatic dev
-publication under this policy.
+tests, clean tarball installation, and deployed live smoke tests against the
+dev environment pass. A merge into `main` is not required. Protect `develop` so
+only reviewed changes reach this publication trigger; merging into it authorizes
+automatic dev publication under this policy.
 
 The workflow checks out the exact push SHA and generates `X.Y.Z-dev.N`, where
 `X.Y.Z` is the committed package version's core and `N` is
@@ -128,7 +128,8 @@ Never reuse a published version or move its tag.
 ## Release candidates
 
 Release candidates use a version such as `0.5.0-rc.1`. Complete validation and
-merge the reviewed release commit into `main` before tagging that exact commit.
+merge the reviewed release commit into `main`. Wait for the Release verification
+workflow to pass on that exact commit before tagging it.
 Mark the GitHub Release as a prerelease; the workflow publishes it with npm
 dist-tag `rc`.
 
@@ -149,10 +150,11 @@ Publish the matching stable version only after prerelease feedback is resolved.
 2. Update release notes and user-facing documentation.
 3. Run the complete validation checklist.
 4. Merge the reviewed release commit into `main`.
-5. Tag that exact commit as `v0.5.0`.
-6. Create a GitHub Release that is not marked as a prerelease.
-7. Wait for the workflow to publish with npm dist-tag `latest`.
-8. Verify a clean installation and the registry dist-tags.
+5. Wait for the Release verification workflow to pass on that exact commit.
+6. Tag that exact commit as `v0.5.0`.
+7. Create a GitHub Release that is not marked as a prerelease.
+8. Wait for the workflow to publish with npm dist-tag `latest`.
+9. Verify a clean installation and the registry dist-tags.
 
 ## Validation checklist
 
@@ -174,24 +176,27 @@ Before publishing any development, RC, or stable package:
 - Install the generated tarball in a clean directory.
 - Verify both ESM `import` and CommonJS `require` from that installation.
 - Complete applicable live and third-party integration smoke tests.
-- Run `npm run test:live:docs-url` against the intended deployed endpoint before
-  every publication. This creates a temporary Collection with two 3 MiB
-  documents and requires real `docsUrl` array downloads for Query, Fetch, GET/POST
-  List, and their Safe methods, then verifies Collection deletion. An inline-only
-  response or missing environment variables is a failure, not a skipped check.
+- Run `npm run test:live` against the intended deployed endpoint before every
+  publication: the dev environment for dev packages and production for RC and
+  stable packages. This runs every `test/integration/*-live.test.mjs` file one
+  at a time; concurrent bulk writes can exceed writer capacity and return HTTP
+  429. Each file creates its own temporary Collections and verifies their
+  deletion. The
+  docsUrl test requires real `docsUrl` array downloads; an inline-only response
+  is a failure. Missing environment variables are a failure, not a skipped check.
   Record the environment, SDK commit, observed behavior, and cleanup result;
   source revision alone does not establish the deployed server revision.
 - For explicit releases, review release notes before publishing the GitHub Release.
 
-The docsUrl smoke reads `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
+The live tests read `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME`, and
 `LAMBDADB_PROJECT_API_KEY` from the environment or `.env.local`. Use a project
 where temporary test Collections may be created and deleted. For a worktree
 without its own environment file, load the original checkout's file explicitly:
 
 ```bash
 npm run build
-node --env-file=/absolute/path/to/original-checkout/.env.local \
-  --test test/integration/docs-url-live.test.mjs
+LAMBDADB_RUN_LIVE_TESTS=1 node --env-file=/absolute/path/to/original-checkout/.env.local \
+  --test --test-concurrency=1 test/integration/*-live.test.mjs
 ```
 
 This credentialed test is separate from the ordinary PR CI. Missing credentials
@@ -212,7 +217,11 @@ For a prerelease, the first command must show the existing stable version under
 ## Workflow authentication and boundaries
 
 - `.github/workflows/publish.yaml` handles `develop` pushes and published GitHub
-  Releases. Ordinary PR CI has no credentials and cannot publish.
+  Releases. `.github/workflows/release-verification.yaml` runs the live smoke
+  tests against production on every `main` push and never publishes. Ordinary
+  PR CI has no credentials, runs no live tests, and cannot publish.
+- Dev packages, including explicit dev Releases, run the live smoke tests against
+  the dev environment. RC and stable Releases run them against production.
 - Metadata and ancestry checks reject unsupported versions, mismatches,
   incorrect prerelease flags, dev commits outside `develop`, and RC/stable
   commits outside `main`. Automatic dev metadata must identify the exact push.
@@ -226,33 +235,50 @@ For a prerelease, the first command must show the existing stable version under
   source files, artifacts, or GitHub Secrets. Missing configuration or a failed
   secret read prevents publication.
 
-Configure the following repository Variables before enabling publication:
+Configure the following repository Variables before enabling publication. The
+`LAMBDADB_DEV_` Variables serve dev packages; the `LAMBDADB_PROD_` Variables
+serve `main` verification and RC/stable Releases. A missing production Variable fails those
+runs; it never falls back to the dev environment.
 
 | Variable | Value |
 | :-- | :-- |
-| `LAMBDADB_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
-| `LAMBDADB_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
-| `LAMBDADB_SMOKE_AWS_ROLE_ARN` | Dedicated AWS OIDC role ARN |
-| `LAMBDADB_SMOKE_SECRET_ARN` | Exact ARN of the project's API key secret |
+| `LAMBDADB_DEV_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
+| `LAMBDADB_DEV_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
+| `LAMBDADB_DEV_SMOKE_AWS_ROLE_ARN` | Dedicated dev AWS OIDC role ARN |
+| `LAMBDADB_DEV_SMOKE_SECRET_ARN` | Exact ARN of the dev project's API key secret |
+| `LAMBDADB_PROD_BASE_URL` | `https://aws-ap-northeast-2-v3.lambdadb.ai` |
+| `LAMBDADB_PROD_PROJECT_NAME` | Dedicated SDK smoke project in `prod-aws-apne2-v3` |
+| `LAMBDADB_PROD_SMOKE_AWS_ROLE_ARN` | Dedicated production AWS OIDC role ARN |
+| `LAMBDADB_PROD_SMOKE_SECRET_ARN` | Exact ARN of the production project's API key secret |
 
-Store the project key as a plain SecretString in `ap-northeast-2`. Use a
-project where test Collections may be created and deleted. Do not grant the
+Store each project key as a plain SecretString in `ap-northeast-2`. Use a
+dedicated project where test Collections may be created and deleted. Set its
+`rateLimit` to at least 100 requests per second; the sequential live suite peaks
+at about 25 requests per second, and a lower limit returns HTTP 429. Do not grant the
 workflow the stack admin key, project creation, deployment, or secret write
 permissions. Key rotation updates the AWS secret without changing this workflow.
 
-Provision the role with an OIDC trust condition for audience `sts.amazonaws.com`
-and only these subject patterns:
+Provision each role with an OIDC trust condition for audience
+`sts.amazonaws.com` and only these subject patterns. The dev role:
 
 ```text
 repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/develop
 repo:lambdadb/lambdadb-typescript-client:ref:refs/tags/v*
 ```
 
-Its permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
-secret ARN. Add `kms:Decrypt` on the exact key only if using a customer-managed
-KMS key. No `ListSecrets` permission is required by the CLI reader. Provisioning
-the role, project, key, and repository Variables is a separate environment
-setup step; adding the workflow alone does not establish working AWS access.
+The production role:
+
+```text
+repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/main
+repo:lambdadb/lambdadb-typescript-client:ref:refs/tags/v*
+```
+
+Each permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
+secret ARN of its own environment. Add `kms:Decrypt` on the exact key only if
+using a customer-managed KMS key. No `ListSecrets` permission is required by the
+CLI reader. Provisioning the roles, projects, keys, and repository Variables is
+a separate environment setup step; adding the workflow alone does not establish
+working AWS access.
 
 For additional administrative protection, configure a protected GitHub
 Environment for npm publishing and update the npm Trusted Publisher settings to

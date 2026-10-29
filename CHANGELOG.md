@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Release workflows now run every deployed live test file sequentially
+  (`npm run test:live`) instead of only the docsUrl smoke. Dev packages are
+  verified against the dev environment; every `main` push and RC/stable Release
+  is verified against production. Dev smoke Variables are renamed with a
+  `LAMBDADB_DEV_` prefix, and production Variables use `LAMBDADB_PROD_`; a
+  missing Variable fails the run instead of falling back to another environment.
+- The Data Versioning live test derives branch source timestamps from server
+  snapshot times, so local clock skew no longer causes false failures.
+
 ## 0.10.0
 
 - Align vector configuration with OpenAPI `94a7b71613a3bf217a370d5117b3ff6ddfbae851`:
