@@ -9,6 +9,29 @@ import { BadRequestError, LambdaDBClient, ResourceNotFoundError } from "../../di
 // Verify externally visible results, not provider call counts or billing.
 const options = { timeoutMs: 60_000, retries: { strategy: "none" } };
 const dimensions = 256;
+// Provider timeouts, rate limits and outages are transient under shared load; with
+// onFailure "returnOriginal" they arrive as a fallback naming the reason. Retry only
+// those, a bounded number of times. Credential, invalid-response and any other
+// fallback fails at once, and a fallback never counts as applied reranking.
+const transientRerankReasons = new Set(["timeout", "rateLimit", "unavailable"]);
+const rerankAttempts = 3;
+
+async function rerankQuery(collection, request, label) {
+  for (let attempt = 1; ; attempt++) {
+    const response = await collection.query({ ...request, rerank: { ...request.rerank, onFailure: "returnOriginal" } }, options);
+    if (response.rerank?.status !== "fallback") return response;
+    const { reason } = response.rerank;
+    // Documented fallback shape: retrieval order without rerank scores or criteria.
+    assert.equal(response.rerank.scoredCount, 0, `${label} fallback must not report scores`);
+    assert.equal(response.rerank.criteriaVersion, undefined, `${label} fallback must omit criteriaVersion`);
+    assert.ok(response.docs.length <= request.size);
+    assert.ok(response.docs.every((hit) => hit.retrievalScore === undefined), `${label} fallback must omit retrievalScore`);
+    assert.ok(transientRerankReasons.has(reason) && attempt < rerankAttempts,
+      `${label} fell back with reason ${reason} on attempt ${attempt}/${rerankAttempts}`);
+    console.info(`[live] ${label} fell back with reason ${reason}; retrying (${attempt + 1}/${rerankAttempts})`);
+    await delay(attempt * 5_000);
+  }
+}
 
 function serverOptions() {
   for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
@@ -140,10 +163,10 @@ test("live Cohere embeddings, typed query inputs, direct vectors and reranking",
 
     stage = "Cohere reranking";
     for (const model of ["rerank-v5.0-fast", "rerank-v5.0-pro"]) {
-      const reranked = await collection.query({ size: 3, consistentRead: true,
+      const reranked = await rerankQuery(collection, { size: 3, consistentRead: true,
         query: { knn: { field: "productVector", queryText: "restore a database", k: 4 } },
         rerank: { provider: "cohere", model, queryText: "restore a database backup", fields: ["product.description", "caption"] },
-        fields: { include: ["id"] } }, options);
+        fields: { include: ["id"] } }, `Cohere ${model}`);
       assert.equal(reranked.rerank?.status, "applied", `${model} must apply`);
       assert.equal(reranked.rerank.provider, "cohere");
       assert.equal(reranked.rerank.model, model);
