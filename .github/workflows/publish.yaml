@@ -10,28 +10,27 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: npm-sdk-${{ github.event_name == 'push' && 'main' || github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
-  publish:
+  mode:
     runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      environment: ${{ steps.mode.outputs.environment }}
     steps:
       - name: Check out the exact publication commit
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'push' && github.sha || github.event.release.tag_name }}
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-          cache: "npm"
 
       # The committed version is always an RC or stable version. A main push whose version is
       # already tagged on origin is a development commit and publishes a dev build; a main push
@@ -59,13 +58,40 @@ jobs:
             esac
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          # Dev builds smoke-test against dev; release verification and Releases against prod.
+          if [ "$MODE" = dev ]; then ENVIRONMENT=dev; else ENVIRONMENT=prod; fi
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
           echo "Committed version $VERSION; run mode $MODE"
+
+  # The GitHub Environment holds the smoke project API key. Its deployment policy admits only
+  # main (dev, prod) and v* tags (prod), so other refs cannot read the key.
+  publish:
+    needs: mode
+    runs-on: ubuntu-latest
+    environment: ${{ needs.mode.outputs.environment }}
+    permissions:
+      contents: read
+      # npm Trusted Publishing and provenance.
+      id-token: write
+    steps:
+      - name: Check out the exact publication commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
 
       # A rerun of a stable release commit after its tag exists has no development version
       # (N = 0); the step reports ready=false with a notice and every later step is skipped.
       - name: Prepare automatic development version
         id: dev
-        if: steps.mode.outputs.mode == 'dev'
+        if: needs.mode.outputs.mode == 'dev'
         run: node scripts/prepare-dev-package.mjs
 
       - name: Validate release metadata
@@ -74,7 +100,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
-          RUN_MODE: ${{ steps.mode.outputs.mode }}
+          RUN_MODE: ${{ needs.mode.outputs.mode }}
         run: |
           node <<'NODE'
           const fs = require("node:fs");
@@ -213,20 +239,12 @@ jobs:
           node --version
           npm --version
 
-      - name: Authenticate smoke tests to AWS
-        if: steps.dev.outputs.ready != 'false'
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars[format('{0}SMOKE_AWS_ROLE_ARN', steps.release.outputs.smoke_prefix)] }}
-          aws-region: ap-northeast-2
-          role-session-name: sdk-smoke-${{ github.run_id }}
-
       - name: Run deployed live smoke tests
         if: steps.dev.outputs.ready != 'false'
         env:
           LAMBDADB_BASE_URL: ${{ vars[format('{0}BASE_URL', steps.release.outputs.smoke_prefix)] }}
           LAMBDADB_PROJECT_NAME: ${{ vars[format('{0}PROJECT_NAME', steps.release.outputs.smoke_prefix)] }}
-          LAMBDADB_SMOKE_SECRET_ARN: ${{ vars[format('{0}SMOKE_SECRET_ARN', steps.release.outputs.smoke_prefix)] }}
+          LAMBDADB_PROJECT_API_KEY: ${{ secrets.LAMBDADB_PROJECT_API_KEY }}
         run: |
           echo "Live smoke target: $LAMBDADB_BASE_URL"
           node scripts/run-live-smoke.mjs
@@ -242,7 +260,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish tested tarball
-        if: steps.mode.outputs.mode != 'verify' && steps.dev.outputs.ready != 'false'
+        if: needs.mode.outputs.mode != 'verify' && steps.dev.outputs.ready != 'false'
         env:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           DIST_TAG: ${{ steps.release.outputs.dist_tag }}

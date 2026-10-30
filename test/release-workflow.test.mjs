@@ -8,7 +8,8 @@ import { runInNewContext } from "node:vm";
 
 const workflow = readFileSync(new URL("../.github/workflows/publish.yaml", import.meta.url), "utf8");
 const metadataScript = workflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE\n/)[1];
-const stepScript = (name) => workflow.match(new RegExp(`- name: ${name}\\n[\\s\\S]*?run: \\|\\n([\\s\\S]*?)\\n\\s+- name:`))[1];
+// A step script ends at the next step or at the next job.
+const stepScript = (name) => workflow.match(new RegExp(`- name: ${name}\\n[\\s\\S]*?run: \\|\\n([\\s\\S]*?)\\n(?:\\s+- name:|\\n {2}\\S)`))[1];
 const modeScript = stepScript("Select the run mode");
 const branchScript = stepScript("Verify release commit belongs to its channel branch");
 const publishScript = workflow.match(/- name: Publish tested tarball\n[\s\S]*?run: \|\n([\s\S]*)$/)[1];
@@ -73,23 +74,23 @@ test("the run mode follows whether the committed version is tagged on origin", (
     } });
     return result.status === 0 ? readFileSync(output, "utf8").trim() : `failed: ${result.stderr.trim()}`;
   };
-  assert.equal(run("push", "0.9.0-rc.1"), "mode=dev");
-  assert.equal(run("push", "0.9.0"), "mode=verify");
-  assert.equal(run("push", "0.9.1-rc.1"), "mode=verify");
+  assert.equal(run("push", "0.9.0-rc.1"), "mode=dev\nenvironment=dev");
+  assert.equal(run("push", "0.9.0"), "mode=verify\nenvironment=prod");
+  assert.equal(run("push", "0.9.1-rc.1"), "mode=verify\nenvironment=prod");
   assert.match(run("push", "0.9.0-dev.0"), /failed: .*must be an RC or stable version/);
   assert.match(run("push", "0.9.0-dev.3"), /failed: .*must be an RC or stable version/);
   assert.match(run("push", "0.9.0-rc.1", join(directory, "missing")), /failed: [\s\S]*Could not query origin for tag v0\.9\.0-rc\.1/);
-  assert.equal(run("release", "0.9.0"), "mode=release");
-  assert.match(workflow, /- name: Prepare automatic development version\n\s+id: dev\n\s+if: steps\.mode\.outputs\.mode == 'dev'\n/);
+  assert.equal(run("release", "0.9.0"), "mode=release\nenvironment=prod");
+  assert.match(workflow, /- name: Prepare automatic development version\n\s+id: dev\n\s+if: needs\.mode\.outputs\.mode == 'dev'\n/);
   assert.match(workflow,
-    /- name: Publish tested tarball\n\s+if: steps\.mode\.outputs\.mode != 'verify' && steps\.dev\.outputs\.ready != 'false'\n/);
+    /- name: Publish tested tarball\n\s+if: needs\.mode\.outputs\.mode != 'verify' && steps\.dev\.outputs\.ready != 'false'\n/);
 });
 
 test("every step after a skipped development preparation is skipped", () => {
   const steps = workflow.split(/\n(?= {6}- name: )/).slice(1);
   const index = steps.findIndex((step) => step.startsWith("      - name: Prepare automatic development version\n"));
   const later = steps.slice(index + 1);
-  assert.ok(later.length >= 13);
+  assert.ok(later.length >= 12);
   for (const step of later) {
     assert.match(step, /\n {8}if: (?:.* && )?steps\.dev\.outputs\.ready != 'false'\n/, step.split("\n")[0]);
   }
@@ -156,10 +157,20 @@ test("each mode rejects the wrong source, channel, tag, prerelease flag or versi
 
 test("live smoke Variables come from the selected environment without a fallback", () => {
   // Indexing by a non-empty literal name keeps a missing Variable empty.
-  for (const name of ["SMOKE_AWS_ROLE_ARN", "BASE_URL", "PROJECT_NAME", "SMOKE_SECRET_ARN"]) {
+  for (const name of ["BASE_URL", "PROJECT_NAME"]) {
     assert.ok(workflow.includes(`\${{ vars[format('{0}${name}', steps.release.outputs.smoke_prefix)] }}`), name);
   }
   assert.doesNotMatch(workflow, /vars\.LAMBDADB_/);
+});
+
+test("the smoke key comes only from the GitHub Environment the run mode selects", () => {
+  assert.match(workflow, /\n {2}publish:\n {4}needs: mode\n {4}runs-on: ubuntu-latest\n {4}environment: \$\{\{ needs\.mode\.outputs\.environment \}\}\n/);
+  assert.equal(workflow.match(/secrets\./g).length, 1);
+  assert.ok(workflow.includes("LAMBDADB_PROJECT_API_KEY: ${{ secrets.LAMBDADB_PROJECT_API_KEY }}"));
+  assert.doesNotMatch(workflow, /SMOKE_SECRET_ARN|SMOKE_AWS_ROLE_ARN|configure-aws-credentials/);
+  // Only the publishing job receives an OIDC token, for npm Trusted Publishing.
+  assert.equal(workflow.match(/id-token: write/g).length, 1);
+  assert.match(workflow, /\n {4}permissions:\n {6}contents: read\n {6}# npm Trusted Publishing and provenance\.\n {6}id-token: write\n/);
 });
 
 test("release commits must be on main and only the current main head publishes a dev build", (t) => {
