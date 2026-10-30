@@ -255,9 +255,7 @@ test("live embedding source forms and server-validated provider rules", { timeou
       query: { knn: { field: "productVector", k: 2, queryInputs: [{ type: "text", value: "restore a collection" }] } } }, options);
     assert.equal(result.docs[0].doc.id, "restore");
     stage = "OpenAI rejects image query inputs";
-    // Observed 2026-10-29: without committed data in the read target, the server skips this
-    // provider check and returns an empty 200. consistentRead includes the pending writes.
-    assertBadRequest(await collection.querySafe({ consistentRead: true, query: { knn: { field: "productVector", k: 2,
+    assertBadRequest(await collection.querySafe({ query: { knn: { field: "productVector", k: 2,
       queryInputs: [{ type: "image", value: png(0, 0, 255) }] } } }, options), "OpenAI image query input");
     console.info("[live] source forms, OpenAI sources and provider validation passed");
   } catch (error) {

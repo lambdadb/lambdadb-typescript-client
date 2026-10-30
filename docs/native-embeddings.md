@@ -276,6 +276,12 @@ precedes native embedding preparation. The SDK forwards the server
 response unchanged. The running server's exact source revision, provider call
 counts, and billing were not independently verified.
 
+lambdadb/lambdadb#514 moved these static checks before the empty-target
+return. On 2026-10-30 the same empty-Collection probe returned HTTP 400 for
+all five cases with both `consistentRead: false` and `true` on the development
+and production endpoints, and the live test no longer sets `consistentRead`
+for the OpenAI image input check.
+
 ### Stored-source validation on 2026-10-26
 
 The SDK worktree based on `374ef91cf59e373a0ddb2a66bc47b8ff9ee81833`, with
