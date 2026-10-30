@@ -14,7 +14,13 @@ export interface Env {
 export const envSchema: z.ZodType<Env, z.ZodTypeDef, unknown> = z.object({
   LAMBDADB_PROJECT_API_KEY: z.string().optional(),
 
-  LAMBDADB_DEBUG: z.coerce.boolean().optional(),
+  // Only "true" or "1" enable the logger. z.coerce.boolean() treated every
+  // non-empty string, including "false" and "0", as true.
+  LAMBDADB_DEBUG: z.preprocess(
+    (value) =>
+      typeof value === "string" ? /^(?:true|1)$/i.test(value.trim()) : value,
+    z.boolean().optional(),
+  ),
 });
 
 /**

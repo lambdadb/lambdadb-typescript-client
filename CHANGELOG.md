@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `LAMBDADB_DEBUG` enables the default debug logger only when it is `true` or `1`
+  (case-insensitive, surrounding whitespace ignored). Previously every non-empty
+  value, including `false` and `0`, enabled it, and the logger prints request
+  headers, including the API key, to stdout.
+
 - Development versions are derived from tags instead of a committed placeholder.
   The committed version always holds the last released RC or stable version (or
   the next one set by a release pull request), and `scripts/version.mjs set`
