@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.1
+
 - `LAMBDADB_DEBUG` enables the default debug logger only when it is `true` or `1`
   (case-insensitive, surrounding whitespace ignored). Previously every non-empty
   value, including `false` and `0`, enabled it, and the logger prints request
