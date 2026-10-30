@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
+import { rerankQuery } from "./rerank-retry.mjs";
 
 // Opt-in paid-provider smoke through LambdaDB only; no Jev key is accepted.
 const options = { timeoutMs: 30_000, retries: { strategy: "none" } };
@@ -63,8 +64,9 @@ test("live native reranking defaults, custom criteria, scores, projection and cl
     ] }, options);
     const input = { size: 4, consistentRead: true, query: { bool: undefined, queryString: { query: "*:*" } }, fields: { include: ["id", "title"] } };
     stage = "baseline retrieval";
-    // New Collection placement can lag creation. Poll only ordinary retrieval;
-    // never retry paid reranking requests or hide permanent API errors.
+    // New Collection placement can lag creation. Poll only ordinary retrieval here;
+    // reranking retries only transient provider fallbacks (rerank-retry.mjs) and
+    // never hides permanent API errors.
     const deadline = Date.now() + 90_000;
     let baseline;
     let attempts = 0;
@@ -85,6 +87,12 @@ test("live native reranking defaults, custom criteria, scores, projection and cl
     assert.ok(baseline.docs.every((hit) => hit.retrievalScore === undefined));
     const scores = new Map(baseline.docs.map((hit) => [hit.doc.id, hit.score]));
     const rerank = { provider: "typesafe", model: "jev-1.13.0", queryText: "How do I restore a previous collection version?", fields: ["title", "body"] };
+    const query = (request) => collection.query(request, options);
+    const querySafe = async (request) => {
+      const result = await collection.querySafe(request, options);
+      if (!result.ok) throw result.error;
+      return result.value;
+    };
     const cases = [
       ["default", {}, "default-relevance-v1"],
       ["null", { criteria: null, candidateSize: null, onFailure: null }, "default-relevance-v1"],
@@ -95,13 +103,7 @@ test("live native reranking defaults, custom criteria, scores, projection and cl
     for (const [index, [label, extra, version]] of cases.entries()) {
       stage = `rerank ${label}`;
       const request = { ...input, size: 2, rerank: { ...rerank, ...extra } };
-      let response;
-      if (index % 2 === 0) response = await collection.query(request, options);
-      else {
-        const safe = await collection.querySafe(request, options);
-        if (!safe.ok) throw safe.error;
-        response = safe.value;
-      }
+      const response = await rerankQuery(index % 2 === 0 ? query : querySafe, request, `Typesafe ${label}`);
       assert.equal(response.total, 2);
       assert.equal(response.docs.length, 2);
       assert.equal(response.rerank?.status, "applied");
@@ -125,9 +127,8 @@ test("live native reranking defaults, custom criteria, scores, projection and cl
     }
     for (const [size, candidateSize] of [[101, 101], [1000, 1000], [1000, null]]) {
       stage = `expanded rerank limits: size=${size}, candidateSize=${candidateSize}`;
-      const result = await collection.querySafe({ ...input, size, rerank: { ...rerank, candidateSize } }, options);
-      if (!result.ok) throw result.error;
-      const response = result.value;
+      const response = await rerankQuery(querySafe, { ...input, size, rerank: { ...rerank, candidateSize } },
+        `Typesafe size=${size}`);
       assert.equal(response.rerank?.status, "applied");
       assert.equal(response.rerank.candidateCount, 4);
       assert.equal(response.rerank.scoredCount, 4);

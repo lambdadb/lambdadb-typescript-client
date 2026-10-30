@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { BadRequestError, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
+import { rerankQuery } from "./rerank-retry.mjs";
 
 // Opt-in provider smoke: lambdadb ff13daf3f4ed40487b2b13522a141265c2f459ab (#481).
 // Verify externally visible results, not provider call counts or billing.
@@ -94,10 +95,10 @@ for (const mode of ["unindexed-top-level", "unindexed-nested", "keyword"]) {
       assert.equal(initial.vector.length, 1536);
 
       stage = "KNN queryText and reranking of stored source with public projection";
-      const reranked = await collection.query({ size: 1, consistentRead: true,
+      const reranked = await rerankQuery((request) => collection.query(request, options), { size: 1, consistentRead: true,
         query: { knn: { field: "vector", queryText: "Restore a collection version", k: 10 } },
         rerank: { provider: "typesafe", model: "jev-1.13.0", queryText: "Restore a collection version",
-          fields: [sourceField, "sibling.wrapper.text"] }, fields: { include: ["id"] } }, options);
+          fields: [sourceField, "sibling.wrapper.text"] }, fields: { include: ["id"] } }, `Typesafe stored text ${mode}`);
       assert.equal(reranked.rerank?.status, "applied");
       assert.equal(reranked.rerank.scoredCount, 1);
       assert.equal(reranked.docs.length, 1);

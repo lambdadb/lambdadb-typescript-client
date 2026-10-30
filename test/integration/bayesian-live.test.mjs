@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { BadRequestError, HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
+import { rerankQuery } from "./rerank-retry.mjs";
 
 const padVector = (values) => [...values, ...Array(64 - values.length).fill(0)];
 const options = { timeoutMs: 30_000, retries: { strategy: "none" } };
@@ -163,12 +164,15 @@ test("live Bayesian fusion, legacy methods, validation and applied native rerank
     const scores = new Map(baseline.docs.map((hit) => [hit.doc.id, hit.score]));
     const rerank = { provider: "typesafe", model: "jev-1.13.0",
       queryText: "How do I restore a previous collection version?", fields: ["body"] };
-    // Provider calls run once each; no retry or fallback can masquerade as applied reranking.
+    // Only transient provider fallbacks are retried; no fallback can masquerade as applied reranking.
     for (const safe of [false, true]) {
       const request = { ...input, candidateSize: undefined, size: 2, rerank };
-      const result = safe ? await collection.querySafe(request, options) : await collection.query(request, options);
-      if (safe && !result.ok) throw result.error;
-      const response = safe ? result.value : result;
+      const response = await rerankQuery(async (r) => {
+        if (!safe) return collection.query(r, options);
+        const result = await collection.querySafe(r, options);
+        if (!result.ok) throw result.error;
+        return result.value;
+      }, request, `Bayesian + Typesafe safe=${safe}`);
       assert.equal(response.rerank?.status, "applied");
       assert.equal(response.rerank.provider, "typesafe");
       assert.equal(response.rerank.model, "jev-1.13.0");
