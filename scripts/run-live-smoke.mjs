@@ -1,28 +1,13 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-export function runLiveSmoke(env, execute = execFileSync, spawn = spawnSync, mask = console.log) {
-  for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_SMOKE_SECRET_ARN"]) {
+export function runLiveSmoke(env, spawn = spawnSync) {
+  for (const name of ["LAMBDADB_BASE_URL", "LAMBDADB_PROJECT_NAME", "LAMBDADB_PROJECT_API_KEY"]) {
     if (!env[name]?.trim()) throw new Error(`Missing smoke configuration: ${name}`);
   }
-  let key;
-  try {
-    key = execute("aws", ["secretsmanager", "get-secret-value", "--region", "ap-northeast-2",
-      "--secret-id", env.LAMBDADB_SMOKE_SECRET_ARN, "--query", "SecretString", "--output", "text"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env }).trim();
-  } catch {
-    // Do not include AWS command output or credentials in errors.
-    throw new Error("Unable to read the dedicated smoke project key from Secrets Manager");
-  }
-  if (!key || key === "None" || /[\r\n]/.test(key)) throw new Error("Expected a single project API key in SecretString");
-  // The mask command echoes the key, so emit it only where GitHub Actions consumes it.
-  if (env.GITHUB_ACTIONS === "true") {
-    mask(`::add-mask::${key.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A")}`);
-  }
-  // Keep the key out of files, command arguments, and the rest of the publishing job.
-  const result = spawn("npm", ["run", "test:live"], {
-    stdio: "inherit", env: { ...env, LAMBDADB_PROJECT_API_KEY: key },
-  });
+  if (/[\r\n]/.test(env.LAMBDADB_PROJECT_API_KEY.trim())) throw new Error("Expected a single project API key");
+  // The key comes from the GitHub Environment secret, which Actions masks in logs.
+  const result = spawn("npm", ["run", "test:live"], { stdio: "inherit", env });
   if (result.error || result.status !== 0) throw new Error("Deployed live smoke failed");
 }
 

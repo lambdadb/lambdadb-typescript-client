@@ -237,11 +237,13 @@ For a prerelease, the first command must show the existing stable version under
   module loading, and deployed smoke checks is published.
 - npm Trusted Publishing supplies a short-lived OIDC credential without a
   long-lived npm token. The workflow filename remains `publish.yaml`.
-- Smoke tests authenticate to AWS using a separate GitHub OIDC role, then read
-  a dedicated project API key from Secrets Manager. The key is masked and
-  passed only in the smoke child process environment, never command arguments,
-  source files, artifacts, or GitHub Secrets. Missing configuration or a failed
-  secret read prevents publication.
+- Smoke tests read a dedicated project API key from the GitHub Environment
+  secret `LAMBDADB_PROJECT_API_KEY`. The `mode` job selects the `dev`
+  Environment for dev builds and `prod` for release verification and RC/stable
+  Releases, and the `publish` job runs in it. Actions masks the key in logs;
+  it is passed only in the smoke step's environment, never in command
+  arguments, source files or artifacts. A missing key or Variable prevents
+  publication.
 
 Configure the following repository Variables before enabling publication. The
 `LAMBDADB_DEV_` Variables serve dev builds; the `LAMBDADB_PROD_` Variables serve
@@ -252,45 +254,40 @@ never falls back to the other environment.
 | :-- | :-- |
 | `LAMBDADB_DEV_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
 | `LAMBDADB_DEV_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
-| `LAMBDADB_DEV_SMOKE_AWS_ROLE_ARN` | Dedicated dev AWS OIDC role ARN |
-| `LAMBDADB_DEV_SMOKE_SECRET_ARN` | Exact ARN of the dev project's API key secret |
 | `LAMBDADB_PROD_BASE_URL` | `https://aws-ap-northeast-2-v3.lambdadb.ai` |
 | `LAMBDADB_PROD_PROJECT_NAME` | Dedicated SDK smoke project in `prod-aws-apne2-v3` |
-| `LAMBDADB_PROD_SMOKE_AWS_ROLE_ARN` | Dedicated production AWS OIDC role ARN |
-| `LAMBDADB_PROD_SMOKE_SECRET_ARN` | Exact ARN of the production project's API key secret |
 
-Store each project key as a plain SecretString in `ap-northeast-2`. Use a
+Configure two GitHub Environments, each with the secret
+`LAMBDADB_PROJECT_API_KEY` set to its project's API key:
+
+| Environment | Deployment branches and tags | Key |
+| :-- | :-- | :-- |
+| `dev` | branch `main` | Dev smoke project |
+| `prod` | branch `main`, tag `v*` | Production smoke project |
+
+The deployment policy keeps the key away from other branches and tags. Use a
 dedicated project where test Collections may be created and deleted. Set its
 `rateLimit` to at least 100 requests per second; the sequential live suite peaks
-at about 25 requests per second, and a lower limit returns HTTP 429. Do not grant
-the workflow the stack admin key, project creation, deployment, or secret write
-permissions. Key rotation updates the AWS secret without changing this workflow.
+at about 25 requests per second, and a lower limit returns HTTP 429. Never use
+the stack admin key. Rotate a key by issuing a new project key and replacing the
+Environment secret (`gh secret set LAMBDADB_PROJECT_API_KEY --env <name>`).
 
-Provision each role with an OIDC trust condition for audience
-`sts.amazonaws.com` and only these subject patterns. The dev role:
+npm Trusted Publishing for this package does not require a GitHub Environment,
+so it accepts publications from either Environment. If an Environment
+requirement is added to the npm Trusted Publisher, it must match the
+Environment the `publish` job runs in; coordinate both changes.
 
-```text
-repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/main
+For local live runs, keep the dev smoke project's settings outside the
+repository in `~/.config/lambdadb/smoke/dev/typescript-sdk-ci.env` (mode `0600`)
+with `LAMBDADB_BASE_URL`, `LAMBDADB_PROJECT_NAME` and
+`LAMBDADB_PROJECT_API_KEY`, and load it into the shell:
+
+```bash
+set -a; . ~/.config/lambdadb/smoke/dev/typescript-sdk-ci.env; set +a
+npm run test:live
 ```
 
-The production role (release verification on `main`, Releases on tags):
-
-```text
-repo:lambdadb/lambdadb-typescript-client:ref:refs/heads/main
-repo:lambdadb/lambdadb-typescript-client:ref:refs/tags/v*
-```
-
-Each permission policy needs `secretsmanager:GetSecretValue` on the exact smoke
-secret ARN of its own environment. Add `kms:Decrypt` on the exact key only if
-using a customer-managed KMS key. No `ListSecrets` permission is required by the
-CLI reader. Provisioning the roles, projects, keys, and repository Variables is
-a separate environment setup step; adding the workflow alone does not establish
-working AWS access.
-
-For additional administrative protection, configure a protected GitHub
-Environment for npm publishing and update the npm Trusted Publisher settings to
-require the same environment. Coordinate both external changes before adding
-`environment:` to the workflow; changing only one side can break publishing.
+Exported variables take precedence over a checkout's `.env.local`.
 
 ## Failed releases
 
