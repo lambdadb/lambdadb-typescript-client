@@ -1,5 +1,6 @@
 # IndexConfigsUnion
 
+Every variant accepts an optional `description` ([`FieldDescription`](#fielddescription)).
 
 ## Supported Types
 
@@ -8,6 +9,7 @@
 ```typescript
 const value: models.IndexConfigsText = {
   type: "text",
+  description: "Book title as printed on the cover",
 };
 ```
 
@@ -89,8 +91,21 @@ const value: models.IndexConfigs = {
 ```typescript
 const value: models.IndexConfigsObject = {
   type: "object",
+  description: "Publisher details",
   objectIndexConfigs: {
-    "key": "<value>",
+    pages: { type: "long", description: "Page count" },
   },
 };
 ```
+
+## FieldDescription
+
+`description?: string | null` on every variant, including nested
+`objectIndexConfigs` children. Up to 255 characters; longer values fail locally
+with `SDKValidationError`. It never affects indexing. Collection reads return
+it only when set. On create, omitting it, `null`, or `""` leaves the field
+without a description. On update, omitting it or `null` keeps the stored
+description, `""` clears it, and any other value replaces it; it is the only
+setting of an existing field that an update may change. The server-managed `id`
+field does not accept a description. The SDK sends the value as supplied and
+omits the key when it is undefined.

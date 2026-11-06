@@ -5,18 +5,14 @@ The server manages provider credentials; supply only your LambdaDB project API
 key. There is no collection-level rerank setting or client-side reranking step.
 Omitted or null `rerank` preserves existing search behavior.
 
-The implementation contract is pinned to backend commit
-[`ff13daf3f4ed40487b2b13522a141265c2f459ab`](https://github.com/lambdadb/lambdadb/tree/ff13daf3f4ed40487b2b13522a141265c2f459ab),
-including [RerankConfig](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/api/src/main/java/ai/lambdadb/dto/RerankConfig.java),
-[RerankResponse](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/api/src/main/java/ai/lambdadb/dto/RerankResponse.java),
-the query DTOs and contract tests, and the
-[design contract](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/docs/design/native-reranking.md).
-This includes the query/candidate limit increase in PR #469 and unindexed stored
-string paths in PR #481 (included in backend `main` at
-`242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
-Cohere reranking follows the public OpenAPI at backend `main`
-[`1c3e7d453cca296a7b2af85a375b4c5016504101`](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/api/openapi.json)
-(added in PR #483) and its [design contract](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/docs/design/native-reranking.md).
+The implementation contract is pinned to backend revision
+`ff13daf3f4ed40487b2b13522a141265c2f459ab`, including RerankConfig,
+RerankResponse, the query DTOs and contract tests, and the design contract.
+This includes the query/candidate limit increase and unindexed stored string
+paths (included in backend `main` at `242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
+Cohere reranking follows the OpenAPI at backend revision
+`1c3e7d453cca296a7b2af85a375b4c5016504101` and its design contract; the public
+reference copy is `reference/api/openapi.json` in lambdadb/docs.
 A source pin is not evidence of deployment to your endpoint or a published SDK package.
 
 ## Request reference
@@ -103,7 +99,7 @@ the complete response text and parse the document array in memory, so client
 memory must accommodate the full result. Internal executor streaming requires
 no SDK transport change. Facet bucket limits remain 100. Fetch and List now allow 1000; Fetch retains
 a separate 64 MiB per-node JSON budget. See the [read contract](OPENAPI_UPDATE.md#updating-fetch-and-list).
-See the pinned [server resource-budget contract](https://github.com/lambdadb/lambdadb/blob/234f6f97814bf0d60604fa45ab2907f1fce88b5a/docs/design/query-result-limits.md).
+See the pinned server resource-budget contract.
 
 ## Default criteria example
 

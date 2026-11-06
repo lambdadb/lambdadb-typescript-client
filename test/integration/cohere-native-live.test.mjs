@@ -6,7 +6,7 @@ import { crc32, deflateSync } from "node:zlib";
 import { BadRequestError, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
 import { rerankQuery } from "./rerank-retry.mjs";
 
-// Opt-in provider smoke: lambdadb f9d34b8f78ae829ae34d5065d29a42f3574983e1 api/openapi.json (#483).
+// Opt-in provider smoke: backend revision f9d34b8f78ae829ae34d5065d29a42f3574983e1 (public copy in lambdadb/docs).
 // Verify externally visible results, not provider call counts or billing.
 const options = { timeoutMs: 60_000, retries: { strategy: "none" } };
 const dimensions = 256;

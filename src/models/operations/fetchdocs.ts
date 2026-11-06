@@ -15,7 +15,7 @@ export type FetchDocsRequestBody = {
    */
   ids: Array<string>;
   /**
-   * Overlay eligible pending writes on a directly selected Branch. Tag and Alias reads reject true, pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
+   * Overlay eligible pending writes on the selected Branch's committed data. Allowed when ref selects a Branch directly or an Alias that currently targets a Branch; the server resolves the Alias when the request is admitted. Tag reads and an Alias that targets a Tag reject true with HTTP 400. Pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
    */
   consistentRead?: boolean | undefined;
   /**
@@ -90,10 +90,10 @@ export const FetchDocsRequestBody$outboundSchema: z.ZodType<
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   ref: models.ReadRef$schema.optional(),
 }).strict().superRefine((value, context) => {
-  if (value.consistentRead && value.ref != null && value.ref.kind !== "branch") {
+  if (value.consistentRead && value.ref?.kind === "tag") {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "consistentRead is supported only for direct Branch reads",
+      message: "consistentRead is supported only for Branch reads or an Alias that targets a Branch",
       path: ["consistentRead"],
     });
   }

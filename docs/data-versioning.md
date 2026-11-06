@@ -1,6 +1,10 @@
 # Data Versioning
 
-This SDK implements the public LambdaDB Data Versioning contract pinned at
+This SDK implements the public LambdaDB Data Versioning contract in
+`reference/api/openapi.json` of lambdadb/docs, pinned at docs commit
+[`1714009a2659a18b26cb68193dd7a071fd6efb42`](https://github.com/lambdadb/docs/blob/1714009a2659a18b26cb68193dd7a071fd6efb42/reference/api/openapi.json) (SHA-256 `604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070`),
+which allows consistent reads through an Alias that targets a Branch. The
+previous pin was
 [`c44180406c05b1a9043d8516e7c7f60df91fc9a7`](https://github.com/lambdadb/docs/commit/c44180406c05b1a9043d8516e7c7f60df91fc9a7).
 The source revision identifies the implementation contract; it does not by
 itself prove that a particular API environment has deployed that contract.
@@ -162,11 +166,23 @@ A page token is an opaque search position, not a Snapshot pin. A Branch can
 advance and an Alias can move between page requests. Use the same immutable Tag
 and unchanged filters/projection throughout a stable multi-page export.
 
-`consistentRead: true` overlays eligible pending writes on committed data and
-is supported only for a direct Branch ref or an omitted ref (implicit `main`).
-Pending bulk imports are excluded, and an oversized pending overlay can return `TooManyRequestsError` (`429`). The
-public Query and Fetch input unions reject `consistentRead: true` with a Tag or
-Alias at compile time, and runtime validation protects JavaScript callers.
+`consistentRead: true` overlays eligible pending writes on the selected Branch's
+committed data. It is allowed for an omitted ref (implicit `main`), a Branch
+ref, or an Alias ref that currently targets a Branch; the server resolves the
+Alias to its Branch when the request is admitted. Tag reads reject it, and an
+Alias that targets a Tag fails with `BadRequestError` (`400`). Pending bulk
+imports are excluded, and an oversized pending overlay can return
+`TooManyRequestsError` (`429`). The public Query and Fetch input unions reject
+`consistentRead: true` with a Tag ref at compile time, and runtime validation
+protects JavaScript callers; Alias target resolution stays on the server.
+
+```typescript
+await collection.query({
+  query: { queryString: { query: "title:candidate" } },
+  ref: aliasRef("production"),
+  consistentRead: true,
+});
+```
 
 ## Branch-scoped writes
 
@@ -239,8 +255,8 @@ existing nested field definitions.
 New top-level fields and nested children at any object depth are supported.
 Include all existing fields, retaining their types, analyzers, vector settings,
 and embedding configuration. Removing or changing existing fields is rejected
-by the API; the SDK passes the full schema through without fetching the current
-schema first. Collection responses include the server-managed top-level `id`
+by the API; only a field's optional `description` may change on an update, and
+the SDK passes the full schema through without fetching the current schema first. Collection responses include the server-managed top-level `id`
 field as `{ type: "keyword" }`; requests may send it back unchanged or omit it,
 so `indexConfigs` read from `get()` can be reused as the base of an update.
 

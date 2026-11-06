@@ -19,7 +19,7 @@ const value: CreateCollectionRequest = {
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `collectionName` | `string` | Yes | Unique Collection name. |
-| `indexConfigs` | `Record<string, IndexConfigsUnion>` | Yes | Nonempty index configuration map. |
+| `indexConfigs` | `Record<string, IndexConfigsUnion>` | Yes | Nonempty index configuration map; each field may carry an optional `description`. |
 | `description` | `string` | No | Description, up to 255 characters. |
 | `tags` | `Record<string, string>` | No | Up to five metadata tags; values must contain a non-whitespace character. |
 | `partitionConfig` | `PartitionConfig` | No | Partition configuration. |

@@ -2,14 +2,14 @@
 
 Configure a vector field with `embedding` to enable native embeddings. The SDK
 preserves the omitted legacy flag and leaves dimensions/similarity defaults to
-the server. The contract is pinned to backend
-[ff13daf3f4ed40487b2b13522a141265c2f459ab](https://github.com/lambdadb/lambdadb/blob/ff13daf3f4ed40487b2b13522a141265c2f459ab/docs/design/native-embedding-config.md)
-(backend PR #481, included in `main` at `242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
+the server. The contract is pinned to backend revision
+`ff13daf3f4ed40487b2b13522a141265c2f459ab` (included in backend `main` at
+`242a2824d09dac9b1c31385290e6ee3d40ac2ba9`).
 Cohere providers, ordered `sources`, image inputs, `knn.queryInputs`, direct
-vectors on native fields, and native-field bulk imports follow the public
-OpenAPI at backend `main`
-[`1c3e7d453cca296a7b2af85a375b4c5016504101`](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/api/openapi.json)
-(added in PR #483); see its [design contract](https://github.com/lambdadb/lambdadb/blob/1c3e7d453cca296a7b2af85a375b4c5016504101/docs/design/native-embedding-config.md).
+vectors on native fields, and native-field bulk imports follow the OpenAPI at
+backend revision `1c3e7d453cca296a7b2af85a375b4c5016504101` and its design
+contract; the public reference copy is `reference/api/openapi.json` in
+lambdadb/docs (see [OpenAPI maintenance](OPENAPI_UPDATE.md#openapi-spec)).
 These source pins do not establish deployment to any endpoint.
 
 ```typescript
@@ -276,7 +276,7 @@ precedes native embedding preparation. The SDK forwards the server
 response unchanged. The running server's exact source revision, provider call
 counts, and billing were not independently verified.
 
-lambdadb/lambdadb#514 moved these static checks before the empty-target
+A later backend change moved these static checks before the empty-target
 return. On 2026-10-30 the same empty-Collection probe returned HTTP 400 for
 all five cases with both `consistentRead: false` and `true` on the development
 and production endpoints, and the live test no longer sets `consistentRead`

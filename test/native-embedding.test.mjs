@@ -118,7 +118,7 @@ test("native embedding retains vector conflicts, strict public fields, and calle
   assert.throws(() => indexConfigsManagedEmbeddingVectorToJSON(native));
 });
 
-// Cohere and ordered sources: lambdadb 1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+// Cohere and ordered sources: backend revision 1c3e7d453cca296a7b2af85a375b4c5016504101 (public copy in lambdadb/docs).
 const cohere = { type: "vector", embedding: {
   provider: "cohere", model: "embed-v5.0-pro", dimensions: 1024,
   sources: [{ field: "product.description", type: "text" }, { field: "product.images", type: "image" }],

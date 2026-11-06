@@ -3,7 +3,8 @@
 This SDK is maintained manually. Direct fixes and pull requests are welcome,
 including changes to files that retain historical code-generator headers.
 Follow [OpenAPI maintenance](docs/OPENAPI_UPDATE.md) when updating API contracts
-and pin the exact upstream revision used for the change.
+and pin the exact public contract revision (lambdadb/docs commit and SHA-256)
+used for the change.
 
 ## Reporting issues
 

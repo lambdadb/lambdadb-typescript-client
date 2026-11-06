@@ -128,7 +128,7 @@ const invalidConfigs = [
     Array.from({ length: 5 }, (_, i) => `${i}${"é".repeat(1000)}`)].map((criteria) => ({ criteria })),
   { weights: [0, 1] }, { threshold: 0.5 }, { apiKey: "not-a-client-option" },
 ];
-// Cohere rerank contract: lambdadb 1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+// Cohere rerank contract: backend revision 1c3e7d453cca296a7b2af85a375b4c5016504101 (public copy in lambdadb/docs).
 const cohere = { ...rerank, provider: "cohere", model: "rerank-v5.0-pro" };
 const invalidCohere = [
   { model: "jev-1.13.0" }, { model: "rerank-v4.0-pro" }, { criteria: [] }, { criteria: ["Low", "High"] },

@@ -27,17 +27,23 @@ import type {
   TagRef,
 } from "../models/versioning.js";
 
+/**
+ * Consistent reads need a Branch, an Alias that currently targets a Branch, or
+ * an omitted ref (implicit main). The server resolves the Alias when the request
+ * is admitted and rejects an Alias that targets a Tag with HTTP 400. Tag reads
+ * cannot request consistentRead true.
+ */
 type ConsistentReadForRef =
-  | { ref?: BranchRef | undefined; consistentRead?: boolean | undefined }
-  | { ref: TagRef | AliasRef; consistentRead?: false | undefined };
+  | { ref?: BranchRef | AliasRef | undefined; consistentRead?: boolean | undefined }
+  | { ref: TagRef; consistentRead?: false | undefined };
 
-/** Query input with consistent reads restricted to direct Branch refs. */
+/** Query input; consistent reads are limited to Branch and Alias refs. */
 export type QueryCollectionInput = Omit<
   QueryCollectionRequestBody,
   "ref" | "consistentRead"
 > & ConsistentReadForRef;
 
-/** Fetch input with consistent reads restricted to direct Branch refs. */
+/** Fetch input; consistent reads are limited to Branch and Alias refs. */
 export type FetchDocsInput = Omit<
   FetchDocsRequestBody,
   "ref" | "consistentRead"
@@ -141,6 +147,7 @@ export type GetBulkUpsertInput = { branch?: string | undefined };
 
 // ---- Models referenced by request/response bodies ----
 export type {
+  FieldDescription,
   IndexConfigsUnion,
   IndexConfigsManagedEmbeddingVector,
   IndexConfigsNativeEmbeddingVector,

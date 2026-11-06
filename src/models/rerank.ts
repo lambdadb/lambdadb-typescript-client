@@ -51,7 +51,7 @@ const blank = /^[\u0009-\u000d\u001c-\u0020\u1680\u2000-\u2006\u2008-\u200a\u202
 const nonblank = z.string().refine((text) => !blank.test(text), "Must be nonblank");
 const bytes = (text: string) => new TextEncoder().encode(text).length;
 
-// OpenAPI: lambdadb/lambdadb@1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+// OpenAPI: backend revision 1c3e7d453cca296a7b2af85a375b4c5016504101 (public copy in lambdadb/docs).
 const rerankOptions = {
   queryText: nonblank.refine((text) => bytes(text) <= 8192, "queryText exceeds 8 KiB UTF-8"),
   fields: z.array(nonblank.refine(
