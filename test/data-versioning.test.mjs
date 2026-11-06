@@ -87,7 +87,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "c44180406c05b1a9043d8516e7c7f60df91fc9a7",
+    "1714009a2659a18b26cb68193dd7a071fd6efb42",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -371,7 +371,7 @@ test("maps duplicate, not-found, and validation failures to concrete errors", as
 
   const invalidConsistency = await collection.querySafe({
     query: { matchAll: {} },
-    ref: aliasRef("production"),
+    ref: tagRef("release-001"),
     consistentRead: true,
   });
   assert.equal(invalidConsistency.ok, false);
@@ -811,7 +811,7 @@ test("returns referenced-target deletion conflicts without automatic retries", a
   }
 });
 
-test("Query and Fetch allow consistent reads only for implicit main or a direct Branch", async () => {
+test("Query and Fetch allow consistent reads for implicit main, a Branch, or an Alias, not a Tag", async () => {
   for (const operation of ["query", "fetch"]) {
     for (const ref of [undefined, branchRef("candidate"), tagRef("release-001"), aliasRef("production")]) {
       for (const consistentRead of [undefined, false, true]) {
@@ -822,10 +822,18 @@ test("Query and Fetch allow consistent reads only for implicit main or a direct 
         const result = operation === "query"
           ? await collection.querySafe({ query: { matchAll: {} }, ...input })
           : await collection.docs.fetchSafe({ ids: ["doc-1"], ...input });
-        const allowed = consistentRead !== true || ref === undefined || ref.kind === "branch";
+        const allowed = consistentRead !== true || ref === undefined || ref.kind !== "tag";
         assert.equal(result.ok, allowed);
         assert.equal(apiCalls.length, allowed ? 1 : 0);
-        if (!allowed) assert.ok(result.error instanceof SDKValidationError);
+        if (allowed && consistentRead === true) {
+          const body = JSON.parse(apiCalls[0].body);
+          assert.equal(body.consistentRead, true);
+          assert.deepEqual(body.ref, ref);
+        }
+        if (!allowed) {
+          assert.ok(result.error instanceof SDKValidationError);
+          assert.match(result.error.message, /Alias that targets a Branch/);
+        }
       }
     }
   }

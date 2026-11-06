@@ -73,8 +73,8 @@ const helperQuery = createQueryInput(
 
 // @ts-expect-error Tag sources do not support point-in-time asOf.
 const invalidTagSource: RefSource = { kind: "tag", name: "release-001", asOf: 1 };
-// @ts-expect-error Strong consistency is allowed only for a direct Branch ref.
-const invalidAliasQuery: QueryCollectionInput = {
+// Alias reads may request strong consistency; the server resolves the Alias to its Branch.
+const aliasQuery: QueryCollectionInput = {
   query: { matchAll: {} },
   ref: aliasRef("production"),
   consistentRead: true,
@@ -89,11 +89,15 @@ const invalidDeletePartitionOnly: DeleteDocsInput = {
 };
 // @ts-expect-error Collection PATCH requires at least one non-null field.
 const invalidNullOnlyPatch: UpdateCollectionInput = { description: null };
+const aliasHelperQuery = createQueryInput(
+  { matchAll: {} },
+  { ref: aliasRef("production"), consistentRead: true },
+);
 const invalidHelperQuery = createQueryInput(
   { matchAll: {} },
   {
-    // @ts-expect-error Query helper also rejects strongly consistent Alias reads.
-    ref: aliasRef("production"),
+    // @ts-expect-error Query helper rejects strongly consistent Tag reads.
+    ref: tagRef("release-001"),
     consistentRead: true,
   },
 );
@@ -120,7 +124,8 @@ void deleteByFilter;
 void patchWithNullNoOps;
 void helperQuery;
 void invalidTagSource;
-void invalidAliasQuery;
+void aliasQuery;
+void aliasHelperQuery;
 void invalidWrite;
 void invalidDeleteBoth;
 void invalidDeletePartitionOnly;
@@ -161,7 +166,6 @@ const reads: (QueryCollectionInput | FetchDocsInput)[] = [
 const tagQuery: QueryCollectionInput = { query: {}, ref: tagRef("release-001"), consistentRead: true };
 // @ts-expect-error Tag Fetch cannot request consistentRead true.
 const invalidTagFetch: FetchDocsInput = { ids: [], ref: tagRef("release-001"), consistentRead: true };
-// @ts-expect-error Alias Fetch cannot request consistentRead true.
 const aliasFetch: FetchDocsInput = { ids: [], ref: aliasRef("production"), consistentRead: true };
 const completions: BulkUpsertInput[] = [
   { objectKey: "key" },

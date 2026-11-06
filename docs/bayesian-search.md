@@ -1,9 +1,8 @@
 # Bayesian hybrid search
 
 Select Bayesian fusion explicitly with a top-level `bayesian` query. The contract
-is pinned to backend [963d79e8866833f1deb1393ed00a9825d866c853](https://github.com/lambdadb/lambdadb/commit/963d79e8866833f1deb1393ed00a9825d866c853):
-[BayesianQuery](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/query/BayesianQuery.java)
-and [two-signal validation](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/model/query/RankableQueryBase.java).
+is pinned to backend revision `963d79e8866833f1deb1393ed00a9825d866c853`
+(BayesianQuery and its two-signal validation).
 This source pin does not establish deployment in another environment.
 
 - Supply exactly two subqueries. Use `bool` to combine clauses within a signal.
@@ -64,7 +63,7 @@ The candidate budget is distinct from final output `size`. Keeping the candidate
 budget fixed preserves the ranking prefix when only output size changes on
 unchanged data. The SDK serializes the supplied budget without choosing a default;
 the server validates missing, invalid, and conflicting budgets. See the pinned
-[QueryRequest](https://github.com/lambdadb/lambdadb/blob/963d79e8866833f1deb1393ed00a9825d866c853/api/src/main/java/ai/lambdadb/dto/QueryRequest.java).
+backend QueryRequest DTO.
 
 Query `size`, dense `knn.k`, and both candidate budgets support up to 1000.
 Query results and hydrated candidate bodies no longer have an aggregate 64 MiB
@@ -162,8 +161,7 @@ file was removed. No SDK publication or default promotion was performed.
 
 This validation used backend merge
 `9072a1bc8925954369a887f558f1eaf387b7ea0e`, including the separate candidate/output
-budgets. [Deploy Dev run 37422611173](https://github.com/lambdadb/lambdadb/actions/runs/37422611173)
-succeeded for that exact SHA. The observed `dev-aws-apne2-v3` Gateway and Query
+budgets. The backend Deploy Dev workflow succeeded for that exact SHA. The observed `dev-aws-apne2-v3` Gateway and Query
 Executor task definitions were revision 16, with image tag `dev-v3-9072a1b` and
 running digests `sha256:300f65269579fcff327366490505327a549e38249c371e93df07f2ae0669bfef`
 and `sha256:bf87b32fdcbaf1b17f5cacb3ec8e9f1af1eb7ef51566d06cfb74273e3f857a54`,

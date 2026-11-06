@@ -101,11 +101,8 @@ function collectionResponse() {
   };
 }
 
-test("pins the c441804 OpenAPI contract", () => {
-  assert.equal(
-    DATA_VERSIONING_CONTRACT_REVISION,
-    "c44180406c05b1a9043d8516e7c7f60df91fc9a7",
-  );
+test("pins the public OpenAPI contract revision", () => {
+  assert.equal(DATA_VERSIONING_CONTRACT_REVISION, "1714009a2659a18b26cb68193dd7a071fd6efb42");
 });
 
 test("validates nonempty schemas and Java String.isBlank metadata tags", async () => {

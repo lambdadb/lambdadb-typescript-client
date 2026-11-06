@@ -27,3 +27,4 @@ let value: IndexConfigsManagedEmbeddingVector = {
 | `type`             | *"vector"*                                             | :heavy_check_mark: | N/A |
 | `managedEmbedding` | *true*                                                 | :heavy_check_mark: | Legacy flag for a native embedding vector field. |
 | `embedding`        | [models.EmbeddingConfig](../models/embeddingconfig.md) | :heavy_check_mark: | Native embedding configuration for vector fields. |
+| `description`      | *string* \| `null`                                    | :heavy_minus_sign: | Optional explanation of the field, up to 255 characters. See [FieldDescription](../models/indexconfigsunion.md#fielddescription). |

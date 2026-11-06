@@ -9,8 +9,19 @@ import { ClosedEnum } from "../types/enums.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./errors/sdkvalidationerror.js";
 
+/**
+ * Optional free-form explanation of what a field holds, up to 255 characters.
+ * It never affects indexing. Collection reads return it only when set. On
+ * update, omitting it or sending null keeps the stored description, an empty
+ * string clears it, and any other value replaces it without reindexing. The
+ * server-managed `id` field does not accept a description.
+ */
+export type FieldDescription = string | null;
+
 export type IndexConfigsObject = {
   type: "object";
+  description?: FieldDescription | undefined;
+  /** Nested field configurations; each child may carry its own description. */
   objectIndexConfigs: { [k: string]: any };
 };
 
@@ -29,6 +40,7 @@ export type TypeEnum = ClosedEnum<typeof TypeEnum>;
  */
 export type IndexConfigs = {
   type: TypeEnum;
+  description?: FieldDescription | undefined;
 };
 
 /**
@@ -45,6 +57,7 @@ export type Similarity = ClosedEnum<typeof Similarity>;
 
 export type IndexConfigsVector = {
   type: "vector";
+  description?: FieldDescription | undefined;
   embedding?: never;
   /**
    * Set to false or omit for unmanaged vector fields.
@@ -112,6 +125,7 @@ export type EmbeddingConfig = {
 
 export type IndexConfigsManagedEmbeddingVector = {
   type: "vector";
+  description?: FieldDescription | undefined;
   dimensions?: never;
   similarity?: never;
   /**
@@ -124,6 +138,7 @@ export type IndexConfigsManagedEmbeddingVector = {
 /** Native embedding input and stored source paths at backend ff13daf3f4ed40487b2b13522a141265c2f459ab. */
 export type IndexConfigsNativeEmbeddingVector = {
   type: "vector";
+  description?: FieldDescription | undefined;
   dimensions?: never;
   similarity?: never;
   embedding: EmbeddingConfig;
@@ -187,6 +202,7 @@ export type Analyzer = ClosedEnum<typeof Analyzer>;
 
 export type IndexConfigsText = {
   type: "text";
+  description?: FieldDescription | undefined;
   /**
    * Text analyzers applied independently; language detection is not automatic.
    * Omit to use the server default ["standard"]. Empty arrays do not use it.
@@ -208,6 +224,13 @@ export type IndexConfigsUnion =
   | (IndexConfigs & { type: "sparseVector" })
   | IndexConfigsObject;
 
+// FieldDescription: public OpenAPI (lambdadb/docs reference/api/openapi.json).
+// Reads omit unset descriptions; null is normalized to undefined inbound.
+const fieldDescriptionInboundSchema = nullToUndefined(z.string().optional());
+// Requests send null through unchanged (PATCH keeps the stored value) and omit
+// undefined; the 255-character limit fails locally as SDKValidationError.
+const fieldDescriptionOutboundSchema = z.string().max(255).nullable().optional();
+
 /** @internal */
 export const IndexConfigsObject$inboundSchema: z.ZodType<
   IndexConfigsObject,
@@ -215,11 +238,13 @@ export const IndexConfigsObject$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("object"),
+  description: fieldDescriptionInboundSchema,
   objectIndexConfigs: z.record(z.any()),
 });
 /** @internal */
 export type IndexConfigsObject$Outbound = {
   type: "object";
+  description?: FieldDescription | undefined;
   objectIndexConfigs: { [k: string]: any };
 };
 
@@ -230,6 +255,7 @@ export const IndexConfigsObject$outboundSchema: z.ZodType<
   IndexConfigsObject
 > = z.object({
   type: z.literal("object"),
+  description: fieldDescriptionOutboundSchema,
   objectIndexConfigs: z.record(z.any()),
 });
 
@@ -264,10 +290,12 @@ export const IndexConfigs$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: TypeEnum$inboundSchema,
+  description: fieldDescriptionInboundSchema,
 });
 /** @internal */
 export type IndexConfigs$Outbound = {
   type: string;
+  description?: FieldDescription | undefined;
 };
 
 /** @internal */
@@ -277,6 +305,7 @@ export const IndexConfigs$outboundSchema: z.ZodType<
   IndexConfigs
 > = z.object({
   type: TypeEnum$outboundSchema,
+  description: fieldDescriptionOutboundSchema,
 });
 
 export function indexConfigsToJSON(indexConfigs: IndexConfigs): string {
@@ -310,6 +339,7 @@ export const IndexConfigsVector$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionInboundSchema,
   managedEmbedding: nullToUndefined(z.literal(false).optional()),
   dimensions: vectorDimensionsSchema,
   similarity: nullToUndefined(Similarity$inboundSchema.default("cosine")),
@@ -317,6 +347,7 @@ export const IndexConfigsVector$inboundSchema: z.ZodType<
 /** @internal */
 export type IndexConfigsVector$Outbound = {
   type: "vector";
+  description?: FieldDescription | undefined;
   managedEmbedding?: false | undefined;
   dimensions: number;
   similarity: string;
@@ -329,6 +360,7 @@ export const IndexConfigsVector$outboundSchema: z.ZodType<
   IndexConfigsVector
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionOutboundSchema,
   managedEmbedding: z.literal(false).optional(),
   dimensions: vectorDimensionsSchema,
   similarity: Similarity$outboundSchema.default("cosine"),
@@ -360,7 +392,7 @@ export const EmbeddingProvider$outboundSchema: z.ZodNativeEnum<
   typeof EmbeddingProvider
 > = EmbeddingProvider$inboundSchema;
 
-// OpenAPI: lambdadb/lambdadb@1c3e7d453cca296a7b2af85a375b4c5016504101 api/openapi.json.
+// OpenAPI: backend revision 1c3e7d453cca296a7b2af85a375b4c5016504101 (public copy in lambdadb/docs).
 // Path syntax, uniqueness and provider/model combinations remain server-validated.
 const EmbeddingSource$schema = z.object({
   field: z.string(),
@@ -445,12 +477,14 @@ export const IndexConfigsManagedEmbeddingVector$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionInboundSchema,
   managedEmbedding: z.literal(true),
   embedding: z.lazy(() => EmbeddingConfig$inboundSchema),
 });
 /** @internal */
 export type IndexConfigsManagedEmbeddingVector$Outbound = {
   type: "vector";
+  description?: FieldDescription | undefined;
   managedEmbedding: true;
   embedding: EmbeddingConfig$Outbound;
 };
@@ -462,6 +496,7 @@ export const IndexConfigsManagedEmbeddingVector$outboundSchema: z.ZodType<
   IndexConfigsManagedEmbeddingVector
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionOutboundSchema,
   managedEmbedding: z.literal(true),
   embedding: z.lazy(() => EmbeddingConfig$outboundSchema),
 }).strict();
@@ -493,6 +528,7 @@ export const IndexConfigsNativeEmbeddingVector$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionInboundSchema,
   embedding: z.lazy(() => EmbeddingConfig$inboundSchema),
   managedEmbedding: z.literal(true).optional(),
 });
@@ -500,6 +536,7 @@ export const IndexConfigsNativeEmbeddingVector$inboundSchema: z.ZodType<
 /** @internal */
 export type IndexConfigsNativeEmbeddingVector$Outbound = {
   type: "vector";
+  description?: FieldDescription | undefined;
   embedding: EmbeddingConfig$Outbound;
   managedEmbedding?: true | undefined;
 };
@@ -511,6 +548,7 @@ export const IndexConfigsNativeEmbeddingVector$outboundSchema: z.ZodType<
   IndexConfigsNativeEmbeddingVector
 > = z.object({
   type: z.literal("vector"),
+  description: fieldDescriptionOutboundSchema,
   embedding: z.lazy(() => EmbeddingConfig$outboundSchema),
   managedEmbedding: z.literal(true).optional(),
 }).strict();
@@ -545,11 +583,13 @@ export const IndexConfigsText$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   type: z.literal("text"),
+  description: fieldDescriptionInboundSchema,
   analyzers: nullToUndefined(z.array(Analyzer$inboundSchema).optional()),
 });
 /** @internal */
 export type IndexConfigsText$Outbound = {
   type: "text";
+  description?: FieldDescription | undefined;
   analyzers?: Array<string> | undefined;
 };
 
@@ -560,6 +600,7 @@ export const IndexConfigsText$outboundSchema: z.ZodType<
   IndexConfigsText
 > = z.object({
   type: z.literal("text"),
+  description: fieldDescriptionOutboundSchema,
   analyzers: z.array(Analyzer$outboundSchema).optional(),
 });
 

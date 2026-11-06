@@ -6,7 +6,7 @@ import test from "node:test";
 import { BadRequestError, HTTPClient, LambdaDBClient, ResourceNotFoundError } from "../../dist/esm/index.js";
 import { Analyzer } from "../../dist/esm/models/indexconfigsunion.js";
 
-// Search fixtures from backend PR #417, head 410154abcdf5275add1df47dcf23c170ed0e0efd.
+// Search fixtures from backend revision 410154abcdf5275add1df47dcf23c170ed0e0efd.
 // Duplicate rejection verified in backend 335cb16fcef5d7b8d60f88c84f2ce2cf87f96939.
 const languages = [
   ["standard", "Hello WORLD", "world"],

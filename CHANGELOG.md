@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+Aligned with the public OpenAPI contract `reference/api/openapi.json` in
+lambdadb/docs at commit `1714009a2659a18b26cb68193dd7a071fd6efb42` (SHA-256
+`604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070`). This pins the
+source contract and does not establish deployment to any endpoint.
+
+- Add an optional `description` (`FieldDescription`: string or null, up to 255
+  characters) to every index field configuration, including nested
+  `objectIndexConfigs` children. Omitted descriptions stay off the wire; `null`
+  and `""` are sent as supplied so a Collection update can keep or clear the
+  stored description, and longer values fail locally with `SDKValidationError`.
+  Collection reads return `description` only when set. A description is the only
+  setting of an existing field that an update may change; the server-managed
+  `id` field rejects one.
+- Allow `consistentRead: true` through an Alias ref. The server resolves an
+  Alias that currently targets a Branch; an Alias that targets a Tag fails with
+  `BadRequestError` (`400`). `QueryCollectionInput`/`FetchDocsInput` and the
+  Query/Fetch request validation now reject only Tag refs, with the message
+  "consistentRead is supported only for Branch reads or an Alias that targets a
+  Branch". `DATA_VERSIONING_CONTRACT_REVISION` moves from
+  `c44180406c05b1a9043d8516e7c7f60df91fc9a7` to the new docs commit.
+- Documentation now cites the public contract copy in lambdadb/docs, pinned by
+  commit and SHA-256, instead of backend repository links.
+
 ## 0.11.1
 
 - `LAMBDADB_DEBUG` enables the default debug logger only when it is `true` or `1`

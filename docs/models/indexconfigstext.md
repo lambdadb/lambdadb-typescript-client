@@ -20,6 +20,7 @@ let value: IndexConfigsText = {
 | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
 | `type`                                     | *"text"*                                   | :heavy_check_mark:                         | N/A                                        |
 | `analyzers`                                | [models.Analyzer](../models/analyzer.md)[] | :heavy_minus_sign:                         | Text analyzers applied independently. Omit for the server default `["standard"]`.                                 |
+| `description`                              | *string* \| `null`                        | :heavy_minus_sign:                         | Optional explanation of the field, up to 255 characters. See [FieldDescription](../models/indexconfigsunion.md#fielddescription). |
 
 The SDK leaves omitted `analyzers` out of the request. An empty array does not
 select the default. The SDK preserves array order and contents; use unique

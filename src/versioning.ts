@@ -48,9 +48,13 @@ import {
 } from "./types/public.js";
 import type { Result } from "./types/fp.js";
 
-/** Exact public contract revision implemented by this SDK. */
+/**
+ * Exact public contract revision implemented by this SDK: the lambdadb/docs
+ * commit of `reference/api/openapi.json` (SHA-256
+ * 604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070).
+ */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "c44180406c05b1a9043d8516e7c7f60df91fc9a7" as const;
+  "1714009a2659a18b26cb68193dd7a071fd6efb42" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);

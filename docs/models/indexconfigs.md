@@ -17,3 +17,4 @@ let value: IndexConfigs = {
 | Field                                    | Type                                     | Required                                 | Description                              |
 | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
 | `type`                                   | [models.TypeEnum](../models/typeenum.md) | :heavy_check_mark:                       | N/A                                      |
+| `description`                            | *string* \| `null`                      | :heavy_minus_sign:                       | Optional explanation of the field, up to 255 characters. See [FieldDescription](../models/indexconfigsunion.md#fielddescription). |
