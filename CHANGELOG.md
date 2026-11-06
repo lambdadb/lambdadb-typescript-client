@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.12.0 - 2026-11-06
+
 Aligned with the public OpenAPI contract `reference/api/openapi.json` in
 lambdadb/docs at commit `1714009a2659a18b26cb68193dd7a071fd6efb42` (SHA-256
 `604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070`). This pins the
