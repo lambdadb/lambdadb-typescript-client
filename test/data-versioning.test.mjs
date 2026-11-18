@@ -1060,7 +1060,7 @@ const REF_LISTINGS = [
   ["aliases", aliasWire],
 ];
 
-test("ref listings send no query parameters unless the caller sets them", async () => {
+test("listPage sends no query parameters unless the caller sets them", async () => {
   for (const [resource, wire] of REF_LISTINGS) {
     const { apiCalls, client } = createClient(() => jsonResponse({ [resource]: [wire()] }));
     const refs = client.collection(COLLECTION_NAME)[resource];
@@ -1071,15 +1071,15 @@ test("ref listings send no query parameters unless the caller sets them", async 
       { size: undefined, pageToken: undefined },
       { pageToken: "" },
     ]) {
-      const page = await refs.list(params);
+      const page = await refs.listPage(params);
       assert.equal(page[resource].length, 1);
       assert.equal("nextPageToken" in page, false);
     }
-    const safe = await refs.listSafe();
+    const safe = await refs.listPageSafe();
     assert.equal(safe.ok, true);
     assert.equal("nextPageToken" in safe.value, false);
-    // RequestOptions stay the second argument and never become query parameters.
-    await refs.list(undefined, { timeoutMs: 1000 });
+    // RequestOptions are the second argument and never become query parameters.
+    await refs.listPage(undefined, { timeoutMs: 1000 });
 
     assert.equal(apiCalls.length, 6);
     for (const call of apiCalls) {
@@ -1090,7 +1090,7 @@ test("ref listings send no query parameters unless the caller sets them", async 
   }
 });
 
-test("ref listings send size and pageToken and return nextPageToken", async () => {
+test("listPage returns exactly one page with size, pageToken, and nextPageToken", async () => {
   for (const [resource, wire] of REF_LISTINGS) {
     const { apiCalls, client } = createClient((_call, index) => jsonResponse({
       [resource]: [wire()],
@@ -1098,11 +1098,15 @@ test("ref listings send size and pageToken and return nextPageToken", async () =
     }));
     const refs = client.collection(COLLECTION_NAME)[resource];
 
-    const first = await refs.list({ size: 100 });
-    const last = await refs.listSafe({ size: 1, pageToken: first.nextPageToken });
-    await refs.list({ pageToken: "only-token" });
-
+    const first = await refs.listPage({ size: 100 });
+    // A page with more entries to follow is returned as is, without another request.
+    assert.equal(apiCalls.length, 1);
     assert.equal(first.nextPageToken, "page/2 token");
+    assert.equal(first[resource].length, 1);
+
+    const last = await refs.listPageSafe({ size: 1, pageToken: first.nextPageToken });
+    await refs.listPage({ pageToken: "only-token" });
+
     assert.equal(last.ok, true);
     assert.equal("nextPageToken" in last.value, false);
     assert.deepEqual(
@@ -1112,7 +1116,7 @@ test("ref listings send size and pageToken and return nextPageToken", async () =
   }
 });
 
-test("ref listings reject invalid pagination input locally", async () => {
+test("listPage rejects invalid pagination input locally", async () => {
   for (const [resource] of REF_LISTINGS) {
     const { apiCalls, client } = createClient(() => jsonResponse({ [resource]: [] }));
     const refs = client.collection(COLLECTION_NAME)[resource];
@@ -1126,37 +1130,89 @@ test("ref listings reject invalid pagination input locally", async () => {
       { timeoutMs: 1000 },
       { size: 10, filter: {} },
     ]) {
-      const result = await refs.listSafe(params);
+      const result = await refs.listPageSafe(params);
       assert.equal(result.ok, false, `${resource}: ${JSON.stringify(params)}`);
       assert.ok(result.error instanceof SDKValidationError);
-      await assert.rejects(refs.list(params), SDKValidationError);
+      await assert.rejects(refs.listPage(params), SDKValidationError);
+      await assert.rejects(refs.listPages(params).next(), SDKValidationError);
     }
     assert.equal(apiCalls.length, 0);
   }
 });
 
-test("ref listings surface server pagination rejections as BadRequestError", async () => {
+test("listPage surfaces server pagination rejections as BadRequestError", async () => {
   for (const [resource] of REF_LISTINGS) {
     const { client } = createClient(() => jsonResponse({ message: "Invalid pageToken" }, 400));
     const refs = client.collection(COLLECTION_NAME)[resource];
-    const result = await refs.listSafe({ pageToken: "malformed" });
+    const result = await refs.listPageSafe({ pageToken: "malformed" });
     assert.equal(result.ok, false);
     assert.ok(result.error instanceof BadRequestError);
-    await assert.rejects(refs.list({ pageToken: "malformed" }), BadRequestError);
+    await assert.rejects(refs.listPage({ pageToken: "malformed" }), BadRequestError);
   }
 });
 
-test("listPages and listAll follow nextPageToken and keep size on every request", async () => {
+// Serves three single-entry pages linked by nextPageToken.
+function threePageClient(resource, wire, nameKey, failOnToken) {
+  const tokens = [undefined, "token-2", "token-3"];
+  return createClient((call) => {
+    const token = call.url.searchParams.get("pageToken") ?? undefined;
+    if (token !== undefined && token === failOnToken) {
+      return jsonResponse({ message: "Catalog unavailable" }, 400);
+    }
+    const index = tokens.indexOf(token);
+    return jsonResponse({
+      [resource]: [wire({ [nameKey]: `entry-${index + 1}` })],
+      ...(index < 2 ? { nextPageToken: tokens[index + 1] } : {}),
+    });
+  });
+}
+
+test("list and listSafe keep their signature and return every entry across pages", async () => {
   for (const [resource, wire] of REF_LISTINGS) {
     const nameKey = resource === "aliases" ? "aliasName" : "name";
-    const tokens = [undefined, "token-2", "token-3"];
-    const { apiCalls, client } = createClient((call) => {
-      const index = tokens.indexOf(call.url.searchParams.get("pageToken") ?? undefined);
-      return jsonResponse({
-        [resource]: [wire({ [nameKey]: `entry-${index + 1}` })],
-        ...(index < 2 ? { nextPageToken: tokens[index + 1] } : {}),
-      });
-    });
+    const { apiCalls, client } = threePageClient(resource, wire, nameKey);
+    const refs = client.collection(COLLECTION_NAME)[resource];
+
+    const all = await refs.list();
+    assert.deepEqual(Object.keys(all), [resource]);
+    assert.deepEqual(all[resource].map((entry) => entry[nameKey]), ["entry-1", "entry-2", "entry-3"]);
+    // One request per page, with the server's default page size (no size sent).
+    assert.deepEqual(
+      apiCalls.map((call) => call.url.search),
+      ["", "?pageToken=token-2", "?pageToken=token-3"],
+    );
+
+    apiCalls.length = 0;
+    // The only argument is RequestOptions, as before pagination existed.
+    const safe = await refs.listSafe({ timeoutMs: 1000 });
+    assert.equal(safe.ok, true);
+    assert.deepEqual(safe.value, all);
+    assert.deepEqual(
+      apiCalls.map((call) => call.url.search),
+      ["", "?pageToken=token-2", "?pageToken=token-3"],
+    );
+  }
+});
+
+test("list returns a later page's error instead of a partial list", async () => {
+  for (const [resource, wire] of REF_LISTINGS) {
+    const nameKey = resource === "aliases" ? "aliasName" : "name";
+    const { apiCalls, client } = threePageClient(resource, wire, nameKey, "token-3");
+    const refs = client.collection(COLLECTION_NAME)[resource];
+
+    const safe = await refs.listSafe();
+    assert.equal(safe.ok, false);
+    assert.ok(safe.error instanceof BadRequestError);
+    assert.equal("value" in safe, false);
+    assert.equal(apiCalls.length, 3);
+    await assert.rejects(refs.list(), BadRequestError);
+  }
+});
+
+test("listPages follows nextPageToken from listPage and keeps size on every request", async () => {
+  for (const [resource, wire] of REF_LISTINGS) {
+    const nameKey = resource === "aliases" ? "aliasName" : "name";
+    const { apiCalls, client } = threePageClient(resource, wire, nameKey);
     const refs = client.collection(COLLECTION_NAME)[resource];
 
     const pages = [];
@@ -1169,18 +1225,11 @@ test("listPages and listAll follow nextPageToken and keep size on every request"
     );
 
     apiCalls.length = 0;
-    const all = await refs.listAll();
-    assert.deepEqual(Object.keys(all), [resource]);
-    assert.deepEqual(all[resource].map((entry) => entry[nameKey]), ["entry-1", "entry-2", "entry-3"]);
-    assert.deepEqual(
-      apiCalls.map((call) => call.url.search),
-      ["", "?pageToken=token-2", "?pageToken=token-3"],
-    );
-
-    apiCalls.length = 0;
-    const resumed = await refs.listAll({ pageToken: "token-3" });
-    assert.deepEqual(resumed[resource].map((entry) => entry[nameKey]), ["entry-3"]);
+    const resumed = [];
+    for await (const page of refs.listPages({ pageToken: "token-3" })) resumed.push(page);
+    assert.deepEqual(resumed.map((page) => page[resource][0][nameKey]), ["entry-3"]);
     assert.deepEqual(apiCalls.map((call) => call.url.search), ["?pageToken=token-3"]);
+    assert.equal(typeof refs.listAll, "undefined");
   }
 });
 

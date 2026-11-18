@@ -273,7 +273,7 @@ test("distinguishes create collisions from conditional ref conflicts", async () 
   assert.equal(conflict.ok, false);
   assert.ok(conflict.error instanceof CatalogConflictError);
 
-  const unavailable = await aliases.listSafe(undefined, NO_RETRIES);
+  const unavailable = await aliases.listSafe(NO_RETRIES);
   assert.equal(unavailable.ok, false);
   assert.ok(unavailable.error instanceof ServiceUnavailableError);
 });

@@ -70,9 +70,9 @@ const { branch } = await collection.branches.get("candidate");
 const { tag } = await collection.tags.get("release-001");
 const { alias } = await collection.aliases.get("production");
 
-const { branches } = await collection.branches.listAll();
-const { tags } = await collection.tags.listAll();
-const { aliases } = await collection.aliases.listAll();
+const { branches } = await collection.branches.list();
+const { tags } = await collection.tags.list();
+const { aliases } = await collection.aliases.list();
 
 await collection.aliases.delete("production");
 await collection.tags.delete("release-001");
@@ -178,31 +178,42 @@ the default `main` Branch only, exactly as `branches.update("main", ...)`.
 
 ### Paginated listings
 
-`branches.list`, `tags.list`, and `aliases.list` return one page in name order.
-They take `{ size, pageToken }` (`ListRefsInput`) as the first argument and
-request options as the second, like `listCollections`:
+The server returns Branches, Tags, and Aliases one page at a time in name
+order, 10 entries per page by default.
+
+`branches.list(options?)`, `tags.list(options?)`, and `aliases.list(options?)`
+keep their signatures and still return every entry (`{ branches }`, `{ tags }`,
+`{ aliases }`, without `nextPageToken`). They follow `nextPageToken` with the
+server's default page size, so a listing now makes one request per page. If any
+page fails, `list` throws and `listSafe` returns that error; no partial list is
+returned.
+
+`listPage(params?, options?)` and `listPageSafe` return exactly one page. They
+take `{ size, pageToken }` (`ListRefsInput`) first and request options second,
+and return `nextPageToken` only when more entries follow. `listPages(params?,
+options?)` is an async iterator over the pages, built on `listPage`:
 
 ```typescript
-const page = await collection.branches.list({ size: 50 });
+const { branches: everyBranch } = await collection.branches.list();
+
+const page = await collection.branches.listPage({ size: 50 });
 if (page.nextPageToken !== undefined) {
-  await collection.branches.list({ size: 50, pageToken: page.nextPageToken });
+  await collection.branches.listPage({ size: 50, pageToken: page.nextPageToken });
 }
 
 for await (const each of collection.tags.listPages({ size: 100 })) {
   console.log(each.tags);
 }
-const { aliases: everyAlias } = await collection.aliases.listAll();
 ```
 
-The server returns 10 entries when `size` is omitted, so `list()` is no longer
-the complete set; use `listAll()` or `listPages()` for that. `nextPageToken` is
-present only when more entries follow. The SDK sends `size` and `pageToken`
-only when they are set and never sends an empty `pageToken`, because the server
-rejects an empty token and any other query parameter with HTTP `400`. `size`
-outside 1 through 100, a non-string token, or an unknown key (including request
-options passed as the first argument) fails locally with `SDKValidationError`.
-A malformed token returns `BadRequestError`. `listCollections` likewise omits
-an empty `pageToken` and maps HTTP `400` to `BadRequestError`.
+The SDK sends `size` and `pageToken` only when they are set and never sends an
+empty `pageToken`, because the server rejects an empty token and any other
+query parameter with HTTP `400`. On `listPage` and `listPages`, `size` outside 1
+through 100, a non-string token, or an unknown key (including request options
+passed as the first argument) fails locally with `SDKValidationError`. A
+malformed token returns `BadRequestError`. `listCollections` is unchanged in
+shape: it returns one page per call, omits an empty `pageToken`, and maps HTTP
+`400` to `BadRequestError`.
 
 Deleting a non-default Branch or Tag referenced by any Alias returns
 `CatalogConflictError` (HTTP `409`). Delete or retarget every referencing Alias

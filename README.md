@@ -196,17 +196,18 @@ created from Tags, and Branches without recorded parents return `null`.
 Every Branch, Tag, and Alias response carries `indexConfigs`; Branches and Tags
 also carry `numDocs` and `dataUpdatedAt`. Read one ref with
 `branches.get(name)`, `tags.get(name)`, or `aliases.get(name)`, and update one
-Branch's schema with `branches.update(name, { indexConfigs })`. Listings are
-paginated like `listCollections`: `list({ size, pageToken })` returns one page
-(10 entries by default) with `nextPageToken`, and `listPages`/`listAll` follow
-it.
+Branch's schema with `branches.update(name, { indexConfigs })`. `list()` still
+returns every Branch, Tag, or Alias and now makes one request per server page.
+`listPage({ size, pageToken })` returns one page (10 entries by default) with
+`nextPageToken`, and `listPages` iterates over the pages.
 
 ```typescript
 const { branch: current } = await collection.branches.get("candidate");
 await collection.branches.update("candidate", {
   indexConfigs: { ...current.indexConfigs, author: { type: "keyword" } },
 });
-const { aliases } = await collection.aliases.listAll();
+const { aliases } = await collection.aliases.list();
+const page = await collection.tags.listPage({ size: 50 });
 ```
 
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
@@ -743,7 +744,8 @@ if (result.ok) {
 Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collection.getSafe`, `collection.updateSafe`, `collection.deleteSafe`, `collection.querySafe`, `collection.docs.listSafe`, `collection.docs.upsertSafe`, `collection.docs.updateSafe`, `collection.docs.deleteSafe`, `collection.docs.fetchSafe`, `collection.docs.getBulkUpsertSafe`, `collection.docs.bulkUpsertSafe`, `collection.docs.bulkUpsertDocsSafe`. The `Result` type and `OK` / `ERR` helpers are exported from the package.
 
 Data Versioning lifecycle handles also provide `createSafe`, `getSafe`,
-`listSafe`, `deleteSafe`, `branches.updateSafe`, and `aliases.retargetSafe`.
+`listSafe`, `listPageSafe`, `deleteSafe`, `branches.updateSafe`, and
+`aliases.retargetSafe`.
 
 ### Error Classes
 **Primary errors:**

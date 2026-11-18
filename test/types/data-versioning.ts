@@ -233,24 +233,36 @@ async function refOperations(): Promise<void> {
   const safeUpdate = await branches.updateSafe("candidate", update);
   if (safeUpdate.ok) void safeUpdate.value.branch.dataUpdatedAt?.getTime();
 
-  const branchPage = await branches.list(page);
-  const tagPage = await tags.list({ size: 1 }, { timeoutMs: 1000 });
-  const aliasPage = await aliases.listSafe();
+  const branchPage = await branches.listPage(page);
+  const tagPage = await tags.listPage({ size: 1 }, { timeoutMs: 1000 });
+  const aliasPage = await aliases.listPageSafe();
   const tokens: (string | undefined)[] = [branchPage.nextPageToken, tagPage.nextPageToken];
   if (aliasPage.ok) tokens.push(aliasPage.value.nextPageToken);
   for await (const each of branches.listPages(page)) void each.branches;
-  const allTags: TagDetails[] = (await tags.listAll()).tags;
-  const allAliases: AliasDetails[] = (await aliases.listAll({ size: 100 })).aliases;
+
+  // list keeps its pre-pagination signature and returns every entry.
+  const allBranches: BranchDetails[] = (await branches.list()).branches;
+  const allTags: TagDetails[] = (await tags.list({ timeoutMs: 1000 })).tags;
+  const safeAliases = await aliases.listSafe({ retries: { strategy: "none" } });
+  const allAliases: AliasDetails[] = safeAliases.ok ? safeAliases.value.aliases : [];
+  // @ts-expect-error The complete listing has no nextPageToken.
+  void (await branches.list()).nextPageToken;
+  // @ts-expect-error Pagination parameters belong to listPage, not list.
+  void tags.list({ size: 10 });
+  // @ts-expect-error list takes request options only.
+  void aliases.list(undefined, { timeoutMs: 1000 });
+  // @ts-expect-error listAll does not exist; list is the complete listing.
+  void branches.listAll();
 
   // @ts-expect-error A Branch update carries indexConfigs only.
   void branches.update("candidate", { indexConfigs, description: "no" });
   // @ts-expect-error A Branch update requires indexConfigs.
   void branches.update("candidate", {});
-  // @ts-expect-error Request options are the second argument of a listing.
-  void branches.list({ timeoutMs: 1000 });
+  // @ts-expect-error Request options are the second argument of listPage.
+  void branches.listPage({ timeoutMs: 1000 });
   // @ts-expect-error Listing page tokens are strings; null is not accepted.
-  void tags.list({ pageToken: null });
-  void [got, updated, gotTag, schema, tokens, allTags, allAliases];
+  void tags.listPage({ pageToken: null });
+  void [got, updated, gotTag, schema, tokens, allBranches, allTags, allAliases];
 }
 void refOperations;
 

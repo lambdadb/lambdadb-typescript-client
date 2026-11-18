@@ -327,9 +327,13 @@ no `schemaVersionId` field in the public contract; do not add one.
   (`get`/`getSafe`, `branches.update`/`updateSafe`). The update body is strict,
   carries `indexConfigs` only, and must be nonempty; it reuses the shared
   outbound index-config schema, so field descriptions follow the same rules.
-- Listings take `ListRefsInput` first and request options second. The server
-  rejects unknown query parameters and an empty `pageToken`, so encode only the
-  supplied values and treat an empty token as omitted. `collectionsList` applies
+- `list`/`listSafe` keep their `(options?)` signature and response types and
+  return every entry by following `nextPageToken` with no `size`; a failure on
+  any page returns that error without a partial list. One page is the separate
+  `listPage`/`listPageSafe`, which take `ListRefsInput` first and request
+  options second; `listPages` iterates over `listPage`. Do not add a `listAll`.
+  The server rejects unknown query parameters and an empty `pageToken`, so
+  encode only the supplied values and treat an empty token as omitted. `collectionsList` applies
   the same empty-token rule and maps the newly declared HTTP `400` to
   `BadRequestError`. Do not insert a `size` default; the server default is 10.
 - Branch creation uses `RefSource`. `asOf` stays valid only for a Branch source;
@@ -339,7 +343,8 @@ no `schemaVersionId` field in the public contract; do not add one.
   deprecated in favor of the Branch update but still sent as supplied.
 
 Mock HTTP tests cover the wire shape of each new operation, omitted pagination
-parameters, the Tag source, and the nullable fields. They do not establish
+parameters, the complete listing across pages, the Tag source, and the nullable
+fields. They do not establish
 deployed server behavior.
 
 ## CI

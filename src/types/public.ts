@@ -126,8 +126,9 @@ export type AliasDetails = Omit<AliasDetailsModel, "createdAt"> & {
 };
 
 /**
- * Pagination parameters of the Branch, Tag, and Alias listings. Omitted values
- * are not sent; the server then returns the first page of 10 entries.
+ * Pagination parameters of `listPage` and `listPages` on Branches, Tags, and
+ * Aliases. Omitted values are not sent; the server then returns the first page
+ * of 10 entries.
  */
 export type ListRefsInput = {
   /** Max number of entries to return at once, from 1 through 100. */
@@ -160,7 +161,9 @@ export type UpdateBranchInput = {
 export type CreateBranchResponse = { branch: BranchDetails };
 export type GetBranchResponse = { branch: BranchDetails };
 export type UpdateBranchResponse = { branch: BranchDetails };
-export type ListBranchesResponse = {
+/** Every Branch of the Collection. */
+export type ListBranchesResponse = { branches: BranchDetails[] };
+export type ListBranchesPageResponse = {
   branches: BranchDetails[];
   /** Opaque token for the next page. Absent on the last page. */
   nextPageToken?: string | undefined;
@@ -173,7 +176,9 @@ export type CreateTagInput = {
 
 export type CreateTagResponse = { tag: TagDetails };
 export type GetTagResponse = { tag: TagDetails };
-export type ListTagsResponse = {
+/** Every Tag of the Collection. */
+export type ListTagsResponse = { tags: TagDetails[] };
+export type ListTagsPageResponse = {
   tags: TagDetails[];
   /** Opaque token for the next page. Absent on the last page. */
   nextPageToken?: string | undefined;
@@ -189,7 +194,9 @@ export type RetargetAliasInput = {
 };
 
 export type AliasResponse = { alias: AliasDetails };
-export type ListAliasesResponse = {
+/** Every Alias of the Collection. */
+export type ListAliasesResponse = { aliases: AliasDetails[] };
+export type ListAliasesPageResponse = {
   aliases: AliasDetails[];
   /** Opaque token for the next page. Absent on the last page. */
   nextPageToken?: string | undefined;

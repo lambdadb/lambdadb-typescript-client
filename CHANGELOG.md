@@ -24,15 +24,17 @@ copy records its publication to production (Deploy Prod run 44291949608,
   `indexConfigs` (null for a dangling Alias). They appear in create, retarget,
   get, update, and list responses, and a response without them now fails with
   `ResponseValidationError`. The facade returns `dataUpdatedAt` as `Date`.
-- **Behavior change:** Branch, Tag, and Alias listings are paginated. The server
-  returns 10 entries per page by default, so `list()` no longer returns every
-  ref; use the new `listAll()` or `listPages()`, or follow `nextPageToken`.
-- **Breaking:** `list`/`listSafe` on `branches`, `tags`, and `aliases` now take
-  `ListRefsInput` (`{ size, pageToken }`) as the first argument and request
-  options as the second, like `listCollections`. Request options passed as the
-  first argument fail at compile time and with `SDKValidationError` at runtime;
-  pass `list(undefined, options)`. `size` and `pageToken` are sent only when
-  set, and an empty `pageToken` is never sent.
+- Branch, Tag, and Alias listings follow the server's pagination (10 entries
+  per page by default). `list`/`listSafe` on `branches`, `tags`, and `aliases`
+  keep their signatures and response types and still return every entry; they
+  now make one request per page, and a failure on any page returns that error
+  with no partial list.
+- Add `listPage(params?, options?)` and `listPageSafe` for one page
+  (`ListRefsInput`: `{ size, pageToken }`; the response carries `nextPageToken`
+  only when more entries follow), and `listPages(params?, options?)` to iterate
+  over pages. `size` and `pageToken` are sent only when set, an empty
+  `pageToken` is never sent, and an out-of-range `size` or an unknown key fails
+  locally with `SDKValidationError`.
 - `listCollections` no longer sends an empty `pageToken` (the server now rejects
   it) and maps HTTP `400` to `BadRequestError`; `ListCollectionsError` includes
   it.

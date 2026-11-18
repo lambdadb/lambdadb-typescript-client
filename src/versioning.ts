@@ -43,9 +43,12 @@ import {
   type CreateTagResponse,
   type GetBranchResponse,
   type GetTagResponse,
+  type ListAliasesPageResponse,
   type ListAliasesResponse,
+  type ListBranchesPageResponse,
   type ListBranchesResponse,
   type ListRefsInput,
+  type ListTagsPageResponse,
   type ListTagsResponse,
   type MessageResponse,
   type RetargetAliasInput,
@@ -303,6 +306,22 @@ async function* refPages<TPage extends { nextPageToken?: string | undefined }>(
   }
 }
 
+/** Collects every page from the first one; the first failure ends the listing. */
+async function allRefPages<TPage extends { nextPageToken?: string | undefined }, TError>(
+  listPage: (params: ListRefsInput) => Promise<Result<TPage, TError>>,
+): Promise<Result<TPage[], TError>> {
+  const pages: TPage[] = [];
+  let pageToken: string | undefined;
+  while (true) {
+    const page = await listPage({ pageToken });
+    if (!page.ok) return page;
+    pages.push(page.value);
+    pageToken = page.value.nextPageToken;
+    if (pageToken == null || pageToken === "") break;
+  }
+  return { ok: true, value: pages };
+}
+
 function parseRefName(name: string): Result<string, SDKValidationError> {
   return safeParse(
     name,
@@ -381,19 +400,36 @@ export class CollectionBranches {
   }
 
   /**
-   * Lists one page of Branches in name order. The server returns 10 entries
-   * unless `size` is set; `nextPageToken` is present when more follow.
+   * Lists every Branch in name order. Follows `nextPageToken` with the server's
+   * default page size, making one request per page.
    */
-  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListBranchesResponse> {
-    const result = await this.listSafe(params, options);
+  async list(options?: RequestOptions): Promise<ListBranchesResponse> {
+    const result = await this.listSafe(options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(
+  /** Like `list`; a failure on any page returns that error and no partial list. */
+  async listSafe(options?: RequestOptions): Promise<Result<ListBranchesResponse, VersioningError>> {
+    const pages = await allRefPages((params) => this.listPageSafe(params, options));
+    if (!pages.ok) return pages;
+    return { ok: true, value: { branches: pages.value.flatMap((page) => page.branches) } };
+  }
+
+  /**
+   * Lists one page of Branches in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async listPage(params?: ListRefsInput, options?: RequestOptions): Promise<ListBranchesPageResponse> {
+    const result = await this.listPageSafe(params, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async listPageSafe(
     params?: ListRefsInput,
     options?: RequestOptions,
-  ): Promise<Result<ListBranchesResponse, VersioningError>> {
+  ): Promise<Result<ListBranchesPageResponse, VersioningError>> {
     const query = listRefsQuery(params);
     if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
@@ -413,19 +449,9 @@ export class CollectionBranches {
     };
   }
 
-  /** Iterates over every page of Branches, one page per API response. */
-  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListBranchesResponse> {
-    return refPages(params, (page) => this.list(page, options));
-  }
-
-  /** Fetches every page of Branches and returns a single list. */
-  async listAll(
-    params?: ListRefsInput,
-    options?: RequestOptions,
-  ): Promise<{ branches: ListBranchesResponse["branches"] }> {
-    const branches: ListBranchesResponse["branches"] = [];
-    for await (const page of this.listPages(params, options)) branches.push(...page.branches);
-    return { branches };
+  /** Iterates over the pages of Branches, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListBranchesPageResponse> {
+    return refPages(params, (page) => this.listPage(page, options));
   }
 
   /** Gets a Branch. A name that is not a Branch fails with ResourceNotFoundError. */
@@ -542,19 +568,36 @@ export class CollectionTags {
   }
 
   /**
-   * Lists one page of Tags in name order. The server returns 10 entries
-   * unless `size` is set; `nextPageToken` is present when more follow.
+   * Lists every Tag in name order. Follows `nextPageToken` with the server's
+   * default page size, making one request per page.
    */
-  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListTagsResponse> {
-    const result = await this.listSafe(params, options);
+  async list(options?: RequestOptions): Promise<ListTagsResponse> {
+    const result = await this.listSafe(options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(
+  /** Like `list`; a failure on any page returns that error and no partial list. */
+  async listSafe(options?: RequestOptions): Promise<Result<ListTagsResponse, VersioningError>> {
+    const pages = await allRefPages((params) => this.listPageSafe(params, options));
+    if (!pages.ok) return pages;
+    return { ok: true, value: { tags: pages.value.flatMap((page) => page.tags) } };
+  }
+
+  /**
+   * Lists one page of Tags in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async listPage(params?: ListRefsInput, options?: RequestOptions): Promise<ListTagsPageResponse> {
+    const result = await this.listPageSafe(params, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async listPageSafe(
     params?: ListRefsInput,
     options?: RequestOptions,
-  ): Promise<Result<ListTagsResponse, VersioningError>> {
+  ): Promise<Result<ListTagsPageResponse, VersioningError>> {
     const query = listRefsQuery(params);
     if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
@@ -574,19 +617,9 @@ export class CollectionTags {
     };
   }
 
-  /** Iterates over every page of Tags, one page per API response. */
-  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListTagsResponse> {
-    return refPages(params, (page) => this.list(page, options));
-  }
-
-  /** Fetches every page of Tags and returns a single list. */
-  async listAll(
-    params?: ListRefsInput,
-    options?: RequestOptions,
-  ): Promise<{ tags: ListTagsResponse["tags"] }> {
-    const tags: ListTagsResponse["tags"] = [];
-    for await (const page of this.listPages(params, options)) tags.push(...page.tags);
-    return { tags };
+  /** Iterates over the pages of Tags, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListTagsPageResponse> {
+    return refPages(params, (page) => this.listPage(page, options));
   }
 
   /** Gets a Tag. A name that is not a Tag fails with ResourceNotFoundError. */
@@ -668,19 +701,36 @@ export class CollectionAliases {
   }
 
   /**
-   * Lists one page of Aliases in name order. The server returns 10 entries
-   * unless `size` is set; `nextPageToken` is present when more follow.
+   * Lists every Alias in name order. Follows `nextPageToken` with the server's
+   * default page size, making one request per page.
    */
-  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListAliasesResponse> {
-    const result = await this.listSafe(params, options);
+  async list(options?: RequestOptions): Promise<ListAliasesResponse> {
+    const result = await this.listSafe(options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(
+  /** Like `list`; a failure on any page returns that error and no partial list. */
+  async listSafe(options?: RequestOptions): Promise<Result<ListAliasesResponse, VersioningError>> {
+    const pages = await allRefPages((params) => this.listPageSafe(params, options));
+    if (!pages.ok) return pages;
+    return { ok: true, value: { aliases: pages.value.flatMap((page) => page.aliases) } };
+  }
+
+  /**
+   * Lists one page of Aliases in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async listPage(params?: ListRefsInput, options?: RequestOptions): Promise<ListAliasesPageResponse> {
+    const result = await this.listPageSafe(params, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async listPageSafe(
     params?: ListRefsInput,
     options?: RequestOptions,
-  ): Promise<Result<ListAliasesResponse, VersioningError>> {
+  ): Promise<Result<ListAliasesPageResponse, VersioningError>> {
     const query = listRefsQuery(params);
     if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
@@ -700,19 +750,9 @@ export class CollectionAliases {
     };
   }
 
-  /** Iterates over every page of Aliases, one page per API response. */
-  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListAliasesResponse> {
-    return refPages(params, (page) => this.list(page, options));
-  }
-
-  /** Fetches every page of Aliases and returns a single list. */
-  async listAll(
-    params?: ListRefsInput,
-    options?: RequestOptions,
-  ): Promise<{ aliases: ListAliasesResponse["aliases"] }> {
-    const aliases: ListAliasesResponse["aliases"] = [];
-    for await (const page of this.listPages(params, options)) aliases.push(...page.aliases);
-    return { aliases };
+  /** Iterates over the pages of Aliases, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListAliasesPageResponse> {
+    return refPages(params, (page) => this.listPage(page, options));
   }
 
   /**

@@ -28,8 +28,8 @@ async function main() {
   });
   // Direct source identity can exist even when both snapshots are null.
   console.log(branch.parentBranch?.branchId, branch.parentBranch?.name);
-  // Listings are paginated (10 entries by default); listAll follows nextPageToken.
-  const { branches } = await collection.branches.listAll();
+  // list returns every Branch; listPage({ size, pageToken }) returns one page.
+  const { branches } = await collection.branches.list();
   console.log(branches.map(({ name, parentBranch }) => ({ name, parentBranch })));
 
   await collection.docs.upsert({
