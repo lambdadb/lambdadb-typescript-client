@@ -773,7 +773,7 @@ Data Versioning lifecycle handles also provide `createSafe`, `getSafe`,
 
 
 **Inherit from [`LambdaDBError`](./src/models/errors/lambdadberror.ts)**:
-* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 10 of 13 methods.*
+* [`BadRequestError`](./src/models/errors/badrequesterror.ts): Bad request. Status code `400`. Applicable to 11 of 13 methods.*
 * [`ResourceAlreadyExistsError`](./src/models/errors/resourcealreadyexistserror.ts): Resource already exists. Status code `409`. Applicable to 1 of 13 methods.*
 * [`ResponseValidationError`](./src/models/errors/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 

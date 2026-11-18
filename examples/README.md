@@ -4,7 +4,7 @@ Example scripts for the LambdaDB SDK. We use the **collection-scoped client** (`
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js active or maintenance LTS (CI uses Node 24); see [RUNTIMES.md](../RUNTIMES.md)
 - npm
 
 ## Setup
