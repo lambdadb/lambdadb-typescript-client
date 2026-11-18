@@ -1,6 +1,6 @@
 # ListCollectionsResponse
 
-A list of collections matched with a projectName. The list endpoint supports pagination via query parameters `size` (1–100) and `pageToken`; the response includes `nextPageToken` when more pages are available.
+A list of collections matched with a projectName. The list endpoint supports pagination via query parameters `size` (1–100) and `pageToken`; the response includes `nextPageToken` when more pages are available. The server rejects an empty or malformed `pageToken`, an out-of-range `size`, and any other query parameter with HTTP `400` (`BadRequestError`); the SDK omits unset parameters and an empty `pageToken`.
 
 ## Example Usage
 

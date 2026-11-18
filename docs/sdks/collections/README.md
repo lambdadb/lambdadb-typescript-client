@@ -88,6 +88,7 @@ run();
 
 | Error Type                   | Status Code                  | Content Type                 |
 | ---------------------------- | ---------------------------- | ---------------------------- |
+| errors.BadRequestError       | 400                          | application/json             |
 | errors.UnauthenticatedError  | 401                          | application/json             |
 | errors.ResourceNotFoundError | 404                          | application/json             |
 | errors.TooManyRequestsError  | 429                          | application/json             |

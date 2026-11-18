@@ -1,5 +1,10 @@
 import * as z from "zod/v3";
 
+import {
+  IndexConfigsUnion,
+  IndexConfigsUnion$inboundSchema,
+} from "./indexconfigsunion.js";
+
 const refNameSchema = z.string().regex(/^[a-zA-Z0-9_-]{3,52}$/);
 
 export type BranchRef = {
@@ -21,13 +26,17 @@ export type AliasRef = {
 export type ReadRef = BranchRef | TagRef | AliasRef;
 
 export type BranchSource = BranchRef & {
-  /** Latest committed snapshot cutoff as Unix epoch milliseconds. */
+  /**
+   * Selects the latest retained committed snapshot at or before this Unix epoch
+   * millisecond cutoff. Inherited and pending writes are excluded; this is not
+   * an exact-time restore of accepted writes.
+   */
   asOf?: number | undefined;
 };
 
 export type TagSource = TagRef;
 
-/** A Branch or Tag used as the source of a new Tag. */
+/** A Branch or Tag used as the source of a new Branch or Tag. */
 export type RefSource = BranchSource | TagSource;
 
 /** A Branch or Tag used as the target of an Alias. */
@@ -49,8 +58,9 @@ export type BranchDetails = {
   name: string;
   /**
    * Fixed direct source, even for an empty head or an ancestor snapshot selected
-   * by asOf. Null for main or unrecorded parents. Survives parent deletion and
-   * name reuse; this metadata does not prevent parent deletion.
+   * by asOf. Null for main, Branches created from Tags, or unrecorded parents.
+   * Survives parent deletion and name reuse; this metadata does not prevent
+   * parent deletion.
    */
   parentBranch: ParentBranchDetails | null;
   /** Current committed head; null for an empty branch. */
@@ -60,12 +70,30 @@ export type BranchDetails = {
    * This metadata does not extend snapshot retention.
    */
   parentSnapshot: SnapshotDetails | null;
+  /** Document count in this Branch's committed head; 0 for an empty Branch. */
+  numDocs: number;
+  /**
+   * Last data update of this Branch's committed head as Unix epoch
+   * milliseconds; null for an empty Branch.
+   */
+  dataUpdatedAt: number | null;
+  /** The Branch's own index schema. */
+  indexConfigs: { [k: string]: IndexConfigsUnion };
   /** Branch creation time as Unix epoch milliseconds. */
   createdAt: number;
 };
 
 export type TagDetails = SnapshotDetails & {
   name: string;
+  /** Document count in the pinned snapshot. */
+  numDocs: number;
+  /** Last data update of the pinned snapshot as Unix epoch milliseconds. */
+  dataUpdatedAt: number;
+  /**
+   * Index schema pinned by the Tag, including inherited writes. With
+   * `source.asOf`, this is the selected snapshot's schema.
+   */
+  indexConfigs: { [k: string]: IndexConfigsUnion };
   /** Tag creation time, independent of the pinned snapshot commit time. */
   createdAt: number;
 };
@@ -79,7 +107,14 @@ export type AliasDetails = {
   targetName: string;
   targetId: string;
   aliasRevision: number;
+  /**
+   * Whether the bound target identity is missing. Document reads through a
+   * dangling Alias return 400; reading the Alias itself still succeeds with
+   * null indexConfigs.
+   */
   dangling: boolean;
+  /** Index schema of the target's version; null for a dangling Alias. */
+  indexConfigs: { [k: string]: IndexConfigsUnion } | null;
   /** Alias creation time as Unix epoch milliseconds. */
   createdAt: number;
 };
@@ -140,25 +175,45 @@ export const ParentBranchDetails$inboundSchema: z.ZodType<ParentBranchDetails> =
   name: z.string(),
 });
 
+const indexConfigsInboundSchema = z.record(IndexConfigsUnion$inboundSchema);
+
 /** @internal */
-export const BranchDetails$inboundSchema: z.ZodType<BranchDetails> = z.object({
+export const BranchDetails$inboundSchema: z.ZodType<
+  BranchDetails,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
   name: z.string(),
   parentBranch: ParentBranchDetails$inboundSchema.nullable(),
   headSnapshot: SnapshotDetails$inboundSchema.nullable(),
   parentSnapshot: SnapshotDetails$inboundSchema.nullable(),
+  numDocs: z.number().int(),
+  dataUpdatedAt: z.number().int().nullable(),
+  indexConfigs: indexConfigsInboundSchema,
   createdAt: z.number().int(),
 });
 
 /** @internal */
-export const TagDetails$inboundSchema: z.ZodType<TagDetails> = z.object({
+export const TagDetails$inboundSchema: z.ZodType<
+  TagDetails,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
   name: z.string(),
   snapshotId: z.string(),
   snapshotCommittedAt: z.number().int(),
+  numDocs: z.number().int(),
+  dataUpdatedAt: z.number().int(),
+  indexConfigs: indexConfigsInboundSchema,
   createdAt: z.number().int(),
 });
 
 /** @internal */
-export const AliasDetails$inboundSchema: z.ZodType<AliasDetails> = z.object({
+export const AliasDetails$inboundSchema: z.ZodType<
+  AliasDetails,
+  z.ZodTypeDef,
+  unknown
+> = z.object({
   aliasId: z.string(),
   aliasName: z.string(),
   targetKind: z.enum(["BRANCH", "TAG"]),
@@ -166,5 +221,6 @@ export const AliasDetails$inboundSchema: z.ZodType<AliasDetails> = z.object({
   targetId: z.string(),
   aliasRevision: z.number().int().nonnegative(),
   dangling: z.boolean(),
+  indexConfigs: indexConfigsInboundSchema.nullable(),
   createdAt: z.number().int(),
 });

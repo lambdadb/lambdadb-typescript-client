@@ -27,7 +27,7 @@ const value: CollectionResponse = {
 | --- | --- | --- | --- |
 | `projectName` | `string` | Yes | Project name. |
 | `collectionName` | `string` | Yes | Collection name. |
-| `indexConfigs` | `Record<string, IndexConfigsUnion>` | Yes | Nonempty index configurations. |
+| `indexConfigs` | `Record<string, IndexConfigsUnion>` | Yes | Nonempty index configurations of the default `main` Branch, as a read-only summary; other Branches carry their own schema. |
 | `description` | `string` | Yes | Collection description. |
 | `tags` | `Record<string, string>` | Yes | Up to five metadata tags. |
 | `partitionConfig` | `PartitionConfig` | No | Partition configuration. |

@@ -34,6 +34,7 @@ export function collectionsList(
 ): APIPromise<
   Result<
     operations.ListCollectionsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -67,6 +68,7 @@ async function $do(
   [
     Result<
       operations.ListCollectionsResponse,
+      | errors.BadRequestError
       | errors.UnauthenticatedError
       | errors.ResourceNotFoundError
       | errors.TooManyRequestsError
@@ -90,7 +92,8 @@ async function $do(
   const path = pathToFunc("/collections")();
 
   const query = encodeFormQuery({
-    "pageToken": request?.pageToken,
+    // The server rejects an empty pageToken; treat it as the first page.
+    "pageToken": request?.pageToken === "" ? undefined : request?.pageToken,
     "size": request?.size,
   });
 
@@ -144,7 +147,7 @@ async function $do(
 
   const doResult = await client._do(req, {
     context,
-    errorCodes: ["401", "404", "429", "4XX", "500", "5XX"],
+    errorCodes: ["400", "401", "404", "429", "4XX", "500", "5XX"],
     retryConfig: context.retryConfig,
     retryCodes: context.retryCodes,
   });
@@ -159,6 +162,7 @@ async function $do(
 
   const [result] = await M.match<
     operations.ListCollectionsResponse,
+    | errors.BadRequestError
     | errors.UnauthenticatedError
     | errors.ResourceNotFoundError
     | errors.TooManyRequestsError
@@ -177,6 +181,7 @@ async function $do(
     | SDKValidationError
   >(
     M.json(200, operations.ListCollectionsResponse$inboundSchema),
+    M.jsonErr(400, errors.BadRequestError$inboundSchema),
     M.jsonErr(401, errors.UnauthenticatedError$inboundSchema),
     M.jsonErr(404, errors.ResourceNotFoundError$inboundSchema),
     M.jsonErr(429, errors.TooManyRequestsError$inboundSchema),

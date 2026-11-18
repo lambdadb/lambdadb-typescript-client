@@ -24,6 +24,10 @@ export type CollectionResponse = {
    * Collection name.
    */
   collectionName: string;
+  /**
+   * Index schema of the default main Branch, as a read-only summary like
+   * numDocs and dataUpdatedAt. Other Branches carry their own schema.
+   */
   indexConfigs: { [k: string]: IndexConfigsUnion };
   /** Collection description. */
   description: string;

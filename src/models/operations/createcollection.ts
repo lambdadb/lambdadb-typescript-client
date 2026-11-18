@@ -21,21 +21,18 @@ export type CreateCollectionRequest = {
   snapshotRetentionInDays?: number | undefined;
 };
 
-export type CreatedCollection = {
-  collectionName: string;
-  description: string;
-  tags: Record<string, string>;
-  defaultBranchName: "main";
-  snapshotRetentionInDays: number;
-  /** Collection creation time as Unix epoch milliseconds. */
-  createdAt: number;
-};
+/**
+ * @deprecated Use `CollectionResponse`. Collection create returns the same
+ * shape as a Collection read.
+ */
+export type CreatedCollection = models.CollectionResponse;
 
 /**
- * Created collection
+ * Created collection, in the same shape as a Collection read, including the
+ * normalized indexConfigs of its main Branch.
  */
 export type CreateCollectionResponse = {
-  collection: CreatedCollection;
+  collection: models.CollectionResponse;
 };
 
 /** @internal */
@@ -79,14 +76,7 @@ export const CreateCollectionResponse$inboundSchema: z.ZodType<
   z.ZodTypeDef,
   unknown
 > = z.object({
-  collection: z.object({
-    collectionName: z.string(),
-    description: z.string(),
-    tags: z.record(z.string()),
-    defaultBranchName: z.literal("main"),
-    snapshotRetentionInDays: z.number().int().min(1).max(31),
-    createdAt: z.number().int(),
-  }),
+  collection: models.CollectionResponse$inboundSchema,
 });
 
 export function createCollectionResponseFromJSON(

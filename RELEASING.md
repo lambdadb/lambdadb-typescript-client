@@ -252,7 +252,7 @@ never falls back to the other environment.
 
 | Variable | Value |
 | :-- | :-- |
-| `LAMBDADB_DEV_BASE_URL` | `https://internal-dev-aws-apne2-v3-c05a2b5d492a.lambdadb.ai` |
+| `LAMBDADB_DEV_BASE_URL` | `https://dev-apne2.lambdadb.ai` |
 | `LAMBDADB_DEV_PROJECT_NAME` | Dedicated SDK smoke project in `dev-aws-apne2-v3` |
 | `LAMBDADB_PROD_BASE_URL` | `https://aws-ap-northeast-2-v3.lambdadb.ai` |
 | `LAMBDADB_PROD_PROJECT_NAME` | Dedicated SDK smoke project in `prod-aws-apne2-v3` |

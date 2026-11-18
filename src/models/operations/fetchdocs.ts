@@ -15,7 +15,7 @@ export type FetchDocsRequestBody = {
    */
   ids: Array<string>;
   /**
-   * Overlay eligible pending writes on the selected Branch's committed data. Allowed when ref selects a Branch directly or an Alias that currently targets a Branch; the server resolves the Alias when the request is admitted. Tag reads and an Alias that targets a Tag reject true with HTTP 400. Pending bulk imports are excluded, and an oversized pending overlay can return HTTP 429.
+   * Overlay eligible inherited and own pending writes on the selected Branch's committed snapshot; ordinary Branch reads use only the snapshot. Allowed when ref selects a Branch directly or an Alias that currently targets a Branch; the server resolves the Alias when the request is admitted. Tag reads and reads through an Alias that targets a Tag already include eligible fixed inherited writes, but reject true with HTTP 400. Pending bulk imports are excluded until a background build materializes them, and an oversized eligible pending overlay can return HTTP 429.
    */
   consistentRead?: boolean | undefined;
   /**

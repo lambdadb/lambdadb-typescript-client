@@ -17,7 +17,8 @@ export type ListCollectionsRequest = {
    */
   size?: number | undefined;
   /**
-   * Next page token.
+   * Opaque token from the previous page. Omit it for the first page; an empty
+   * string is treated as omitted and is not sent.
    */
   pageToken?: string | undefined;
 };

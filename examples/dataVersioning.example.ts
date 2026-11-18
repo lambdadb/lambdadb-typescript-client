@@ -20,7 +20,7 @@ const client = new LambdaDBClient({
 async function main() {
   const collection = client.collection("my-collection");
 
-  // Only Branch sources are accepted. Omitting source selects main;
+  // Branch and Tag sources are accepted. Omitting source selects main;
   // branchSource("main", new Date(...)) selects a retained point-in-time snapshot.
   const { branch } = await collection.branches.create({
     branchName: "candidate",
@@ -28,6 +28,7 @@ async function main() {
   });
   // Direct source identity can exist even when both snapshots are null.
   console.log(branch.parentBranch?.branchId, branch.parentBranch?.name);
+  // list returns every Branch; listPage({ size, pageToken }) returns one page.
   const { branches } = await collection.branches.list();
   console.log(branches.map(({ name, parentBranch }) => ({ name, parentBranch })));
 

@@ -72,14 +72,7 @@ function createClient(apiHandler, transferHandler) {
 
 function createdCollection(tags) {
   return {
-    collection: {
-      collectionName: COLLECTION_NAME,
-      description: "",
-      tags,
-      defaultBranchName: "main",
-      snapshotRetentionInDays: 30,
-      createdAt: 1788825600000,
-    },
+    collection: { ...collectionResponse().collection, tags },
   };
 }
 
@@ -102,7 +95,7 @@ function collectionResponse() {
 }
 
 test("pins the public OpenAPI contract revision", () => {
-  assert.equal(DATA_VERSIONING_CONTRACT_REVISION, "1714009a2659a18b26cb68193dd7a071fd6efb42");
+  assert.equal(DATA_VERSIONING_CONTRACT_REVISION, "7be299af9cac4195b75feb6e38b5cd7f8989f5a0");
 });
 
 test("validates nonempty schemas and Java String.isBlank metadata tags", async () => {
