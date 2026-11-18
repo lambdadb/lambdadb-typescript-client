@@ -100,14 +100,24 @@ export type SnapshotDetails = Omit<SnapshotDetailsModel, "snapshotCommittedAt"> 
   snapshotCommittedAt: Date;
 };
 
-export type BranchDetails = Omit<BranchDetailsModel, "createdAt" | "headSnapshot" | "parentSnapshot"> & {
+export type BranchDetails = Omit<
+  BranchDetailsModel,
+  "createdAt" | "dataUpdatedAt" | "headSnapshot" | "parentSnapshot"
+> & {
   headSnapshot: SnapshotDetails | null;
   parentSnapshot: SnapshotDetails | null;
+  /** Last data update of the committed head; null for an empty Branch. */
+  dataUpdatedAt: Date | null;
   createdAt: Date;
 };
 
-export type TagDetails = Omit<TagDetailsModel, "createdAt" | "snapshotCommittedAt"> & {
+export type TagDetails = Omit<
+  TagDetailsModel,
+  "createdAt" | "dataUpdatedAt" | "snapshotCommittedAt"
+> & {
   snapshotCommittedAt: Date;
+  /** Last data update of the pinned snapshot. */
+  dataUpdatedAt: Date;
   createdAt: Date;
 };
 
@@ -115,14 +125,46 @@ export type AliasDetails = Omit<AliasDetailsModel, "createdAt"> & {
   createdAt: Date;
 };
 
+/**
+ * Pagination parameters of the Branch, Tag, and Alias listings. Omitted values
+ * are not sent; the server then returns the first page of 10 entries.
+ */
+export type ListRefsInput = {
+  /** Max number of entries to return at once, from 1 through 100. */
+  size?: number | undefined;
+  /**
+   * Opaque token from the previous page's `nextPageToken`. Omit it for the
+   * first page; an empty string is treated as omitted and is not sent.
+   */
+  pageToken?: string | undefined;
+};
+
 export type CreateBranchInput = {
   branchName: string;
-  /** Omit to use main; only Branch sources support creating a Branch. */
-  source?: import("../models/versioning.js").BranchSource | undefined;
+  /**
+   * Omit to use main. A Tag source creates the Branch from the Tag's pinned
+   * state; `asOf` is valid only for a Branch source.
+   */
+  source?: import("../models/versioning.js").RefSource | undefined;
+};
+
+/** A Branch owns only its index schema; other settings stay on the Collection. */
+export type UpdateBranchInput = {
+  /**
+   * The Branch's complete existing schema plus any new fields. Must contain at
+   * least one field.
+   */
+  indexConfigs: { [k: string]: import("../models/index.js").IndexConfigsUnion };
 };
 
 export type CreateBranchResponse = { branch: BranchDetails };
-export type ListBranchesResponse = { branches: BranchDetails[] };
+export type GetBranchResponse = { branch: BranchDetails };
+export type UpdateBranchResponse = { branch: BranchDetails };
+export type ListBranchesResponse = {
+  branches: BranchDetails[];
+  /** Opaque token for the next page. Absent on the last page. */
+  nextPageToken?: string | undefined;
+};
 
 export type CreateTagInput = {
   tagName: string;
@@ -130,7 +172,12 @@ export type CreateTagInput = {
 };
 
 export type CreateTagResponse = { tag: TagDetails };
-export type ListTagsResponse = { tags: TagDetails[] };
+export type GetTagResponse = { tag: TagDetails };
+export type ListTagsResponse = {
+  tags: TagDetails[];
+  /** Opaque token for the next page. Absent on the last page. */
+  nextPageToken?: string | undefined;
+};
 
 export type CreateAliasInput = {
   aliasName: string;
@@ -142,7 +189,11 @@ export type RetargetAliasInput = {
 };
 
 export type AliasResponse = { alias: AliasDetails };
-export type ListAliasesResponse = { aliases: AliasDetails[] };
+export type ListAliasesResponse = {
+  aliases: AliasDetails[];
+  /** Opaque token for the next page. Absent on the last page. */
+  nextPageToken?: string | undefined;
+};
 export type GetBulkUpsertInput = { branch?: string | undefined };
 
 // ---- Models referenced by request/response bodies ----
@@ -162,9 +213,6 @@ export type {
 
 // ---- Timestamp helpers (Unix epoch milliseconds → Date) ----
 import type { CollectionResponse as CollectionResponseModel } from "../models/index.js";
-import type {
-  CreateCollectionResponse as CreateCollectionResponseModel,
-} from "../models/operations/createcollection.js";
 
 /**
  * Collection response with timestamp fields as Date (for better DX).
@@ -237,22 +285,16 @@ export function updateCollectionResponseWithDates(res: {
   return getCollectionResponseWithDates(res);
 }
 
-/** Create response with its Unix-millisecond timestamp converted to Date. */
-export type CreateCollectionResponseWithDates = {
-  collection: Omit<CreateCollectionResponseModel["collection"], "createdAt"> & {
-    createdAt: Date;
-  };
-};
+/**
+ * Create response with timestamp fields converted to Date. The created
+ * Collection has the same shape as a Collection read.
+ */
+export type CreateCollectionResponseWithDates = GetCollectionResponseWithDates;
 
-export function createCollectionResponseWithDates(
-  response: CreateCollectionResponseModel,
-): CreateCollectionResponseWithDates {
-  return {
-    collection: {
-      ...response.collection,
-      createdAt: new Date(response.collection.createdAt),
-    },
-  };
+export function createCollectionResponseWithDates(res: {
+  collection: CollectionResponseModel;
+}): CreateCollectionResponseWithDates {
+  return getCollectionResponseWithDates(res);
 }
 
 /** @internal */
@@ -266,6 +308,7 @@ export function branchDetailsWithDates(details: BranchDetailsModel): BranchDetai
     ...details,
     headSnapshot: details.headSnapshot === null ? null : snapshotDetailsWithDate(details.headSnapshot),
     parentSnapshot: details.parentSnapshot === null ? null : snapshotDetailsWithDate(details.parentSnapshot),
+    dataUpdatedAt: details.dataUpdatedAt === null ? null : new Date(details.dataUpdatedAt),
     createdAt: new Date(details.createdAt),
   };
 }
@@ -273,8 +316,9 @@ export function branchDetailsWithDates(details: BranchDetailsModel): BranchDetai
 /** @internal */
 export function tagDetailsWithDates(details: TagDetailsModel): TagDetails {
   return {
-    ...snapshotDetailsWithDate(details),
-    name: details.name,
+    ...details,
+    snapshotCommittedAt: new Date(details.snapshotCommittedAt),
+    dataUpdatedAt: new Date(details.dataUpdatedAt),
     createdAt: new Date(details.createdAt),
   };
 }

@@ -2,6 +2,54 @@
 
 ## Unreleased
 
+Aligned with the public OpenAPI contract `reference/api/openapi.json`
+(`info.version` 1.3.0) in lambdadb/docs at commit
+`7be299af9cac4195b75feb6e38b5cd7f8989f5a0` (SHA-256
+`ec499bb6ad4fd7359c1854359e9ecfd4cd8609420f440f7dcbf75566ccda8f32`), synced from
+lambdadb/lambdadb commit `f9aa63c79cbac2ac477a76ec45e5015ce665afd1`. The docs
+copy records its publication to production (Deploy Prod run 44291949608,
+2026-11-18); the SDK change itself was validated with mocked HTTP only.
+
+- Add single ref reads: `collection.branches.get(name)`,
+  `collection.tags.get(name)`, and `collection.aliases.get(name)`, each with a
+  `getSafe` form. A dangling Alias is still returned, with `dangling: true` and
+  `indexConfigs: null`.
+- Add `collection.branches.update(name, { indexConfigs })` and `updateSafe`.
+  A Branch owns its index schema; the strict body carries a nonempty
+  `indexConfigs` only. Updating `main` also updates the Collection's
+  `indexConfigs`.
+- `BranchDetails` gains required `indexConfigs`, `numDocs`, and nullable
+  `dataUpdatedAt` (null for an empty Branch); `TagDetails` gains `indexConfigs`,
+  `numDocs`, and `dataUpdatedAt`; `AliasDetails` gains required nullable
+  `indexConfigs` (null for a dangling Alias). They appear in create, retarget,
+  get, update, and list responses, and a response without them now fails with
+  `ResponseValidationError`. The facade returns `dataUpdatedAt` as `Date`.
+- **Behavior change:** Branch, Tag, and Alias listings are paginated. The server
+  returns 10 entries per page by default, so `list()` no longer returns every
+  ref; use the new `listAll()` or `listPages()`, or follow `nextPageToken`.
+- **Breaking:** `list`/`listSafe` on `branches`, `tags`, and `aliases` now take
+  `ListRefsInput` (`{ size, pageToken }`) as the first argument and request
+  options as the second, like `listCollections`. Request options passed as the
+  first argument fail at compile time and with `SDKValidationError` at runtime;
+  pass `list(undefined, options)`. `size` and `pageToken` are sent only when
+  set, and an empty `pageToken` is never sent.
+- `listCollections` no longer sends an empty `pageToken` (the server now rejects
+  it) and maps HTTP `400` to `BadRequestError`; `ListCollectionsError` includes
+  it.
+- Branch creation accepts a Tag source (`tagSource(name)`); `CreateBranchInput`
+  `source` is now `RefSource`. `asOf` remains valid only for a Branch source,
+  and `parentBranch` is null for a Branch created from a Tag.
+- `createCollection` returns the full Collection shape, the same as
+  `collection.get()` (`CreateCollectionResponse.collection` is a
+  `CollectionResponse`; `CreatedCollection` is a deprecated alias). A reduced
+  create response from an older server fails with `ResponseValidationError`.
+- Deprecate `indexConfigs` on `collection.update`. It still works and updates
+  the default `main` Branch only; use `branches.update("main", ...)`.
+- Documentation and doc comments follow the contract's wording on what Branch
+  and Tag creation capture, Tag reads, document listing, and consistent reads.
+  `DATA_VERSIONING_CONTRACT_REVISION` moves from
+  `1714009a2659a18b26cb68193dd7a071fd6efb42` to the new docs commit.
+
 ## 0.12.0 - 2026-11-06
 
 Aligned with the public OpenAPI contract `reference/api/openapi.json` in

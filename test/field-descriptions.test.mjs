@@ -145,10 +145,7 @@ test("create and update send nested descriptions and omit absent ones; reads ret
   const stored = { id: { type: "keyword" }, ...indexConfigs };
   const { calls, client } = createClient((call) => {
     if (call.method === "POST") {
-      return jsonResponse({ collection: {
-        collectionName: "books", description: "", tags: {}, defaultBranchName: "main",
-        snapshotRetentionInDays: 30, createdAt: 1,
-      } }, 201);
+      return jsonResponse({ collection: collectionFixture(stored) }, 201);
     }
     return jsonResponse({ collection: collectionFixture(stored) });
   });

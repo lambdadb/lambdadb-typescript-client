@@ -11,6 +11,11 @@ import { SDKValidationError } from "../errors/sdkvalidationerror.js";
 import * as models from "../index.js";
 
 type UpdateCollectionFields = {
+  /**
+   * @deprecated Updates the index schema of the default main Branch only,
+   * exactly as `collection.branches.update("main", { indexConfigs })` does. Use
+   * the Branch update; this field remains for compatibility.
+   */
   indexConfigs?: { [k: string]: models.IndexConfigsUnion } | null | undefined;
   description?: string | null | undefined;
   tags?: Record<string, string> | null | undefined;
@@ -19,6 +24,10 @@ type UpdateCollectionFields = {
 
 export type UpdateCollectionRequestBody =
   | (UpdateCollectionFields & {
+    /**
+     * @deprecated Updates the index schema of the default main Branch only.
+     * Use `collection.branches.update("main", { indexConfigs })`.
+     */
     indexConfigs: { [k: string]: models.IndexConfigsUnion };
   })
   | (UpdateCollectionFields & { description: string })

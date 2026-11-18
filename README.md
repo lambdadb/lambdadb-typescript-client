@@ -187,15 +187,32 @@ for await (const page of collection.docs.listPages({
 ```
 
 Omitting a read ref or write Branch preserves the existing `main` behavior.
-Branch creation accepts only Branch sources; omitting `source` selects `main`,
-and `branchSource(name, asOf)` supports point-in-time creation. Tag creation
-continues to accept Branch or Tag sources. Branch create/list responses include
-required nullable `parentBranch: { branchId, name }`, even for an empty head;
-`main` and Branches without recorded parents return `null`.
+Branch and Tag creation accept Branch or Tag sources; omitting `source` selects
+`main`, and `branchSource(name, asOf)` supports point-in-time creation from a
+Branch. Branch responses include required nullable
+`parentBranch: { branchId, name }`, even for an empty head; `main`, Branches
+created from Tags, and Branches without recorded parents return `null`.
+
+Every Branch, Tag, and Alias response carries `indexConfigs`; Branches and Tags
+also carry `numDocs` and `dataUpdatedAt`. Read one ref with
+`branches.get(name)`, `tags.get(name)`, or `aliases.get(name)`, and update one
+Branch's schema with `branches.update(name, { indexConfigs })`. Listings are
+paginated like `listCollections`: `list({ size, pageToken })` returns one page
+(10 entries by default) with `nextPageToken`, and `listPages`/`listAll` follow
+it.
+
+```typescript
+const { branch: current } = await collection.branches.get("candidate");
+await collection.branches.update("candidate", {
+  indexConfigs: { ...current.indexConfigs, author: { type: "keyword" } },
+});
+const { aliases } = await collection.aliases.listAll();
+```
+
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The Data Versioning contract is pinned at lambdadb/docs commit
-`1714009a2659a18b26cb68193dd7a071fd6efb42` (`reference/api/openapi.json`), which also allows
+`7be299af9cac4195b75feb6e38b5cd7f8989f5a0` (`reference/api/openapi.json`, API version 1.3.0), which also allows
 `consistentRead: true` through an Alias that targets a Branch. Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
 all referencing Aliases first. Reads through an Alias whose
@@ -725,8 +742,8 @@ if (result.ok) {
 
 Available Safe methods: `listCollectionsSafe`, `createCollectionSafe`, `collection.getSafe`, `collection.updateSafe`, `collection.deleteSafe`, `collection.querySafe`, `collection.docs.listSafe`, `collection.docs.upsertSafe`, `collection.docs.updateSafe`, `collection.docs.deleteSafe`, `collection.docs.fetchSafe`, `collection.docs.getBulkUpsertSafe`, `collection.docs.bulkUpsertSafe`, `collection.docs.bulkUpsertDocsSafe`. The `Result` type and `OK` / `ERR` helpers are exported from the package.
 
-Data Versioning lifecycle handles also provide `createSafe`, `listSafe`,
-`deleteSafe`, and `aliases.retargetSafe`.
+Data Versioning lifecycle handles also provide `createSafe`, `getSafe`,
+`listSafe`, `deleteSafe`, `branches.updateSafe`, and `aliases.retargetSafe`.
 
 ### Error Classes
 **Primary errors:**

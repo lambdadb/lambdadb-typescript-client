@@ -362,7 +362,8 @@ export class LambdaDBClient extends LambdaDBCore {
   }
 
   /**
-   * Create a new collection.
+   * Create a new collection. The response has the same shape as
+   * `collection.get()`, including the normalized indexConfigs of its main Branch.
    */
   async createCollection(
     request: CreateCollectionInput,
@@ -426,7 +427,9 @@ export class CollectionHandle {
   }
 
   /**
-   * Configure (update) this collection.
+   * Configure (update) this collection: description, metadata tags, and
+   * snapshot retention. `indexConfigs` here is deprecated and updates the
+   * default main Branch only; use `branches.update(name, { indexConfigs })`.
    */
   async update(
     requestBody: UpdateCollectionInput,

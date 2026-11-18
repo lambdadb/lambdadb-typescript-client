@@ -2,10 +2,11 @@
 
 This SDK implements the public LambdaDB Data Versioning contract in
 `reference/api/openapi.json` of lambdadb/docs, pinned at docs commit
-[`1714009a2659a18b26cb68193dd7a071fd6efb42`](https://github.com/lambdadb/docs/blob/1714009a2659a18b26cb68193dd7a071fd6efb42/reference/api/openapi.json) (SHA-256 `604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070`),
-which allows consistent reads through an Alias that targets a Branch. The
-previous pin was
-[`c44180406c05b1a9043d8516e7c7f60df91fc9a7`](https://github.com/lambdadb/docs/commit/c44180406c05b1a9043d8516e7c7f60df91fc9a7).
+[`7be299af9cac4195b75feb6e38b5cd7f8989f5a0`](https://github.com/lambdadb/docs/blob/7be299af9cac4195b75feb6e38b5cd7f8989f5a0/reference/api/openapi.json) (SHA-256 `ec499bb6ad4fd7359c1854359e9ecfd4cd8609420f440f7dcbf75566ccda8f32`, API version 1.3.0,
+synced from backend revision `f9aa63c79cbac2ac477a76ec45e5015ce665afd1`),
+which adds single Branch, Tag, and Alias reads, Branch schema updates,
+paginated ref listings, and Branches created from Tags. The previous pin was
+[`1714009a2659a18b26cb68193dd7a071fd6efb42`](https://github.com/lambdadb/docs/commit/1714009a2659a18b26cb68193dd7a071fd6efb42).
 The source revision identifies the implementation contract; it does not by
 itself prove that a particular API environment has deployed that contract.
 
@@ -65,27 +66,41 @@ await collection.aliases.retarget("production", {
   target: branchTarget("candidate"),
 });
 
-const { branches } = await collection.branches.list();
-const { tags } = await collection.tags.list();
-const { aliases } = await collection.aliases.list();
+const { branch } = await collection.branches.get("candidate");
+const { tag } = await collection.tags.get("release-001");
+const { alias } = await collection.aliases.get("production");
+
+const { branches } = await collection.branches.listAll();
+const { tags } = await collection.tags.listAll();
+const { aliases } = await collection.aliases.listAll();
 
 await collection.aliases.delete("production");
 await collection.tags.delete("release-001");
 await collection.branches.delete("candidate");
 ```
 
-Branch creation accepts only a `BranchSource` in the same Collection and copies
-its committed state. Omit `source` to use `main`; `branchSource("dev", asOf)`
-selects a retained committed snapshot at or before the cutoff. Tag and Alias
-sources fail SDK input validation on both `create` and `createSafe`.
+Branch creation accepts a Branch or Tag source (`RefSource`) in the same
+Collection. Omit `source` to use `main`. Without `asOf`, the new Branch pins the
+source snapshot and the writes still pending on the source at creation, without
+copying them or waiting for the source build: ordinary reads of the new Branch
+see those writes after its own build commits them, and a direct
+`consistentRead` includes the eligible ones immediately. Later writes to the
+source are excluded. `tagSource("release-001")` creates the Branch from the
+Tag's pinned schema and every write captured when the Tag was created.
+`branchSource("dev", asOf)` selects only the latest retained committed snapshot
+at or before the cutoff, excluding pending and inherited writes; it is not an
+exact-time restore. Alias sources and a Tag source with `asOf` fail SDK input
+validation on both `create` and `createSafe`.
 
-`BranchDetails` in create and list responses contains `name`, `createdAt`,
-`parentBranch`, `headSnapshot`, and `parentSnapshot`. All three metadata fields
-are required and nullable:
+`BranchDetails` in create, get, update, and list responses contains `name`,
+`createdAt`, `parentBranch`, `headSnapshot`, `parentSnapshot`, `numDocs`,
+`dataUpdatedAt`, and `indexConfigs`. The three parent/head metadata fields are
+required and nullable:
 
 - `parentBranch: { branchId, name }` records the direct source Branch at creation,
   even when that source is empty or `asOf` selects a snapshot originating on an
-  ancestor. It is `null` for `main` or when no parent was recorded. This historical
+  ancestor. It is `null` for `main`, Branches created from Tags, or when no parent
+  was recorded. This historical
   identity survives parent deletion and name reuse and does not prevent deletion.
 - `headSnapshot` is the current committed head, initially `null` for an empty source.
 - `parentSnapshot` stays fixed at the fork snapshot as the head advances. For
@@ -95,18 +110,99 @@ An empty Branch can therefore have a non-null `parentBranch` while both snapshot
 fields are null. Parent metadata does not extend snapshot retention. Branches
 have no top-level `snapshotId`.
 
+`numDocs` is the document count in the Branch's committed head (`0` for an
+empty Branch), and `dataUpdatedAt` is the last data update of that head. It is
+required and explicitly `null` for an empty Branch. `indexConfigs` is the
+Branch's own index schema and is never null.
+
 Each non-null `SnapshotDetails` contains `snapshotId` and
 `snapshotCommittedAt`. `TagDetails` has these fields at the top level alongside
-`name` and `createdAt`; its snapshot cannot be null. The collection-scoped
-facade converts both creation and snapshot commit timestamps to `Date`, including
-nested Branch snapshots. Types from `models` retain numeric Unix milliseconds.
+`name`, `createdAt`, `numDocs`, `dataUpdatedAt`, and `indexConfigs` (the schema
+pinned by the Tag); its snapshot and `dataUpdatedAt` cannot be null.
+`AliasDetails` carries `indexConfigs` of the target's version, or `null` for a
+dangling Alias. The collection-scoped facade converts creation, snapshot commit,
+and data update timestamps to `Date`, including nested Branch snapshots. Types
+from `models` retain numeric Unix milliseconds.
 
-Tag creation continues to accept a Branch or Tag source (`RefSource`), with
-omission selecting `main`. `tagSource("release-001")` pins the same snapshot,
-not a chain of Tags. Alias sources are rejected, and `asOf` is valid only for a
-Branch source. Tags require a committed Snapshot, so verify committed data before
-creating one. Data mutations are accepted asynchronously and are not necessarily
-committed when their request returns.
+Tag creation accepts a Branch or Tag source (`RefSource`), with omission
+selecting `main`. Without `asOf`, a Tag is a fixed, read-only reference that pins
+the source snapshot and the remaining pending writes of the source; background
+builds may materialize those writes into the Tag's own snapshot without changing
+the source. Ordinary Query and Fetch reads of a Tag include its eligible
+inherited writes, while bulk imports become visible only after a build
+materializes them. `tagSource("release-001")` copies that Tag's fixed state, not
+a chain of Tags. Alias sources are rejected, and `asOf` is valid only for a
+Branch source, where it pins only the latest retained committed snapshot at or
+before the cutoff. An empty head or unavailable `asOf` history returns
+`BadRequestError` (HTTP `400`). Data mutations are accepted asynchronously and
+are not necessarily committed when their request returns.
+
+### Single ref reads
+
+`branches.get(name)`, `tags.get(name)`, and `aliases.get(name)` return one ref
+in the same shape as create and list entries. A name that is not a ref of that
+kind fails with `ResourceNotFoundError` (HTTP `404`). `aliases.get` returns the
+index schema the Alias currently serves, read through to its target; a dangling
+Alias still succeeds with `dangling: true` and `indexConfigs: null`.
+
+### Branch index schemas
+
+A Branch owns its `indexConfigs`. A new Branch inherits the source Branch's
+current schema, the Tag's pinned schema, or the origin snapshot's schema for an
+`asOf` Branch; later schema updates of other Branches, including `main`, do not
+change it. A Tag keeps the schema its snapshot was built with.
+
+```typescript
+const { branch } = await collection.branches.get("candidate");
+await collection.branches.update("candidate", {
+  indexConfigs: { ...branch.indexConfigs, author: { type: "keyword" } },
+});
+```
+
+`branches.update(name, { indexConfigs })` changes that Branch only; updating
+`main` also updates the Collection's `indexConfigs`, which mirror `main`. The
+body is strict and carries `indexConfigs` only: description, tags, and snapshot
+retention stay on `collection.update`. The same additive rule as a Collection
+update applies within the Branch: send the Branch's complete existing schema
+(the server-managed `id` field may be included or omitted), add fields at any
+object depth, and set, replace, or clear field descriptions. An empty or
+missing `indexConfigs`, or any other key, fails locally with
+`SDKValidationError`. Naming a Tag or an Alias returns `BadRequestError`
+(HTTP `400`); a conditional conflict returns `CatalogConflictError` (HTTP
+`409`). Promoting a Branch's schema to `main` is a manual step: apply the same
+additive change to `main`. The server does not check schemas when an Alias is
+retargeted across Branches with different schemas.
+
+`indexConfigs` on `collection.update` is deprecated. It still works and updates
+the default `main` Branch only, exactly as `branches.update("main", ...)`.
+
+### Paginated listings
+
+`branches.list`, `tags.list`, and `aliases.list` return one page in name order.
+They take `{ size, pageToken }` (`ListRefsInput`) as the first argument and
+request options as the second, like `listCollections`:
+
+```typescript
+const page = await collection.branches.list({ size: 50 });
+if (page.nextPageToken !== undefined) {
+  await collection.branches.list({ size: 50, pageToken: page.nextPageToken });
+}
+
+for await (const each of collection.tags.listPages({ size: 100 })) {
+  console.log(each.tags);
+}
+const { aliases: everyAlias } = await collection.aliases.listAll();
+```
+
+The server returns 10 entries when `size` is omitted, so `list()` is no longer
+the complete set; use `listAll()` or `listPages()` for that. `nextPageToken` is
+present only when more entries follow. The SDK sends `size` and `pageToken`
+only when they are set and never sends an empty `pageToken`, because the server
+rejects an empty token and any other query parameter with HTTP `400`. `size`
+outside 1 through 100, a non-string token, or an unknown key (including request
+options passed as the first argument) fails locally with `SDKValidationError`.
+A malformed token returns `BadRequestError`. `listCollections` likewise omits
+an empty `pageToken` and maps HTTP `400` to `BadRequestError`.
 
 Deleting a non-default Branch or Tag referenced by any Alias returns
 `CatalogConflictError` (HTTP `409`). Delete or retarget every referencing Alias
@@ -115,7 +211,8 @@ before retrying; the SDK does not automatically retry `409` by default. Deleting
 target intact.
 
 Aliases bind to target identities. If a missing target is encountered,
-`dangling` is `true` and reads fail with `BadRequestError` (HTTP `400`);
+`dangling` is `true` and document reads fail with `BadRequestError` (HTTP
+`400`), while `aliases.get` still returns the Alias with `indexConfigs: null`;
 recreating the same target name does not repair the binding. Normal target
 deletion is blocked while Aliases reference it. Selecting a ref that does not
 exist fails with `ResourceNotFoundError` (HTTP `404`).
@@ -166,12 +263,21 @@ A page token is an opaque search position, not a Snapshot pin. A Branch can
 advance and an Alias can move between page requests. Use the same immutable Tag
 and unchanged filters/projection throughout a stable multi-page export.
 
-`consistentRead: true` overlays eligible pending writes on the selected Branch's
-committed data. It is allowed for an omitted ref (implicit `main`), a Branch
+Document listing reads only the currently published snapshot for every ref,
+including Tags and Aliases that target Tags. Pending writes become visible to
+listing only after a build publishes a snapshot; listing applies no pending
+overlay.
+
+`consistentRead: true` overlays eligible inherited and own pending writes on the
+selected Branch's committed snapshot; ordinary Branch reads use only the
+snapshot. It is allowed for an omitted ref (implicit `main`), a Branch
 ref, or an Alias ref that currently targets a Branch; the server resolves the
-Alias to its Branch when the request is admitted. Tag reads reject it, and an
-Alias that targets a Tag fails with `BadRequestError` (`400`). Pending bulk
-imports are excluded, and an oversized pending overlay can return
+Alias to its Branch when the request is admitted. Tag reads and reads through an
+Alias that targets a Tag already include the Tag's eligible fixed inherited
+writes on Query and Fetch, but reject `consistentRead: true`: a Tag ref fails
+local validation, and an Alias that targets a Tag fails with `BadRequestError`
+(`400`). Pending bulk imports are excluded until a background build materializes
+them, and an oversized eligible pending overlay can return
 `TooManyRequestsError` (`429`). The public Query and Fetch input unions reject
 `consistentRead: true` with a Tag ref at compile time, and runtime validation
 protects JavaScript callers; Alias target resolution stays on the server.
@@ -241,7 +347,8 @@ copying API headers.
 
 Collection create and update accept `description`, up to five metadata `tags`,
 and `snapshotRetentionInDays` from 1 through 31. Responses include
-`defaultBranchName: "main"`. Wire timestamps use Unix epoch milliseconds; the
+`defaultBranchName: "main"`. Collection create returns the same full shape as
+`collection.get()`, including the normalized `indexConfigs` of `main`. Wire timestamps use Unix epoch milliseconds; the
 collection-scoped facade converts them directly to `Date` without a seconds
 multiplier.
 
@@ -260,8 +367,9 @@ the SDK passes the full schema through without fetching the current schema first
 field as `{ type: "keyword" }`; requests may send it back unchanged or omit it,
 so `indexConfigs` read from `get()` can be reused as the base of an update.
 
-Collection `numDocs` and optional `dataUpdatedAt` describe the default `main`
-Branch's committed head, not all Branches or a selected ref. A commit without a
+Collection `indexConfigs`, `numDocs`, and optional `dataUpdatedAt` describe the
+default `main` Branch, not all Branches or a selected ref; other Branches carry
+their own schema and statistics on `branches.get`. A commit without a
 data mutation retains the earlier `dataUpdatedAt`; it is absent before a
 committed head exists.
 

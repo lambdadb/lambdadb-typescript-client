@@ -1,9 +1,10 @@
 import * as z from "zod/v3";
 
 import type { LambdaDBCore } from "./core.js";
+import { encodeFormQuery } from "./lib/encodings.js";
 import * as M from "./lib/matchers.js";
 import { compactMap } from "./lib/primitives.js";
-import { safeParse } from "./lib/schemas.js";
+import { nullToUndefined, safeParse } from "./lib/schemas.js";
 import type { RequestOptions } from "./lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "./lib/security.js";
 import * as errors from "./models/errors/index.js";
@@ -14,7 +15,6 @@ import {
   AliasDetails$inboundSchema,
   AliasTarget$schema,
   BranchDetails$inboundSchema,
-  BranchSource$schema,
   TagDetails$inboundSchema,
   RefSource$schema,
   type AliasRef,
@@ -23,6 +23,7 @@ import {
   type TagRef,
   type TagSource,
 } from "./models/versioning.js";
+import { IndexConfigsUnion$outboundSchema } from "./models/indexconfigsunion.js";
 import type {
   ConnectionError,
   InvalidRequestError,
@@ -40,21 +41,26 @@ import {
   type CreateBranchResponse,
   type CreateTagInput,
   type CreateTagResponse,
+  type GetBranchResponse,
+  type GetTagResponse,
   type ListAliasesResponse,
   type ListBranchesResponse,
+  type ListRefsInput,
   type ListTagsResponse,
   type MessageResponse,
   type RetargetAliasInput,
+  type UpdateBranchInput,
+  type UpdateBranchResponse,
 } from "./types/public.js";
 import type { Result } from "./types/fp.js";
 
 /**
  * Exact public contract revision implemented by this SDK: the lambdadb/docs
  * commit of `reference/api/openapi.json` (SHA-256
- * 604e6fdcf0e0a5af2c9ac8714e60d282d0ebfb9847a49371ff0452fac48be070).
+ * ec499bb6ad4fd7359c1854359e9ecfd4cd8609420f440f7dcbf75566ccda8f32).
  */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "1714009a2659a18b26cb68193dd7a071fd6efb42" as const;
+  "7be299af9cac4195b75feb6e38b5cd7f8989f5a0" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -83,7 +89,11 @@ export function aliasRef(name: string): AliasRef {
   return { kind: "alias", name: checkedRefName(name) };
 }
 
-/** Creates a validated Branch source, optionally at a Unix-millisecond cutoff. */
+/**
+ * Creates a validated Branch source. An optional `asOf` selects the latest
+ * retained committed snapshot at or before that Unix-millisecond cutoff,
+ * excluding inherited and pending writes.
+ */
 export function branchSource(
   name: string,
   asOf?: Date | number,
@@ -99,7 +109,10 @@ export function branchSource(
   return source;
 }
 
-/** Creates a validated Tag source. `asOf` is intentionally unavailable. */
+/**
+ * Creates a validated Tag source for a new Branch or Tag. `asOf` is
+ * intentionally unavailable.
+ */
 export function tagSource(name: string): TagSource {
   return tagRef(name);
 }
@@ -137,10 +150,11 @@ export type VersioningError =
 
 type VersioningRequest<TInput, TOutput> = {
   body?: TInput | undefined;
-  bodySchema?: z.ZodType<TInput> | undefined;
+  bodySchema?: z.ZodType<unknown, z.ZodTypeDef, TInput> | undefined;
   method: "GET" | "POST" | "PATCH" | "DELETE";
   path: string;
-  responseSchema: z.ZodType<TOutput>;
+  query?: string | undefined;
+  responseSchema: z.ZodType<TOutput, z.ZodTypeDef, unknown>;
   successStatus: 200 | 201;
   conflict?: "already-exists" | "catalog" | undefined;
 };
@@ -154,7 +168,7 @@ async function requestVersioning<TInput, TOutput>(
   if (request.bodySchema !== undefined) {
     const parsed = safeParse(
       request.body,
-      (value) => request.bodySchema?.parse(value) as TInput,
+      (value) => request.bodySchema?.parse(value),
       "Input validation failed",
     );
     if (!parsed.ok) return parsed;
@@ -198,6 +212,7 @@ async function requestVersioning<TInput, TOutput>(
     baseURL: options?.serverURL,
     path: request.path,
     headers,
+    query: request.query ?? "",
     body,
     userAgent: client._options.userAgent,
     timeoutMs: options?.timeoutMs || client._options.timeoutMs || -1,
@@ -240,19 +255,87 @@ function pathFor(collectionName: string, suffix: string): string {
   return `/collections/${encodeURIComponent(collectionName)}${suffix}`;
 }
 
+const listRefsSchema: z.ZodType<ListRefsInput> = z.object({
+  size: z.number().int().min(1).max(100).optional(),
+  pageToken: z.string().optional(),
+}).strict();
+const nextPageTokenSchema = nullToUndefined(z.string().optional());
+
+/**
+ * Validates listing parameters and encodes only the supplied ones. The server
+ * rejects unknown query parameters and an empty pageToken, so an empty token
+ * is omitted like an unset one.
+ */
+function listRefsQuery(params: ListRefsInput | undefined): Result<string, SDKValidationError> {
+  const parsed = safeParse(
+    params ?? {},
+    (value) => listRefsSchema.parse(value),
+    "Input validation failed",
+  );
+  if (!parsed.ok) return parsed;
+  return {
+    ok: true,
+    value: encodeFormQuery({
+      pageToken: parsed.value.pageToken === "" ? undefined : parsed.value.pageToken,
+      size: parsed.value.size,
+    }),
+  };
+}
+
+/** Copies nextPageToken only when the server returned one. */
+function withNextPageToken<T extends object>(
+  value: T,
+  nextPageToken: string | undefined,
+): T & { nextPageToken?: string | undefined } {
+  return nextPageToken === undefined ? value : { ...value, nextPageToken };
+}
+
+async function* refPages<TPage extends { nextPageToken?: string | undefined }>(
+  params: ListRefsInput | undefined,
+  list: (params: ListRefsInput) => Promise<TPage>,
+): AsyncGenerator<TPage> {
+  let pageToken = params?.pageToken;
+  while (true) {
+    const page = await list({ ...params, pageToken });
+    yield page;
+    pageToken = page.nextPageToken;
+    if (pageToken == null || pageToken === "") break;
+  }
+}
+
+function parseRefName(name: string): Result<string, SDKValidationError> {
+  return safeParse(
+    name,
+    (value) => refNameSchema.parse(value),
+    "Input validation failed",
+  );
+}
+
 const createBranchSchema: z.ZodType<CreateBranchInput> = z.object({
   branchName: z.string().regex(refNamePattern),
-  source: BranchSource$schema.optional(),
+  source: RefSource$schema.optional(),
 }).strict();
-const createBranchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
-const listBranchesResponseSchema = z.object({ branches: z.array(BranchDetails$inboundSchema) });
+const updateBranchSchema = z.object({
+  indexConfigs: z.record(IndexConfigsUnion$outboundSchema).refine(
+    (value) => Object.keys(value).length > 0,
+    { message: "Branch indexConfigs must contain at least one field" },
+  ),
+}).strict();
+const branchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
+const listBranchesResponseSchema = z.object({
+  branches: z.array(BranchDetails$inboundSchema),
+  nextPageToken: nextPageTokenSchema,
+});
 
 const createTagSchema: z.ZodType<CreateTagInput> = z.object({
   tagName: z.string().regex(refNamePattern),
   source: RefSource$schema.optional(),
 }).strict();
-const createTagResponseSchema = z.object({ tag: TagDetails$inboundSchema });
-const listTagsResponseSchema = z.object({ tags: z.array(TagDetails$inboundSchema) });
+const tagResponseSchema = z.object({ tag: TagDetails$inboundSchema });
+const listTagsResponseSchema = z.object({
+  tags: z.array(TagDetails$inboundSchema),
+  nextPageToken: nextPageTokenSchema,
+});
 
 const createAliasSchema: z.ZodType<CreateAliasInput> = z.object({
   aliasName: z.string().regex(refNamePattern),
@@ -262,7 +345,10 @@ const retargetAliasSchema: z.ZodType<RetargetAliasInput> = z.object({
   target: AliasTarget$schema,
 }).strict();
 const aliasResponseSchema = z.object({ alias: AliasDetails$inboundSchema });
-const listAliasesResponseSchema = z.object({ aliases: z.array(AliasDetails$inboundSchema) });
+const listAliasesResponseSchema = z.object({
+  aliases: z.array(AliasDetails$inboundSchema),
+  nextPageToken: nextPageTokenSchema,
+});
 const messageResponseSchema = z.object({ message: z.string() });
 
 export class CollectionBranches {
@@ -286,7 +372,7 @@ export class CollectionBranches {
       bodySchema: createBranchSchema,
       method: "POST",
       path: pathFor(this.collectionName, "/branches"),
-      responseSchema: createBranchResponseSchema,
+      responseSchema: branchResponseSchema,
       successStatus: 201,
       conflict: "already-exists",
     }, options);
@@ -294,21 +380,110 @@ export class CollectionBranches {
     return { ok: true, value: { branch: branchDetailsWithDates(result.value.branch) } };
   }
 
-  async list(options?: RequestOptions): Promise<ListBranchesResponse> {
-    const result = await this.listSafe(options);
+  /**
+   * Lists one page of Branches in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListBranchesResponse> {
+    const result = await this.listSafe(params, options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(options?: RequestOptions): Promise<Result<ListBranchesResponse, VersioningError>> {
+  async listSafe(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<Result<ListBranchesResponse, VersioningError>> {
+    const query = listRefsQuery(params);
+    if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
       method: "GET",
       path: pathFor(this.collectionName, "/branches"),
+      query: query.value,
       responseSchema: listBranchesResponseSchema,
       successStatus: 200,
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { branches: result.value.branches.map(branchDetailsWithDates) } };
+    return {
+      ok: true,
+      value: withNextPageToken(
+        { branches: result.value.branches.map(branchDetailsWithDates) },
+        result.value.nextPageToken,
+      ),
+    };
+  }
+
+  /** Iterates over every page of Branches, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListBranchesResponse> {
+    return refPages(params, (page) => this.list(page, options));
+  }
+
+  /** Fetches every page of Branches and returns a single list. */
+  async listAll(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<{ branches: ListBranchesResponse["branches"] }> {
+    const branches: ListBranchesResponse["branches"] = [];
+    for await (const page of this.listPages(params, options)) branches.push(...page.branches);
+    return { branches };
+  }
+
+  /** Gets a Branch. A name that is not a Branch fails with ResourceNotFoundError. */
+  async get(branchName: string, options?: RequestOptions): Promise<GetBranchResponse> {
+    const result = await this.getSafe(branchName, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async getSafe(
+    branchName: string,
+    options?: RequestOptions,
+  ): Promise<Result<GetBranchResponse, VersioningError>> {
+    const parsedName = parseRefName(branchName);
+    if (!parsedName.ok) return parsedName;
+    const result = await requestVersioning(this.client, {
+      method: "GET",
+      path: pathFor(this.collectionName, `/branches/${encodeURIComponent(parsedName.value)}`),
+      responseSchema: branchResponseSchema,
+      successStatus: 200,
+    }, options);
+    if (!result.ok) return result;
+    return { ok: true, value: { branch: branchDetailsWithDates(result.value.branch) } };
+  }
+
+  /**
+   * Updates the index schema of one Branch; other Branches are unchanged, and
+   * updating main also updates the Collection's indexConfigs. Send the Branch's
+   * complete existing schema plus any new fields.
+   */
+  async update(
+    branchName: string,
+    input: UpdateBranchInput,
+    options?: RequestOptions,
+  ): Promise<UpdateBranchResponse> {
+    const result = await this.updateSafe(branchName, input, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async updateSafe(
+    branchName: string,
+    input: UpdateBranchInput,
+    options?: RequestOptions,
+  ): Promise<Result<UpdateBranchResponse, VersioningError>> {
+    const parsedName = parseRefName(branchName);
+    if (!parsedName.ok) return parsedName;
+    const result = await requestVersioning(this.client, {
+      body: input,
+      bodySchema: updateBranchSchema,
+      method: "PATCH",
+      path: pathFor(this.collectionName, `/branches/${encodeURIComponent(parsedName.value)}`),
+      responseSchema: branchResponseSchema,
+      successStatus: 200,
+      conflict: "catalog",
+    }, options);
+    if (!result.ok) return result;
+    return { ok: true, value: { branch: branchDetailsWithDates(result.value.branch) } };
   }
 
   async delete(branchName: string, options?: RequestOptions): Promise<MessageResponse> {
@@ -358,7 +533,7 @@ export class CollectionTags {
       bodySchema: createTagSchema,
       method: "POST",
       path: pathFor(this.collectionName, "/tags"),
-      responseSchema: createTagResponseSchema,
+      responseSchema: tagResponseSchema,
       successStatus: 201,
       conflict: "already-exists",
     }, options);
@@ -366,21 +541,75 @@ export class CollectionTags {
     return { ok: true, value: { tag: tagDetailsWithDates(result.value.tag) } };
   }
 
-  async list(options?: RequestOptions): Promise<ListTagsResponse> {
-    const result = await this.listSafe(options);
+  /**
+   * Lists one page of Tags in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListTagsResponse> {
+    const result = await this.listSafe(params, options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(options?: RequestOptions): Promise<Result<ListTagsResponse, VersioningError>> {
+  async listSafe(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<Result<ListTagsResponse, VersioningError>> {
+    const query = listRefsQuery(params);
+    if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
       method: "GET",
       path: pathFor(this.collectionName, "/tags"),
+      query: query.value,
       responseSchema: listTagsResponseSchema,
       successStatus: 200,
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { tags: result.value.tags.map(tagDetailsWithDates) } };
+    return {
+      ok: true,
+      value: withNextPageToken(
+        { tags: result.value.tags.map(tagDetailsWithDates) },
+        result.value.nextPageToken,
+      ),
+    };
+  }
+
+  /** Iterates over every page of Tags, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListTagsResponse> {
+    return refPages(params, (page) => this.list(page, options));
+  }
+
+  /** Fetches every page of Tags and returns a single list. */
+  async listAll(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<{ tags: ListTagsResponse["tags"] }> {
+    const tags: ListTagsResponse["tags"] = [];
+    for await (const page of this.listPages(params, options)) tags.push(...page.tags);
+    return { tags };
+  }
+
+  /** Gets a Tag. A name that is not a Tag fails with ResourceNotFoundError. */
+  async get(tagName: string, options?: RequestOptions): Promise<GetTagResponse> {
+    const result = await this.getSafe(tagName, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async getSafe(
+    tagName: string,
+    options?: RequestOptions,
+  ): Promise<Result<GetTagResponse, VersioningError>> {
+    const parsedName = parseRefName(tagName);
+    if (!parsedName.ok) return parsedName;
+    const result = await requestVersioning(this.client, {
+      method: "GET",
+      path: pathFor(this.collectionName, `/tags/${encodeURIComponent(parsedName.value)}`),
+      responseSchema: tagResponseSchema,
+      successStatus: 200,
+    }, options);
+    if (!result.ok) return result;
+    return { ok: true, value: { tag: tagDetailsWithDates(result.value.tag) } };
   }
 
   async delete(tagName: string, options?: RequestOptions): Promise<MessageResponse> {
@@ -438,21 +667,79 @@ export class CollectionAliases {
     return { ok: true, value: { alias: aliasDetailsWithDate(result.value.alias) } };
   }
 
-  async list(options?: RequestOptions): Promise<ListAliasesResponse> {
-    const result = await this.listSafe(options);
+  /**
+   * Lists one page of Aliases in name order. The server returns 10 entries
+   * unless `size` is set; `nextPageToken` is present when more follow.
+   */
+  async list(params?: ListRefsInput, options?: RequestOptions): Promise<ListAliasesResponse> {
+    const result = await this.listSafe(params, options);
     if (!result.ok) throw result.error;
     return result.value;
   }
 
-  async listSafe(options?: RequestOptions): Promise<Result<ListAliasesResponse, VersioningError>> {
+  async listSafe(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<Result<ListAliasesResponse, VersioningError>> {
+    const query = listRefsQuery(params);
+    if (!query.ok) return query;
     const result = await requestVersioning(this.client, {
       method: "GET",
       path: pathFor(this.collectionName, "/aliases"),
+      query: query.value,
       responseSchema: listAliasesResponseSchema,
       successStatus: 200,
     }, options);
     if (!result.ok) return result;
-    return { ok: true, value: { aliases: result.value.aliases.map(aliasDetailsWithDate) } };
+    return {
+      ok: true,
+      value: withNextPageToken(
+        { aliases: result.value.aliases.map(aliasDetailsWithDate) },
+        result.value.nextPageToken,
+      ),
+    };
+  }
+
+  /** Iterates over every page of Aliases, one page per API response. */
+  listPages(params?: ListRefsInput, options?: RequestOptions): AsyncGenerator<ListAliasesResponse> {
+    return refPages(params, (page) => this.list(page, options));
+  }
+
+  /** Fetches every page of Aliases and returns a single list. */
+  async listAll(
+    params?: ListRefsInput,
+    options?: RequestOptions,
+  ): Promise<{ aliases: ListAliasesResponse["aliases"] }> {
+    const aliases: ListAliasesResponse["aliases"] = [];
+    for await (const page of this.listPages(params, options)) aliases.push(...page.aliases);
+    return { aliases };
+  }
+
+  /**
+   * Gets an Alias with the index schema it currently serves. A dangling Alias
+   * still succeeds with `dangling: true` and null `indexConfigs`; a name that is
+   * not an Alias fails with ResourceNotFoundError.
+   */
+  async get(aliasName: string, options?: RequestOptions): Promise<AliasResponse> {
+    const result = await this.getSafe(aliasName, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  async getSafe(
+    aliasName: string,
+    options?: RequestOptions,
+  ): Promise<Result<AliasResponse, VersioningError>> {
+    const parsedName = parseRefName(aliasName);
+    if (!parsedName.ok) return parsedName;
+    const result = await requestVersioning(this.client, {
+      method: "GET",
+      path: pathFor(this.collectionName, `/aliases/${encodeURIComponent(parsedName.value)}`),
+      responseSchema: aliasResponseSchema,
+      successStatus: 200,
+    }, options);
+    if (!result.ok) return result;
+    return { ok: true, value: { alias: aliasDetailsWithDate(result.value.alias) } };
   }
 
   async retarget(

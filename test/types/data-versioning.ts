@@ -1,4 +1,4 @@
-import type { BranchDetails, TagDetails, SnapshotDetails, ParentBranchDetails, CreateBranchInput, CreateTagInput, BulkUpsertInput } from "../../src/index.js";
+import type { AliasDetails, BranchDetails, TagDetails, SnapshotDetails, ParentBranchDetails, CreateBranchInput, CreateTagInput, BulkUpsertInput, IndexConfigsUnion, ListRefsInput, UpdateBranchInput } from "../../src/index.js";
 import type { BranchDetails as WireBranchDetails, TagDetails as WireTagDetails } from "../../src/models/index.js";
 
 import {
@@ -142,16 +142,27 @@ void (null as BranchSource | null);
 // Facade timestamps are Dates; wire model timestamps remain milliseconds.
 const snapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: new Date() };
 const parentBranch: ParentBranchDetails = { branchId: "main-id", name: "main" };
-const branch: BranchDetails = { name: "candidate", parentBranch, headSnapshot: snapshot, parentSnapshot: null, createdAt: new Date() };
-const tag: TagDetails = { name: "release-001", ...snapshot, createdAt: new Date() };
-const wireBranch: WireBranchDetails = { name: "main", parentBranch: null, headSnapshot: null, parentSnapshot: null, createdAt: 1 };
-const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", snapshotCommittedAt: 1, createdAt: 2 };
+const indexConfigs: { [k: string]: IndexConfigsUnion } = { title: { type: "text" } };
+const branch: BranchDetails = { name: "candidate", parentBranch, headSnapshot: snapshot, parentSnapshot: null, numDocs: 1, dataUpdatedAt: new Date(), indexConfigs, createdAt: new Date() };
+const emptyBranch: BranchDetails = { ...branch, headSnapshot: null, numDocs: 0, dataUpdatedAt: null };
+const tag: TagDetails = { name: "release-001", ...snapshot, numDocs: 1, dataUpdatedAt: new Date(), indexConfigs, createdAt: new Date() };
+const wireBranch: WireBranchDetails = { name: "main", parentBranch: null, headSnapshot: null, parentSnapshot: null, numDocs: 0, dataUpdatedAt: null, indexConfigs, createdAt: 1 };
+const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", snapshotCommittedAt: 1, numDocs: 1, dataUpdatedAt: 1, indexConfigs, createdAt: 2 };
+const alias: AliasDetails = { aliasId: "alias-1", aliasName: "production", targetKind: "TAG", targetName: "release-001", targetId: "tag-1", aliasRevision: 0, dangling: false, indexConfigs, createdAt: new Date() };
+const danglingAlias: AliasDetails = { ...alias, dangling: true, indexConfigs: null };
+// @ts-expect-error A Tag always pins a snapshot with data, so dataUpdatedAt cannot be null.
+const nullTagDataUpdatedAt: TagDetails = { ...tag, dataUpdatedAt: null };
+// @ts-expect-error Branch indexConfigs is never null.
+const nullBranchSchema: BranchDetails = { ...branch, indexConfigs: null };
+// @ts-expect-error Alias indexConfigs is required, even when its value is null.
+const missingAliasSchema: AliasDetails = { aliasId: "alias-1", aliasName: "production", targetKind: "TAG", targetName: "release-001", targetId: "tag-1", aliasRevision: 0, dangling: true, createdAt: new Date() };
+void [emptyBranch, alias, danglingAlias, nullTagDataUpdatedAt, nullBranchSchema, missingAliasSchema];
 // @ts-expect-error Branch responses no longer expose a top-level snapshotId.
 const obsoleteSnapshotId = branch.snapshotId;
 // @ts-expect-error Tag snapshots cannot be null.
 const nullTag: TagDetails = { ...tag, snapshotId: null };
 // @ts-expect-error parentSnapshot is required, even when its value is null.
-const missingParent: BranchDetails = { name: "main", parentBranch: null, headSnapshot: null, createdAt: new Date() };
+const missingParent: BranchDetails = { name: "main", parentBranch: null, headSnapshot: null, numDocs: 0, dataUpdatedAt: null, indexConfigs, createdAt: new Date() };
 // @ts-expect-error Snapshot commit times use Date in the facade.
 const numericSnapshot: SnapshotDetails = { snapshotId: "snap-1", snapshotCommittedAt: 1 };
 
@@ -176,12 +187,13 @@ const completions: BulkUpsertInput[] = [
 void [branch, tag, wireBranch, wireTag, obsoleteSnapshotId, nullTag, missingParent, numericSnapshot,
   reads, tagQuery, invalidTagFetch, aliasFetch, completions];
 
-// Branch creation is narrower than Tag creation on both Promise-based paths.
+// Branch and Tag creation accept the same Branch or Tag sources.
 const branchInputs: CreateBranchInput[] = [
   { branchName: "candidate" },
   { branchName: "candidate", source: branchSource("main") },
   { branchName: "candidate", source: branchSource("main", new Date()) },
   { branchName: "candidate", source: branchSource("main", 1788336000000) },
+  { branchName: "candidate", source: tagSource("release-001") },
 ];
 const tagInputs: CreateTagInput[] = [
   { tagName: "release-001" },
@@ -196,16 +208,58 @@ for (const input of tagInputs) {
   void tags.create(input);
   void tags.createSafe(input);
 }
-// @ts-expect-error A Tag cannot be the source of a Branch.
-void branches.create({ branchName: "candidate", source: tagSource("release-001") });
-// @ts-expect-error Safe Branch creation has the same Branch-only source contract.
-void branches.createSafe({ branchName: "candidate", source: tagSource("release-001") });
+// @ts-expect-error A Tag source of a Branch does not support asOf.
+void branches.create({ branchName: "candidate", source: { kind: "tag", name: "release-001", asOf: 1 } });
 // @ts-expect-error An Alias cannot be the source of a Branch.
 void branches.create({ branchName: "candidate", source: aliasRef("production") });
 // @ts-expect-error An Alias cannot be the source of a Tag.
 void tags.createSafe({ tagName: "release-001", source: aliasRef("production") });
 // @ts-expect-error parentBranch is required, even when its value is null.
-const missingParentBranch: BranchDetails = { name: "main", headSnapshot: null, parentSnapshot: null, createdAt: new Date() };
+const missingParentBranch: BranchDetails = { name: "main", headSnapshot: null, parentSnapshot: null, numDocs: 0, dataUpdatedAt: null, indexConfigs, createdAt: new Date() };
 // @ts-expect-error Parent identity requires both branchId and name.
 const incompleteParentBranch: ParentBranchDetails = { name: "main" };
 void [missingParentBranch, incompleteParentBranch];
+
+// Single reads, Branch schema updates, and paginated listings.
+async function refOperations(): Promise<void> {
+  const page: ListRefsInput = { size: 100, pageToken: "token" };
+  const update: UpdateBranchInput = { indexConfigs };
+
+  const got: BranchDetails = (await branches.get("candidate")).branch;
+  const updated: BranchDetails = (await branches.update("candidate", update)).branch;
+  const gotTag: TagDetails = (await tags.get("release-001")).tag;
+  const gotAlias: AliasDetails = (await aliases.get("production")).alias;
+  const schema: { [k: string]: IndexConfigsUnion } | null = gotAlias.indexConfigs;
+  const safeUpdate = await branches.updateSafe("candidate", update);
+  if (safeUpdate.ok) void safeUpdate.value.branch.dataUpdatedAt?.getTime();
+
+  const branchPage = await branches.list(page);
+  const tagPage = await tags.list({ size: 1 }, { timeoutMs: 1000 });
+  const aliasPage = await aliases.listSafe();
+  const tokens: (string | undefined)[] = [branchPage.nextPageToken, tagPage.nextPageToken];
+  if (aliasPage.ok) tokens.push(aliasPage.value.nextPageToken);
+  for await (const each of branches.listPages(page)) void each.branches;
+  const allTags: TagDetails[] = (await tags.listAll()).tags;
+  const allAliases: AliasDetails[] = (await aliases.listAll({ size: 100 })).aliases;
+
+  // @ts-expect-error A Branch update carries indexConfigs only.
+  void branches.update("candidate", { indexConfigs, description: "no" });
+  // @ts-expect-error A Branch update requires indexConfigs.
+  void branches.update("candidate", {});
+  // @ts-expect-error Request options are the second argument of a listing.
+  void branches.list({ timeoutMs: 1000 });
+  // @ts-expect-error Listing page tokens are strings; null is not accepted.
+  void tags.list({ pageToken: null });
+  void [got, updated, gotTag, schema, tokens, allTags, allAliases];
+}
+void refOperations;
+
+// Collection create returns the full Collection shape.
+async function createdCollectionShape(): Promise<void> {
+  const { collection: created } = await client.createCollection({ collectionName: "items", indexConfigs });
+  const schema: { [k: string]: IndexConfigsUnion } = created.indexConfigs;
+  const dates: (Date | undefined)[] = [created.createdAt, created.updatedAt, created.dataUpdatedAt];
+  const counts: number[] = [created.numDocs, created.numPartitions];
+  void [schema, dates, counts, created.projectName];
+}
+void createdCollectionShape;

@@ -62,8 +62,8 @@ type GatewayResponseError =
   | errors.ServiceUnavailableError
   | errors.GatewayTimeoutError;
 
-/** Errors that can occur when listing or getting collections. */
-export type ListCollectionsError =
+/** Errors that can occur when getting a collection. */
+export type GetCollectionError =
   | errors.UnauthenticatedError
   | errors.ResourceNotFoundError
   | errors.TooManyRequestsError
@@ -81,8 +81,10 @@ export type CreateCollectionError =
   | GatewayResponseError
   | LambdaDBClientError;
 
-/** Errors that can occur when getting a collection. */
-export type GetCollectionError = ListCollectionsError;
+/** Errors that can occur when listing collections. */
+export type ListCollectionsError =
+  | errors.BadRequestError
+  | GetCollectionError;
 
 /** Errors that can occur when updating a collection. */
 export type UpdateCollectionError =
@@ -92,7 +94,7 @@ export type UpdateCollectionError =
 /** Errors that can occur when deleting a collection. */
 export type DeleteCollectionError =
   | errors.CatalogConflictError
-  | ListCollectionsError;
+  | GetCollectionError;
 
 /** Errors that can occur when querying a collection. */
 export type QueryCollectionError =
@@ -115,4 +117,4 @@ export type BulkUpsertDocsError = QueryCollectionError;
 /** Errors that can occur when getting bulk upsert docs info. */
 export type GetBulkUpsertDocsError =
   | errors.BadRequestError
-  | ListCollectionsError;
+  | GetCollectionError;

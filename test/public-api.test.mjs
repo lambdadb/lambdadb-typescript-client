@@ -5,6 +5,7 @@ import {
   BadRequestError,
   HTTPClient,
   LambdaDBClient,
+  ResponseValidationError,
   SDK_METADATA,
   SDKValidationError,
 } from "../dist/esm/index.js";
@@ -42,17 +43,6 @@ function collectionFixture(collectionName, overrides = {}) {
     updatedAt: 1700000100000,
     dataUpdatedAt: 1700000200000,
     ...overrides,
-  };
-}
-
-function createdCollectionFixture(collectionName) {
-  return {
-    collectionName,
-    description: "",
-    tags: {},
-    defaultBranchName: "main",
-    snapshotRetentionInDays: 30,
-    createdAt: 1700000000000,
   };
 }
 
@@ -144,7 +134,7 @@ test("public client supports native embedding vector index configs with the lega
 
     return jsonResponse(
       {
-        collection: createdCollectionFixture("semantic-items"),
+        collection: collectionFixture("semantic-items"),
       },
       { status: 201 },
     );
@@ -170,7 +160,7 @@ test("native embedding-only create and update preserve omitted flags and parse l
       assert.deepEqual(JSON.parse(call.body).indexConfigs, configs);
       assert.equal(Object.hasOwn(JSON.parse(call.body).indexConfigs.embedding, "managedEmbedding"), false);
     }
-    if (call.method === "POST") return jsonResponse({ collection: createdCollectionFixture("native") }, { status: 201 });
+    if (call.method === "POST") return jsonResponse({ collection: collectionFixture("native") }, { status: 201 });
     return jsonResponse({ collection: collectionFixture("native", { indexConfigs: {
       ...configs, embedding: { ...native, managedEmbedding: true },
     } }) });
@@ -204,7 +194,7 @@ test("native embedding vector config supports optional embedding dimensions and 
 
     return jsonResponse(
       {
-        collection: createdCollectionFixture("semantic-items"),
+        collection: collectionFixture("semantic-items"),
       },
       { status: 201 },
     );
@@ -366,6 +356,73 @@ test("getBulkUpsertSafe preserves legacy native embedding unsupported error mess
     result.error.data$.message,
     "Bulk upsert is not supported for collections with managed embedding fields",
   );
+});
+
+test("createCollection returns the full Collection shape with Date timestamps", async () => {
+  const { client } = createClient(() => jsonResponse(
+    { collection: collectionFixture("items", { numDocs: 0, dataUpdatedAt: null }) },
+    { status: 201 },
+  ));
+
+  const { collection } = await client.createCollection({
+    collectionName: "items",
+    indexConfigs: { title: { type: "text" } },
+  });
+
+  assert.equal(collection.projectName, PROJECT_NAME);
+  assert.deepEqual(collection.indexConfigs, { title: { type: "text" } });
+  assert.equal(collection.numPartitions, 1);
+  assert.equal(collection.numDocs, 0);
+  assert.equal(collection.createdAt.getTime(), 1700000000000);
+  assert.equal(collection.updatedAt.getTime(), 1700000100000);
+  assert.equal(collection.dataUpdatedAt, undefined);
+
+  const reduced = createClient(() => jsonResponse({
+    collection: {
+      collectionName: "items",
+      description: "",
+      tags: {},
+      defaultBranchName: "main",
+      snapshotRetentionInDays: 30,
+      createdAt: 1700000000000,
+    },
+  }, { status: 201 }));
+  const result = await reduced.client.createCollectionSafe({
+    collectionName: "items",
+    indexConfigs: { title: { type: "text" } },
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof ResponseValidationError);
+});
+
+test("listCollections sends size and pageToken only when set and never an empty pageToken", async () => {
+  const { calls, client } = createClient(() => jsonResponse({ collections: [] }));
+
+  await client.listCollections();
+  await client.listCollections({});
+  await client.listCollections({ pageToken: "" });
+  await client.listCollectionsSafe({ size: undefined, pageToken: undefined });
+  await client.listCollections({ size: 5, pageToken: "" });
+  await client.listCollections({ size: 5, pageToken: "next-page" });
+
+  assert.deepEqual(
+    calls.map((call) => call.url.search),
+    ["", "", "", "", "?size=5", "?pageToken=next-page&size=5"],
+  );
+});
+
+test("listCollections maps a rejected page request to BadRequestError", async () => {
+  const { client } = createClient(() => jsonResponse(
+    { message: "Invalid pageToken" },
+    { status: 400 },
+  ));
+
+  const result = await client.listCollectionsSafe({ pageToken: "malformed" });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof BadRequestError);
+  assert.equal(result.error.data$.message, "Invalid pageToken");
+  await assert.rejects(client.listCollections({ pageToken: "malformed" }), BadRequestError);
 });
 
 test("public pagination helpers collect all collection pages", async () => {
