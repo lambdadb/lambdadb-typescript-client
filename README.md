@@ -308,9 +308,9 @@ for supported queries, limits, and validation evidence.
 
 **Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page. The methods `list()`, `query()`, and `fetch()` automatically resolve documents from the presigned URL when the API returns them via `docsUrl` (`isDocsInline: false`), so you always receive `docs` in the response.
 
-Page tokens are opaque search positions, not Snapshot pins. For a stable
-multi-page export, select the same immutable Tag and keep filters and field
-selection unchanged on every page.
+Page tokens are opaque search positions. For a stable multi-page export, use
+the same Tag created with `asOf` on every page and keep filters and field
+selection unchanged.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";

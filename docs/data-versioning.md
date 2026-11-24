@@ -193,11 +193,15 @@ console.log(branchId, headSnapshot.snapshotId, headSnapshot.snapshotCommittedAt)
 ```
 
 The Tag must have a published snapshot. A Tag awaiting publication returns
-`BadRequestError` (HTTP `400`). Concurrent requests replacing the same write
-stream can return `CatalogConflictError` (HTTP `409`). Use `rollbackSafe` to
-receive these errors as a `Result`. The SDK disables automatic retries for
-rollback even when backoff is configured. If a call times out, check the Branch
-state before trying again because another rollback may undo intervening writes.
+`BadRequestError` (HTTP `400`). A missing Branch or Tag returns
+`ResourceNotFoundError` (HTTP `404`). Concurrent requests replacing the same
+write stream can return `CatalogConflictError` (HTTP `409`). Use `rollbackSafe`
+to receive these errors as a `Result`.
+
+Writes accepted before rollback can still complete on the previous write
+stream. Another rollback can undo intervening writes, so both methods ignore
+`retries` and `retryCodes` and send requests without automatic retries. If a
+call times out, check the Branch state before trying again.
 
 ### Paginated listings
 

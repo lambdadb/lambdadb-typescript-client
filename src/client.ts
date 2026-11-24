@@ -686,7 +686,8 @@ export class CollectionDocs {
    *
    * Note: The API limits response size by payload, not by document count. The number of docs per page
    * may be less than the requested `size` and can vary from page to page. A page token is a search
-   * position, not a Snapshot pin; use one immutable Tag throughout a stable export.
+   * position. For a stable export, use the same Tag created with `asOf` on each page and keep the
+   * filters and field selection unchanged.
    *
    * @example
    * for await (const page of collection.docs.listPages({ size: 50 })) {

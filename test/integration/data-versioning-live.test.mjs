@@ -208,7 +208,7 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       false,
     );
 
-    // Tag creation pins committed data, so pending-write visibility is insufficient.
+    // The rollback case needs a Tag with a published snapshot.
     await eventually(async () => {
       const response = await collection.docs.fetch({
         ids: ["doc-1", "doc-2", "doc-3", "doc-4"],
@@ -288,7 +288,6 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
     await collection.aliases.retarget("production", {
       target: { kind: "branch", name: "candidate" },
     });
-    await collection.tags.delete("release-001");
     const referencedBranch = await collection.branches.deleteSafe("candidate");
     assert.equal(referencedBranch.ok, false);
     assert.ok(referencedBranch.error instanceof CatalogConflictError);
@@ -314,6 +313,25 @@ test("live Data Versioning lifecycle, reads, writes, bulk upload, and cleanup", 
       assert.equal(response.total, 1);
       return response;
     }, "signed bulk upload committed visibility", COMMIT_TIMEOUT_MS);
+
+    const { branch: beforeRollback } = await collection.branches.get("candidate");
+    assert.ok(beforeRollback.headSnapshot);
+    const rollback = await collection.branches.rollback("candidate", { tag: "release-001" });
+    assert.ok(rollback.branchId);
+    assert.notEqual(rollback.headSnapshot.snapshotId, beforeRollback.headSnapshot.snapshotId);
+    assert.ok(rollback.headSnapshot.snapshotCommittedAt instanceof Date);
+
+    await eventually(async () => {
+      const { branch: restored } = await collection.branches.get("candidate");
+      assert.deepEqual(restored.headSnapshot, rollback.headSnapshot);
+      const response = await collection.docs.fetch({
+        ids: ["doc-1", "bulk-1"],
+        ref: branchRef("candidate"),
+      });
+      assert.deepEqual(response.docs.map(({ doc }) => doc.id), ["doc-1"]);
+      assert.equal(response.docs[0].doc.title, "one-candidate");
+    }, "Branch rollback restores the tagged data");
+    await collection.tags.delete("release-001");
 
     const updated = await collection.update({
       description: "Updated by TypeScript Data Versioning smoke",

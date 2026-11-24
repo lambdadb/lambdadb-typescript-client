@@ -523,7 +523,8 @@ export class CollectionBranches {
 
   /**
    * Restores a Branch's data and index schema from a Tag with a published snapshot.
-   * Each call can undo intervening writes, so the SDK does not retry rollback.
+   * A repeated rollback can undo intervening writes. Automatic retries are
+   * disabled, and the `retries` and `retryCodes` options are ignored.
    */
   async rollback(
     branchName: string,
@@ -535,6 +536,10 @@ export class CollectionBranches {
     return result.value;
   }
 
+  /**
+   * Returns a Result for the rollback. Automatic retries are disabled, and the
+   * `retries` and `retryCodes` options are ignored.
+   */
   async rollbackSafe(
     branchName: string,
     input: RollbackBranchInput,

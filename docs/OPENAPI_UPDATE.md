@@ -318,12 +318,13 @@ listings, a Tag source for Branch creation, and new response fields. There is
 no `schemaVersionId` field in the public contract; do not add one.
 
 - `BranchDetails` requires `indexConfigs`, `numDocs`, and nullable
-  `dataUpdatedAt` (null for an empty Branch). `TagDetails` requires
-  `indexConfigs`, `numDocs`, and non-null `dataUpdatedAt`. `AliasDetails`
-  requires nullable `indexConfigs` (null for a dangling Alias). Keep them
-  required in the inbound schemas in `src/models/versioning.ts`; these appear in
-  create, retarget, get, update, and list responses. Convert `dataUpdatedAt` to
-  `Date` in the facade and keep null as null.
+  `dataUpdatedAt` (null for an empty Branch). This revision added required
+  `indexConfigs`, `numDocs`, and `dataUpdatedAt` to `TagDetails`. See
+  [Branch rollback and Tag snapshots](#updating-branch-rollback-and-tag-snapshots)
+  for current Tag nullability. `AliasDetails` requires nullable `indexConfigs`
+  (null for a dangling Alias). Keep these fields required in the inbound
+  schemas in `src/models/versioning.ts`. Convert non-null `dataUpdatedAt` to
+  `Date` in the facade.
 - Single reads and the Branch update live on the handles in `src/versioning.ts`
   (`get`/`getSafe`, `branches.update`/`updateSafe`). The update body is strict,
   carries `indexConfigs` only, and must be nonempty; it reuses the shared
@@ -347,6 +348,19 @@ Mock HTTP tests cover the wire shape of each new operation, omitted pagination
 parameters, the complete listing across pages, the Tag source, and the nullable
 fields. They do not establish
 deployed server behavior.
+
+## Updating Branch rollback and Tag snapshots
+
+The [pinned public contract](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json)
+adds `rollbackBranch` and makes three Tag snapshot fields nullable.
+
+- `branches.rollback` and `rollbackSafe` validate the Branch name and send a
+  strict `{ tag }` body. Map HTTP `409` to `CatalogConflictError` and convert
+  the required head snapshot's commit time to `Date`. Disable automatic retries
+  for this operation even when client or request options configure backoff.
+- Keep `TagDetails.snapshotId`, `snapshotCommittedAt`, and `dataUpdatedAt`
+  required in the wire models. Accept explicit `null` before the first snapshot
+  and preserve it in the facade. Convert published timestamps to `Date`.
 
 ## CI
 

@@ -19,7 +19,8 @@ export type ListDocsRequest = {
    */
   size?: number | undefined;
   /**
-   * Opaque search position, not a Snapshot pin. Use one immutable Tag throughout a stable export.
+   * Opaque search position. For a stable export, use the same Tag created with
+   * `asOf` on each page and keep the filters and field selection unchanged.
    */
   pageToken?: string | undefined;
   /**
@@ -101,7 +102,8 @@ export type ListDocsExtendedRequestBody = {
    */
   size?: number | null | undefined;
   /**
-   * Opaque search position, not a Snapshot pin. Use one immutable Tag throughout a stable export.
+   * Opaque search position. For a stable export, use the same Tag created with
+   * `asOf` on each page and keep the filters and field selection unchanged.
    */
   pageToken?: string | null | undefined;
   /**

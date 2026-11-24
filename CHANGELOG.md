@@ -10,9 +10,10 @@ LambdaDB server commit `b32acec40f844067ef3845453f94d9e674bc1a86`.
 - Add `collection.branches.rollback(name, { tag })` and `rollbackSafe` to
   restore Branch data and schema from a Tag with a published snapshot. The
   SDK disables automatic retries because a repeat can undo intervening writes.
-- Tag creation, lookup, and listing now accept explicit `null` values for
-  `snapshotId`, `snapshotCommittedAt`, and `dataUpdatedAt` before the first
-  snapshot. Check for `null` before using snapshot fields. Published snapshot
+- **Breaking:** `TagDetails.snapshotId`, `snapshotCommittedAt`, and
+  `dataUpdatedAt` are now nullable in tag creation, lookup, and listing
+  responses before the first snapshot. Handle `null` before using these fields,
+  for example with `tag.snapshotCommittedAt?.toISOString()`. Published snapshot
   timestamps still use `Date` on the collection-scoped client.
 
 ## 0.13.0 - 2026-11-18
