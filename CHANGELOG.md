@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.14.0 - 2026-11-24
+
 Aligned with the public OpenAPI contract (API 1.3.0) at docs commit
 [`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json)
 (SHA-256 `146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b`), synced from
