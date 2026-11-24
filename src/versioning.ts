@@ -15,6 +15,7 @@ import {
   AliasDetails$inboundSchema,
   AliasTarget$schema,
   BranchDetails$inboundSchema,
+  SnapshotDetails$inboundSchema,
   TagDetails$inboundSchema,
   RefSource$schema,
   type AliasRef,
@@ -34,6 +35,7 @@ import type {
 import {
   aliasDetailsWithDate,
   branchDetailsWithDates,
+  snapshotDetailsWithDate,
   tagDetailsWithDates,
   type AliasResponse,
   type CreateAliasInput,
@@ -52,6 +54,8 @@ import {
   type ListTagsResponse,
   type MessageResponse,
   type RetargetAliasInput,
+  type RollbackBranchInput,
+  type RollbackBranchResponse,
   type UpdateBranchInput,
   type UpdateBranchResponse,
 } from "./types/public.js";
@@ -60,10 +64,10 @@ import type { Result } from "./types/fp.js";
 /**
  * Exact public contract revision implemented by this SDK: the lambdadb/docs
  * commit of `reference/api/openapi.json` (SHA-256
- * ec499bb6ad4fd7359c1854359e9ecfd4cd8609420f440f7dcbf75566ccda8f32).
+ * 146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b).
  */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "7be299af9cac4195b75feb6e38b5cd7f8989f5a0" as const;
+  "054c799c7fac3f1220e675dddf599d4c48512c24" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -340,6 +344,11 @@ const updateBranchSchema = z.object({
     { message: "Branch indexConfigs must contain at least one field" },
   ),
 }).strict();
+const rollbackBranchSchema = z.object({ tag: refNameSchema }).strict();
+const rollbackBranchResponseSchema = z.object({
+  branchId: z.string(),
+  headSnapshot: SnapshotDetails$inboundSchema,
+});
 const branchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
 const listBranchesResponseSchema = z.object({
   branches: z.array(BranchDetails$inboundSchema),
@@ -510,6 +519,51 @@ export class CollectionBranches {
     }, options);
     if (!result.ok) return result;
     return { ok: true, value: { branch: branchDetailsWithDates(result.value.branch) } };
+  }
+
+  /**
+   * Restores a Branch's data and index schema from a Tag with a published snapshot.
+   * A repeated rollback can undo intervening writes. Automatic retries are
+   * disabled, and the `retries` and `retryCodes` options are ignored.
+   */
+  async rollback(
+    branchName: string,
+    input: RollbackBranchInput,
+    options?: RequestOptions,
+  ): Promise<RollbackBranchResponse> {
+    const result = await this.rollbackSafe(branchName, input, options);
+    if (!result.ok) throw result.error;
+    return result.value;
+  }
+
+  /**
+   * Returns a Result for the rollback. Automatic retries are disabled, and the
+   * `retries` and `retryCodes` options are ignored.
+   */
+  async rollbackSafe(
+    branchName: string,
+    input: RollbackBranchInput,
+    options?: RequestOptions,
+  ): Promise<Result<RollbackBranchResponse, VersioningError>> {
+    const parsedName = parseRefName(branchName);
+    if (!parsedName.ok) return parsedName;
+    const result = await requestVersioning(this.client, {
+      body: input,
+      bodySchema: rollbackBranchSchema,
+      method: "POST",
+      path: pathFor(this.collectionName, `/branches/${encodeURIComponent(parsedName.value)}/rollback`),
+      responseSchema: rollbackBranchResponseSchema,
+      successStatus: 200,
+      conflict: "catalog",
+    }, { ...options, retries: { strategy: "none" } });
+    if (!result.ok) return result;
+    return {
+      ok: true,
+      value: {
+        branchId: result.value.branchId,
+        headSnapshot: snapshotDetailsWithDate(result.value.headSnapshot),
+      },
+    };
   }
 
   async delete(branchName: string, options?: RequestOptions): Promise<MessageResponse> {

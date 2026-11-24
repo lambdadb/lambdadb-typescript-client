@@ -37,15 +37,14 @@ async function main() {
     docs: [{ id: "doc-1", text: "Candidate content" }],
   });
 
-  // A successful write is accepted before it is committed. Poll an ordinary
-  // (non-consistent) Branch read before creating a Tag.
+  // Wait for the written content to be visible in a committed snapshot.
   let committed = false;
   for (let attempt = 0; attempt < 60; attempt++) {
     const result = await collection.docs.fetch({
       ids: ["doc-1"],
       ref: branchRef("candidate"),
     });
-    if (result.docs.some(({ doc }) => doc.id === "doc-1")) {
+    if (result.docs.some(({ doc }) => doc.id === "doc-1" && doc.text === "Candidate content")) {
       committed = true;
       break;
     }
@@ -53,11 +52,15 @@ async function main() {
   }
   if (!committed) throw new Error("candidate data was not committed in time");
 
+  const { branch: current } = await collection.branches.get("candidate");
+  if (current.headSnapshot === null) throw new Error("candidate has no committed snapshot");
+
+  // Use asOf to tag just the committed data for a stable export.
   await collection.tags.create({
     tagName: "release-001",
-    source: branchSource("candidate"),
+    source: branchSource("candidate", current.headSnapshot.snapshotCommittedAt),
   });
-  // A Tag may also pin another Tag's snapshot; it does not form a Tag chain.
+  // A Tag can also copy the fixed state of another Tag.
   await collection.tags.create({
     tagName: "release-copy",
     source: tagSource("release-001"),
@@ -72,7 +75,7 @@ async function main() {
     ref: aliasRef("production"),
   });
 
-  // Use the immutable Tag on every page for a stable export.
+  // Use the same asOf Tag and listing options on every page.
   for await (const page of collection.docs.listPages({
     size: 50,
     ref: tagRef("release-001"),

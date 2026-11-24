@@ -1,4 +1,4 @@
-import type { AliasDetails, BranchDetails, TagDetails, SnapshotDetails, ParentBranchDetails, CreateBranchInput, CreateTagInput, BulkUpsertInput, IndexConfigsUnion, ListRefsInput, UpdateBranchInput } from "../../src/index.js";
+import type { AliasDetails, BranchDetails, TagDetails, SnapshotDetails, ParentBranchDetails, CreateBranchInput, CreateTagInput, BulkUpsertInput, IndexConfigsUnion, ListRefsInput, UpdateBranchInput, RollbackBranchInput, RollbackBranchResponse } from "../../src/index.js";
 import type { BranchDetails as WireBranchDetails, TagDetails as WireTagDetails } from "../../src/models/index.js";
 
 import {
@@ -150,17 +150,17 @@ const wireBranch: WireBranchDetails = { name: "main", parentBranch: null, headSn
 const wireTag: WireTagDetails = { name: "release-001", snapshotId: "snap-1", snapshotCommittedAt: 1, numDocs: 1, dataUpdatedAt: 1, indexConfigs, createdAt: 2 };
 const alias: AliasDetails = { aliasId: "alias-1", aliasName: "production", targetKind: "TAG", targetName: "release-001", targetId: "tag-1", aliasRevision: 0, dangling: false, indexConfigs, createdAt: new Date() };
 const danglingAlias: AliasDetails = { ...alias, dangling: true, indexConfigs: null };
-// @ts-expect-error A Tag always pins a snapshot with data, so dataUpdatedAt cannot be null.
-const nullTagDataUpdatedAt: TagDetails = { ...tag, dataUpdatedAt: null };
+const pendingTag: TagDetails = { ...tag, snapshotId: null, snapshotCommittedAt: null, dataUpdatedAt: null, numDocs: 0 };
+const pendingWireTag: WireTagDetails = { ...wireTag, snapshotId: null, snapshotCommittedAt: null, dataUpdatedAt: null, numDocs: 0 };
 // @ts-expect-error Branch indexConfigs is never null.
 const nullBranchSchema: BranchDetails = { ...branch, indexConfigs: null };
 // @ts-expect-error Alias indexConfigs is required, even when its value is null.
 const missingAliasSchema: AliasDetails = { aliasId: "alias-1", aliasName: "production", targetKind: "TAG", targetName: "release-001", targetId: "tag-1", aliasRevision: 0, dangling: true, createdAt: new Date() };
-void [emptyBranch, alias, danglingAlias, nullTagDataUpdatedAt, nullBranchSchema, missingAliasSchema];
+void [emptyBranch, alias, danglingAlias, pendingTag, pendingWireTag, nullBranchSchema, missingAliasSchema];
 // @ts-expect-error Branch responses no longer expose a top-level snapshotId.
 const obsoleteSnapshotId = branch.snapshotId;
-// @ts-expect-error Tag snapshots cannot be null.
-const nullTag: TagDetails = { ...tag, snapshotId: null };
+// @ts-expect-error Snapshot fields on a Tag are required even before publication.
+const incompleteTag: TagDetails = { ...pendingTag, snapshotId: undefined };
 // @ts-expect-error parentSnapshot is required, even when its value is null.
 const missingParent: BranchDetails = { name: "main", parentBranch: null, headSnapshot: null, numDocs: 0, dataUpdatedAt: null, indexConfigs, createdAt: new Date() };
 // @ts-expect-error Snapshot commit times use Date in the facade.
@@ -184,7 +184,7 @@ const completions: BulkUpsertInput[] = [
   { objectKey: "key", type: "ignored-metadata" },
 ];
 
-void [branch, tag, wireBranch, wireTag, obsoleteSnapshotId, nullTag, missingParent, numericSnapshot,
+void [branch, tag, wireBranch, wireTag, obsoleteSnapshotId, incompleteTag, missingParent, numericSnapshot,
   reads, tagQuery, invalidTagFetch, aliasFetch, completions];
 
 // Branch and Tag creation accept the same Branch or Tag sources.
@@ -220,10 +220,11 @@ const missingParentBranch: BranchDetails = { name: "main", headSnapshot: null, p
 const incompleteParentBranch: ParentBranchDetails = { name: "main" };
 void [missingParentBranch, incompleteParentBranch];
 
-// Single reads, Branch schema updates, and paginated listings.
+// Single reads, Branch schema updates and rollbacks, and paginated listings.
 async function refOperations(): Promise<void> {
   const page: ListRefsInput = { size: 100, pageToken: "token" };
   const update: UpdateBranchInput = { indexConfigs };
+  const rollback: RollbackBranchInput = { tag: "release-001" };
 
   const got: BranchDetails = (await branches.get("candidate")).branch;
   const updated: BranchDetails = (await branches.update("candidate", update)).branch;
@@ -232,6 +233,17 @@ async function refOperations(): Promise<void> {
   const schema: { [k: string]: IndexConfigsUnion } | null = gotAlias.indexConfigs;
   const safeUpdate = await branches.updateSafe("candidate", update);
   if (safeUpdate.ok) void safeUpdate.value.branch.dataUpdatedAt?.getTime();
+  const rolledBack: RollbackBranchResponse = await branches.rollback("candidate", rollback);
+  const safeRollback = await branches.rollbackSafe("candidate", rollback);
+  const rollbackTime: Date = rolledBack.headSnapshot.snapshotCommittedAt;
+  if (safeRollback.ok) void safeRollback.value.headSnapshot.snapshotCommittedAt.getTime();
+  const tagCommitTime: Date | null = gotTag.snapshotCommittedAt;
+  void [rollbackTime, tagCommitTime];
+  // @ts-expect-error A rollback requires a non-null head snapshot.
+  const incompleteRollback: RollbackBranchResponse = { branchId: "branch-id", headSnapshot: null };
+  // @ts-expect-error A rollback requires the Tag name.
+  void branches.rollback("candidate", {});
+  void incompleteRollback;
 
   const branchPage = await branches.listPage(page);
   const tagPage = await tags.listPage({ size: 1 }, { timeoutMs: 1000 });

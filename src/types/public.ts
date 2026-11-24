@@ -115,9 +115,10 @@ export type TagDetails = Omit<
   TagDetailsModel,
   "createdAt" | "dataUpdatedAt" | "snapshotCommittedAt"
 > & {
-  snapshotCommittedAt: Date;
-  /** Last data update of the pinned snapshot. */
-  dataUpdatedAt: Date;
+  /** Commit time of the published snapshot, or null before publication. */
+  snapshotCommittedAt: Date | null;
+  /** Last data update of the published snapshot, or null before publication. */
+  dataUpdatedAt: Date | null;
   createdAt: Date;
 };
 
@@ -161,6 +162,18 @@ export type UpdateBranchInput = {
 export type CreateBranchResponse = { branch: BranchDetails };
 export type GetBranchResponse = { branch: BranchDetails };
 export type UpdateBranchResponse = { branch: BranchDetails };
+
+export type RollbackBranchInput = {
+  /** Name of a Tag in this Collection with a published snapshot. */
+  tag: string;
+};
+
+export type RollbackBranchResponse = {
+  branchId: string;
+  /** The new snapshot committed on the destination Branch. */
+  headSnapshot: SnapshotDetails;
+};
+
 /** Every Branch of the Collection. */
 export type ListBranchesResponse = { branches: BranchDetails[] };
 export type ListBranchesPageResponse = {
@@ -324,8 +337,10 @@ export function branchDetailsWithDates(details: BranchDetailsModel): BranchDetai
 export function tagDetailsWithDates(details: TagDetailsModel): TagDetails {
   return {
     ...details,
-    snapshotCommittedAt: new Date(details.snapshotCommittedAt),
-    dataUpdatedAt: new Date(details.dataUpdatedAt),
+    snapshotCommittedAt: details.snapshotCommittedAt === null
+      ? null
+      : new Date(details.snapshotCommittedAt),
+    dataUpdatedAt: details.dataUpdatedAt === null ? null : new Date(details.dataUpdatedAt),
     createdAt: new Date(details.createdAt),
   };
 }

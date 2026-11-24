@@ -213,8 +213,11 @@ const page = await collection.tags.listPage({ size: 50 });
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The Data Versioning contract is pinned at lambdadb/docs commit
-`7be299af9cac4195b75feb6e38b5cd7f8989f5a0` (`reference/api/openapi.json`, API version 1.3.0), which also allows
-`consistentRead: true` through an Alias that targets a Branch. Deleting a Branch or Tag referenced
+[`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json) (API 1.3.0). Use
+`branches.rollback(name, { tag })` to restore a Branch from a Tag with a published
+snapshot. Tags created before their first snapshot have `null` snapshot fields.
+You can use `consistentRead: true` through an Alias that targets a Branch.
+Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
 all referencing Aliases first. Reads through an Alias whose
 target is dangling fail with `BadRequestError` (HTTP `400`), while selecting a
@@ -305,9 +308,9 @@ for supported queries, limits, and validation evidence.
 
 **Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page. The methods `list()`, `query()`, and `fetch()` automatically resolve documents from the presigned URL when the API returns them via `docsUrl` (`isDocsInline: false`), so you always receive `docs` in the response.
 
-Page tokens are opaque search positions, not Snapshot pins. For a stable
-multi-page export, select the same immutable Tag and keep filters and field
-selection unchanged on every page.
+Page tokens are opaque search positions. For a stable multi-page export, use
+the same Tag created with `asOf` on every page and keep filters and field
+selection unchanged.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";

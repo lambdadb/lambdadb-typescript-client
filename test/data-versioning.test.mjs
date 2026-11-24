@@ -7,6 +7,7 @@ import {
   CatalogConflictError,
   ResponseValidationError,
   DATA_VERSIONING_CONTRACT_REVISION,
+  GatewayTimeoutError,
   HTTPClient,
   LambdaDBClient,
   LambdaDBDefaultError,
@@ -15,6 +16,7 @@ import {
   RequestAbortedError,
   RequestTimeoutError,
   SDKValidationError,
+  TooManyRequestsError,
   UnexpectedClientError,
   aliasRef,
   branchRef,
@@ -92,7 +94,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "7be299af9cac4195b75feb6e38b5cd7f8989f5a0",
+    "054c799c7fac3f1220e675dddf599d4c48512c24",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -806,10 +808,10 @@ test("rejects obsolete or incomplete Branch and Tag responses on create and list
     ]],
     ["tags", "tag", { tagName: tag.name }, [
       { ...tag, snapshotCommittedAt: undefined },
-      { ...tag, snapshotId: null },
-      { ...tag, snapshotCommittedAt: null },
+      { ...tag, snapshotId: undefined },
+      { ...tag, snapshotCommittedAt: "2026-09-02" },
       { ...tag, numDocs: undefined },
-      { ...tag, dataUpdatedAt: null },
+      { ...tag, dataUpdatedAt: undefined },
       { ...tag, indexConfigs: undefined },
     ]],
   ]) {
@@ -963,6 +965,98 @@ test("returns null dataUpdatedAt for an empty Branch and null indexConfigs for a
   const { alias } = await collection.aliases.get("production");
   assert.equal(alias.dangling, true);
   assert.equal(alias.indexConfigs, null);
+});
+
+test("preserves required null snapshot fields on create, get, and tag lists", async () => {
+  const pending = tagWire({
+    name: "release-pending", snapshotId: null, snapshotCommittedAt: null, dataUpdatedAt: null, numDocs: 0,
+  });
+  const { client } = createClient((call) => {
+    if (call.method === "POST") return jsonResponse({ tag: pending }, 201);
+    if (call.url.pathname.endsWith("/tags/release-pending")) return jsonResponse({ tag: pending });
+    return jsonResponse({ tags: [tagWire(), pending] });
+  });
+  const tags = client.collection(COLLECTION_NAME).tags;
+  const expected = { ...pending, createdAt: new Date(pending.createdAt) };
+
+  assert.deepEqual((await tags.create({ tagName: pending.name })).tag, expected);
+  assert.deepEqual((await tags.get(pending.name)).tag, expected);
+  assert.deepEqual((await tags.list()).tags[1], expected);
+  const page = await tags.listPage({ size: 2 });
+  assert.deepEqual(page.tags[1], expected);
+  assert.deepEqual(page.tags[0].snapshotCommittedAt, new Date(tagWire().snapshotCommittedAt));
+  assert.deepEqual(page.tags[0].dataUpdatedAt, new Date(tagWire().dataUpdatedAt));
+});
+
+test("branch rollback sends the tag and returns a committed head with a Date", async () => {
+  const wire = { branchId: "branch-id", headSnapshot: { snapshotId: "new-head", snapshotCommittedAt: 1788336000123 } };
+  const { apiCalls, client } = createClient(() => jsonResponse(wire));
+  const branches = client.collection(COLLECTION_NAME).branches;
+  const input = { tag: "release-001" };
+  const expected = {
+    branchId: wire.branchId,
+    headSnapshot: { snapshotId: wire.headSnapshot.snapshotId, snapshotCommittedAt: new Date(wire.headSnapshot.snapshotCommittedAt) },
+  };
+
+  assert.deepEqual(await branches.rollback("candidate", input), expected);
+  assert.deepEqual(await branches.rollbackSafe("candidate", input), { ok: true, value: expected });
+  assert.equal(apiCalls.length, 2);
+  for (const call of apiCalls) {
+    assert.equal(call.method, "POST");
+    assert.equal(call.url.pathname, `/projects/${PROJECT_NAME}/collections/${COLLECTION_NAME}/branches/candidate/rollback`);
+    assert.equal(call.headers["x-api-key"], "test-api-key");
+    assert.equal(call.headers["content-type"], "application/json");
+    assert.deepEqual(JSON.parse(call.body), input);
+  }
+});
+
+test("branch rollback validates request names and requires a committed head in the response", async () => {
+  const { apiCalls, client } = createClient(() => jsonResponse({ branchId: "branch-id", headSnapshot: null }));
+  const branches = client.collection(COLLECTION_NAME).branches;
+  await assert.rejects(branches.rollback("has/slash", { tag: "release-001" }), SDKValidationError);
+  for (const input of [{}, { tag: "x" }, { tag: "release-001", asOf: 1 }]) {
+    const result = await branches.rollbackSafe("candidate", input);
+    assert.equal(result.ok, false);
+    assert.ok(result.error instanceof SDKValidationError);
+  }
+  assert.equal(apiCalls.length, 0);
+  await assert.rejects(branches.rollback("candidate", { tag: "release-001" }), ResponseValidationError);
+  assert.equal(apiCalls.length, 1);
+});
+
+test("branch rollback maps errors and never retries with caller-supplied backoff", async () => {
+  const retryOptions = {
+    retries: {
+      strategy: "backoff",
+      backoff: { initialInterval: 1, maxInterval: 1, exponent: 1, maxElapsedTime: 100 },
+      retryConnectionErrors: true,
+    },
+    retryCodes: ["400", "404", "409", "429", "504"],
+  };
+  const wire = { branchId: "branch-id", headSnapshot: { snapshotId: "new-head", snapshotCommittedAt: 1788336000123 } };
+  for (const [status, error] of [
+    [400, BadRequestError],
+    [404, ResourceNotFoundError],
+    [409, CatalogConflictError],
+    [429, TooManyRequestsError],
+    [504, GatewayTimeoutError],
+  ]) {
+    const { apiCalls, client } = createClient((_call, index) => index === 0
+      ? jsonResponse({ message: "Rollback failed" }, status)
+      : jsonResponse(wire));
+    const branches = client.collection(COLLECTION_NAME).branches;
+    await assert.rejects(branches.rollback("candidate", { tag: "release-001" }, retryOptions), error);
+    assert.equal(apiCalls.length, 1);
+  }
+
+  const { apiCalls, client } = createClient((_call, index) => {
+    if (index === 0) throw new DOMException("Timed out", "TimeoutError");
+    return jsonResponse(wire);
+  });
+  const result = await client.collection(COLLECTION_NAME).branches.rollbackSafe("candidate", { tag: "release-001" }, retryOptions);
+  assert.equal(result.ok, false);
+  assert.ok(result.error instanceof RequestTimeoutError);
+  assert.equal(apiCalls.length, 1);
 });
 
 test("single ref reads validate names locally and map 404", async () => {

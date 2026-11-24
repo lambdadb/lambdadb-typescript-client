@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+Aligned with the public OpenAPI contract (API 1.3.0) at docs commit
+[`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json)
+(SHA-256 `146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b`), synced from
+LambdaDB server commit `b32acec40f844067ef3845453f94d9e674bc1a86`.
+
+- Add `collection.branches.rollback(name, { tag })` and `rollbackSafe` to
+  restore Branch data and schema from a Tag with a published snapshot. The
+  SDK disables automatic retries because a repeat can undo intervening writes.
+- **Breaking:** `TagDetails.snapshotId`, `snapshotCommittedAt`, and
+  `dataUpdatedAt` are now nullable in tag creation, lookup, and listing
+  responses before the first snapshot. Handle `null` before using these fields,
+  for example with `tag.snapshotCommittedAt?.toISOString()`. Published snapshot
+  timestamps still use `Date` on the collection-scoped client.
+
 ## 0.13.0 - 2026-11-18
 
 Aligned with the public OpenAPI contract `reference/api/openapi.json`
