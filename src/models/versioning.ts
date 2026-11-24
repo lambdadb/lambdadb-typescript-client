@@ -83,12 +83,16 @@ export type BranchDetails = {
   createdAt: number;
 };
 
-export type TagDetails = SnapshotDetails & {
+export type TagDetails = {
   name: string;
-  /** Document count in the pinned snapshot. */
+  /** Current published snapshot ID, or null before the first publication. */
+  snapshotId: string | null;
+  /** Snapshot commit time in Unix epoch milliseconds, or null before publication. */
+  snapshotCommittedAt: number | null;
+  /** Document count in the published snapshot, or 0 before publication. */
   numDocs: number;
-  /** Last data update of the pinned snapshot as Unix epoch milliseconds. */
-  dataUpdatedAt: number;
+  /** Last data update in Unix epoch milliseconds, or null before publication. */
+  dataUpdatedAt: number | null;
   /**
    * Index schema pinned by the Tag, including inherited writes. With
    * `source.asOf`, this is the selected snapshot's schema.
@@ -200,10 +204,10 @@ export const TagDetails$inboundSchema: z.ZodType<
   unknown
 > = z.object({
   name: z.string(),
-  snapshotId: z.string(),
-  snapshotCommittedAt: z.number().int(),
+  snapshotId: z.string().nullable(),
+  snapshotCommittedAt: z.number().int().nullable(),
   numDocs: z.number().int(),
-  dataUpdatedAt: z.number().int(),
+  dataUpdatedAt: z.number().int().nullable(),
   indexConfigs: indexConfigsInboundSchema,
   createdAt: z.number().int(),
 });

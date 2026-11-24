@@ -2,13 +2,12 @@
 
 This SDK implements the public LambdaDB Data Versioning contract in
 `reference/api/openapi.json` of lambdadb/docs, pinned at docs commit
-[`7be299af9cac4195b75feb6e38b5cd7f8989f5a0`](https://github.com/lambdadb/docs/blob/7be299af9cac4195b75feb6e38b5cd7f8989f5a0/reference/api/openapi.json) (SHA-256 `ec499bb6ad4fd7359c1854359e9ecfd4cd8609420f440f7dcbf75566ccda8f32`, API version 1.3.0,
-synced from backend revision `f9aa63c79cbac2ac477a76ec45e5015ce665afd1`),
-which adds single Branch, Tag, and Alias reads, Branch schema updates,
-paginated ref listings, and Branches created from Tags. The previous pin was
-[`1714009a2659a18b26cb68193dd7a071fd6efb42`](https://github.com/lambdadb/docs/commit/1714009a2659a18b26cb68193dd7a071fd6efb42).
-The source revision identifies the implementation contract; it does not by
-itself prove that a particular API environment has deployed that contract.
+[`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json)
+(SHA-256 `146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b`, API 1.3.0), synced from backend revision
+`b32acec40f844067ef3845453f94d9e674bc1a86`. This revision adds Branch rollback and nullable
+Tag snapshot fields. See the
+[source record](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi-source.json)
+for production deployment evidence.
 
 Every Collection has a default writable Branch named `main`. Branches, Tags,
 and Aliases are scoped to one Collection.
@@ -81,8 +80,9 @@ await collection.branches.delete("candidate");
 
 Branch creation accepts a Branch or Tag source (`RefSource`) in the same
 Collection. Omit `source` to use `main`. Without `asOf`, the new Branch pins the
-source snapshot and the writes still pending on the source at creation, without
-copying them or waiting for the source build: ordinary reads of the new Branch
+source snapshot, if one exists, and the writes still pending on the source at
+creation. It inherits those writes without copying them or waiting for the
+source build: ordinary reads of the new Branch
 see those writes after its own build commits them, and a direct
 `consistentRead` includes the eligible ones immediately. Later writes to the
 source are excluded. `tagSource("release-001")` creates the Branch from the
@@ -118,24 +118,26 @@ Branch's own index schema and is never null.
 Each non-null `SnapshotDetails` contains `snapshotId` and
 `snapshotCommittedAt`. `TagDetails` has these fields at the top level alongside
 `name`, `createdAt`, `numDocs`, `dataUpdatedAt`, and `indexConfigs` (the schema
-pinned by the Tag); its snapshot and `dataUpdatedAt` cannot be null.
+pinned by the Tag). Before the first snapshot, `snapshotId`,
+`snapshotCommittedAt`, and `dataUpdatedAt` are required and explicitly `null`,
+and `numDocs` is `0`. Check for `null` before using those fields. The snapshot
+ID can change as captured writes are published.
+
 `AliasDetails` carries `indexConfigs` of the target's version, or `null` for a
-dangling Alias. The collection-scoped facade converts creation, snapshot commit,
-and data update timestamps to `Date`, including nested Branch snapshots. Types
-from `models` retain numeric Unix milliseconds.
+dangling Alias. The collection-scoped client converts non-null creation,
+snapshot commit, and data update timestamps to `Date`, including nested
+snapshots. Types from `models` use numeric Unix milliseconds.
 
 Tag creation accepts a Branch or Tag source (`RefSource`), with omission
-selecting `main`. Without `asOf`, a Tag is a fixed, read-only reference that pins
-the source snapshot and the remaining pending writes of the source; background
-builds may materialize those writes into the Tag's own snapshot without changing
-the source. Ordinary Query and Fetch reads of a Tag include its eligible
-inherited writes, while bulk imports become visible only after a build
-materializes them. `tagSource("release-001")` copies that Tag's fixed state, not
-a chain of Tags. Alias sources are rejected, and `asOf` is valid only for a
-Branch source, where it pins only the latest retained committed snapshot at or
-before the cutoff. An empty head or unavailable `asOf` history returns
-`BadRequestError` (HTTP `400`). Data mutations are accepted asynchronously and
-are not necessarily committed when their request returns.
+selecting `main`. Without `asOf`, a Tag captures the source snapshot if one
+exists and any pending writes at creation time. A source with pending writes
+can be tagged before its first snapshot. Ordinary Query and Fetch reads of a
+Tag include eligible captured writes. Bulk imports and document listings show
+those changes after a build publishes them. `tagSource("release-001")` copies
+that Tag's fixed state. `asOf` is valid only for a Branch source and selects the
+latest retained committed snapshot at or before the cutoff. A source with
+neither a snapshot nor pending writes returns `BadRequestError` (HTTP `400`),
+as does unavailable `asOf` history.
 
 ### Single ref reads
 
@@ -175,6 +177,27 @@ retargeted across Branches with different schemas.
 
 `indexConfigs` on `collection.update` is deprecated. It still works and updates
 the default `main` Branch only, exactly as `branches.update("main", ...)`.
+
+### Roll back a Branch
+
+Roll back a Branch to a Tag in the same Collection to restore the Tag's data
+and index schema. The Branch keeps its identity and receives a new head
+snapshot.
+
+```typescript
+const { branchId, headSnapshot } = await collection.branches.rollback(
+  "candidate",
+  { tag: "release-001" },
+);
+console.log(branchId, headSnapshot.snapshotId, headSnapshot.snapshotCommittedAt);
+```
+
+The Tag must have a published snapshot. A Tag awaiting publication returns
+`BadRequestError` (HTTP `400`). Concurrent requests replacing the same write
+stream can return `CatalogConflictError` (HTTP `409`). Use `rollbackSafe` to
+receive these errors as a `Result`. The SDK disables automatic retries for
+rollback even when backoff is configured. If a call times out, check the Branch
+state before trying again because another rollback may undo intervening writes.
 
 ### Paginated listings
 
@@ -270,9 +293,10 @@ lists use the GET endpoint with paired `refKind` and `refName` query
 parameters. Lists with filters, partition filters, or field selection use the
 extended POST endpoint and put `ref` in its body.
 
-A page token is an opaque search position, not a Snapshot pin. A Branch can
-advance and an Alias can move between page requests. Use the same immutable Tag
-and unchanged filters/projection throughout a stable multi-page export.
+A page token is an opaque search position. Between pages, a Branch can advance,
+an Alias can move, and a Tag can publish writes it captured at creation. For a
+stable multi-page export, use the same Tag created with `asOf` and keep filters
+and projection unchanged.
 
 Document listing reads only the currently published snapshot for every ref,
 including Tags and Aliases that target Tags. Pending writes become visible to
