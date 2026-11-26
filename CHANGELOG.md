@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+Aligned with the public OpenAPI contract (API 1.3.0) at docs commit
+[`9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8`](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi.json)
+(SHA-256 `269590b8addc8e25785c222938b84e737a9f9dee0a5e8b45c0dde4779bde1b6d`), synced from
+LambdaDB server commit `16c6e46854b13cebd20c501e541bb030b33ca805`.
+
+- **Breaking:** `RollbackBranchResponse.headSnapshot` is now
+  `SnapshotDetails | null`. `branches.rollback` and `rollbackSafe` accept a Tag
+  that has no published snapshot yet; the server then returns
+  `headSnapshot: null`, leaves the Branch head empty, and the Branch inherits
+  the Tag's captured writes. Previously the SDK rejected that response with
+  `ResponseValidationError`. Check for `null` before reading
+  `headSnapshot.snapshotId`.
+- Add `sort` and `consistentRead` to `ListDocsInput` and
+  `ListDocsExtendedRequestBody`. `sort` takes 1 to 4 `ListDocsSortField`
+  objects such as `{ category: "asc" }`, or `null` for ascending document ID
+  order. `consistentRead: true` includes a Branch's pending ordinary writes; a
+  Tag ref rejects it at compile time and with `SDKValidationError`. Either
+  option sends the POST list request, and `listPages`/`listAll` repeat them on
+  every page. A sort direction other than `"asc"` or `"desc"` fails locally;
+  the server validates the remaining sort constraints.
+- Documentation follows the contract's listing semantics: GET List returns
+  ascending document ID order, a Tag listing includes the Tag's pending
+  ordinary writes, and a page token is a position in the requested order that
+  returns HTTP 400 when a request condition changes.
+  `DATA_VERSIONING_CONTRACT_REVISION` moves from
+  `054c799c7fac3f1220e675dddf599d4c48512c24` to the new docs commit.
+
 ## 0.14.0 - 2026-11-24
 
 Aligned with the public OpenAPI contract (API 1.3.0) at docs commit

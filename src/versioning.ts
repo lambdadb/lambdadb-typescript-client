@@ -64,10 +64,10 @@ import type { Result } from "./types/fp.js";
 /**
  * Exact public contract revision implemented by this SDK: the lambdadb/docs
  * commit of `reference/api/openapi.json` (SHA-256
- * 146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b).
+ * 269590b8addc8e25785c222938b84e737a9f9dee0a5e8b45c0dde4779bde1b6d).
  */
 export const DATA_VERSIONING_CONTRACT_REVISION =
-  "054c799c7fac3f1220e675dddf599d4c48512c24" as const;
+  "9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8" as const;
 
 const refNamePattern = /^[a-zA-Z0-9_-]{3,52}$/;
 const refNameSchema = z.string().regex(refNamePattern);
@@ -347,7 +347,7 @@ const updateBranchSchema = z.object({
 const rollbackBranchSchema = z.object({ tag: refNameSchema }).strict();
 const rollbackBranchResponseSchema = z.object({
   branchId: z.string(),
-  headSnapshot: SnapshotDetails$inboundSchema,
+  headSnapshot: SnapshotDetails$inboundSchema.nullable(),
 });
 const branchResponseSchema = z.object({ branch: BranchDetails$inboundSchema });
 const listBranchesResponseSchema = z.object({
@@ -522,7 +522,10 @@ export class CollectionBranches {
   }
 
   /**
-   * Restores a Branch's data and index schema from a Tag with a published snapshot.
+   * Restores a Branch's data and index schema from a Tag. When the Tag has no
+   * published snapshot, `headSnapshot` is null: the Branch head becomes empty
+   * and the Branch inherits the Tag's captured writes, which ordinary reads and
+   * document listing show only after a build publishes them.
    * A repeated rollback can undo intervening writes. Automatic retries are
    * disabled, and the `retries` and `retryCodes` options are ignored.
    */
@@ -561,7 +564,9 @@ export class CollectionBranches {
       ok: true,
       value: {
         branchId: result.value.branchId,
-        headSnapshot: snapshotDetailsWithDate(result.value.headSnapshot),
+        headSnapshot: result.value.headSnapshot === null
+          ? null
+          : snapshotDetailsWithDate(result.value.headSnapshot),
       },
     };
   }

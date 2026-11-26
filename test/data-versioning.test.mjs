@@ -94,7 +94,7 @@ function createClient(apiHandler, transferHandler) {
 test("exports the pinned contract revision and validated ref/source/target helpers", () => {
   assert.equal(
     DATA_VERSIONING_CONTRACT_REVISION,
-    "054c799c7fac3f1220e675dddf599d4c48512c24",
+    "9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8",
   );
   assert.deepEqual(branchRef("candidate"), { kind: "branch", name: "candidate" });
   assert.deepEqual(tagRef("release-001"), { kind: "tag", name: "release-001" });
@@ -1010,8 +1010,21 @@ test("branch rollback sends the tag and returns a committed head with a Date", a
   }
 });
 
-test("branch rollback validates request names and requires a committed head in the response", async () => {
-  const { apiCalls, client } = createClient(() => jsonResponse({ branchId: "branch-id", headSnapshot: null }));
+test("branch rollback to a Tag without a published snapshot returns a null head", async () => {
+  const wire = { branchId: "branch-id", headSnapshot: null };
+  const { apiCalls, client } = createClient(() => jsonResponse(wire));
+  const branches = client.collection(COLLECTION_NAME).branches;
+  const input = { tag: "pending-tag" };
+
+  assert.deepEqual(await branches.rollback("candidate", input), wire);
+  assert.deepEqual(await branches.rollbackSafe("candidate", input), { ok: true, value: wire });
+  assert.equal(apiCalls.length, 2);
+  for (const call of apiCalls) assert.deepEqual(JSON.parse(call.body), input);
+});
+
+test("branch rollback validates request names and requires a nullable head in the response", async () => {
+  const responses = [{ branchId: "branch-id" }, { branchId: "branch-id", headSnapshot: { snapshotId: "new-head" } }];
+  const { apiCalls, client } = createClient((_, index) => jsonResponse(responses[index]));
   const branches = client.collection(COLLECTION_NAME).branches;
   await assert.rejects(branches.rollback("has/slash", { tag: "release-001" }), SDKValidationError);
   for (const input of [{}, { tag: "x" }, { tag: "release-001", asOf: 1 }]) {
@@ -1020,8 +1033,10 @@ test("branch rollback validates request names and requires a committed head in t
     assert.ok(result.error instanceof SDKValidationError);
   }
   assert.equal(apiCalls.length, 0);
-  await assert.rejects(branches.rollback("candidate", { tag: "release-001" }), ResponseValidationError);
-  assert.equal(apiCalls.length, 1);
+  for (let i = 0; i < responses.length; i += 1) {
+    await assert.rejects(branches.rollback("candidate", { tag: "release-001" }), ResponseValidationError);
+  }
+  assert.equal(apiCalls.length, responses.length);
 });
 
 test("branch rollback maps errors and never retries with caller-supplied backoff", async () => {

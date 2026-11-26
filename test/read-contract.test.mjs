@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { BadRequestError, HTTPClient, LambdaDBClient } from "../dist/esm/index.js";
+import { BadRequestError, HTTPClient, LambdaDBClient, SDKValidationError, aliasRef, branchRef, tagRef } from "../dist/esm/index.js";
 import { ListDocsRequest$outboundSchema, ListDocsExtendedRequestBody$outboundSchema } from "../dist/esm/models/operations/listdocs.js";
 
 // docs ce2d8f7bd8ee2ab4f240be022085aab37cca0b91; backend 0a54b6ecb483ce7df9677ba2071a491f9f9879c9.
@@ -69,6 +69,62 @@ test("List pagination retains initial nulls and follows returned tokens", async 
   assert.equal(result.docs.length, 2);
   assert.deepEqual(calls.map(c => c.body.pageToken), [null, "next"]);
   assert.ok(calls.every(c => c.method === "POST" && c.body.size === null && c.body.filter === null));
+});
+
+for (const safe of [false, true]) {
+  test(`List sort and consistentRead route to POST as supplied (safe=${safe})`, async () => {
+    const { docs, calls } = setup();
+    const method = safe ? "listSafe" : "list";
+    const sort = [{ category: "asc" }, { price: "desc" }];
+    for (const input of [
+      { sort },
+      { sort: null },
+      { consistentRead: true },
+      { consistentRead: false, ref: tagRef("release-001") },
+      { size: 10, sort, consistentRead: true, ref: branchRef("candidate") },
+      { consistentRead: true, ref: aliasRef("production") },
+    ]) {
+      const result = await docs[method](input);
+      if (safe) assert.equal(result.ok, true);
+      assert.equal(calls.at(-1).method, "POST");
+      assert.deepEqual(calls.at(-1).body, { ...input, includeVectors: false });
+    }
+  });
+  test(`List rejects consistentRead with a Tag ref and invalid sort directions locally (safe=${safe})`, async () => {
+    const { docs, calls } = setup();
+    for (const input of [
+      { consistentRead: true, ref: tagRef("release-001") },
+      { sort: [{ category: "ASC" }] },
+      { sort: [{ category: 1 }] },
+      { sort: {} },
+    ]) {
+      if (safe) {
+        const result = await docs.listSafe(input);
+        assert.equal(result.ok, false);
+        assert.ok(result.error instanceof SDKValidationError);
+      } else await assert.rejects(docs.list(input), SDKValidationError);
+    }
+    assert.equal(calls.length, 0);
+  });
+}
+
+test("List leaves sort count and field-name validation to the server", async () => {
+  const { docs, calls } = setup(() => new Response(JSON.stringify({ message: "Invalid sort" }), { status: 400, headers: { "content-type": "application/json" } }));
+  const sorts = [[], [{ a: "asc" }, { b: "asc" }, { c: "asc" }, { d: "asc" }, { e: "asc" }], [{}], [{ a: "asc", b: "desc" }]];
+  for (const sort of sorts) await assert.rejects(docs.list({ sort }), BadRequestError);
+  assert.deepEqual(calls.map(c => c.body.sort), sorts);
+});
+
+test("List pagination repeats sort and consistentRead on every page", async () => {
+  const { docs, calls } = setup((_, n) => ({ total: 1, docs: [{ collection: "read-contract", doc: { id: String(n) } }],
+    isDocsInline: true, ...(n === 1 ? { nextPageToken: "next" } : {}) }));
+  const options = { size: 1, sort: [{ category: "asc" }], consistentRead: true, ref: aliasRef("production") };
+  const result = await docs.listAll(options);
+  assert.equal(result.docs.length, 2);
+  assert.deepEqual(calls.map(c => c.body), [
+    { ...options, includeVectors: false },
+    { ...options, pageToken: "next", includeVectors: false },
+  ]);
 });
 
 test("Low-level GET remains non-nullable and POST retains omitted options", () => {

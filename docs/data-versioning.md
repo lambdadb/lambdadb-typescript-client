@@ -2,11 +2,12 @@
 
 This SDK implements the public LambdaDB Data Versioning contract in
 `reference/api/openapi.json` of lambdadb/docs, pinned at docs commit
-[`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json)
-(SHA-256 `146e722e67b4591081e67bd5c8ba478f6bb6486b0171f5d6adb73ca6eef2f11b`, API 1.3.0), synced from backend revision
-`b32acec40f844067ef3845453f94d9e674bc1a86`. This revision adds Branch rollback and nullable
-Tag snapshot fields. See the
-[source record](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi-source.json)
+[`9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8`](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi.json)
+(SHA-256 `269590b8addc8e25785c222938b84e737a9f9dee0a5e8b45c0dde4779bde1b6d`, API 1.3.0), synced from backend revision
+`16c6e46854b13cebd20c501e541bb030b33ca805`. This revision adds rollback to a Tag before its
+first snapshot, sorted and consistent document listing, and Tag listings that include captured
+writes. See the
+[source record](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi-source.json)
 for production deployment evidence.
 
 Every Collection has a default writable Branch named `main`. Branches, Tags,
@@ -131,9 +132,9 @@ snapshots. Types from `models` use numeric Unix milliseconds.
 Tag creation accepts a Branch or Tag source (`RefSource`), with omission
 selecting `main`. Without `asOf`, a Tag captures the source snapshot if one
 exists and any pending writes at creation time. A source with pending writes
-can be tagged before its first snapshot. Ordinary Query and Fetch reads of a
-Tag include eligible captured writes. Bulk imports and document listings show
-those changes after a build publishes them. `tagSource("release-001")` copies
+can be tagged before its first snapshot. Ordinary Query, Fetch, and List reads
+of a Tag include eligible captured writes; bulk imports become visible after a
+build publishes them. `tagSource("release-001")` copies
 that Tag's fixed state. `asOf` is valid only for a Branch source and selects the
 latest retained committed snapshot at or before the cutoff. A source with
 neither a snapshot nor pending writes returns `BadRequestError` (HTTP `400`),
@@ -181,19 +182,32 @@ the default `main` Branch only, exactly as `branches.update("main", ...)`.
 ### Roll back a Branch
 
 Roll back a Branch to a Tag in the same Collection to restore the Tag's data
-and index schema. The Branch keeps its identity and receives a new head
-snapshot.
+and index schema. The Branch keeps its identity. When the Tag has a published
+snapshot, the Branch receives a new head snapshot.
 
 ```typescript
 const { branchId, headSnapshot } = await collection.branches.rollback(
   "candidate",
   { tag: "release-001" },
 );
-console.log(branchId, headSnapshot.snapshotId, headSnapshot.snapshotCommittedAt);
+if (headSnapshot === null) {
+  console.log(branchId, "waits for a build to publish the Tag's captured writes");
+} else {
+  console.log(branchId, headSnapshot.snapshotId, headSnapshot.snapshotCommittedAt);
+}
 ```
 
-The Tag must have a published snapshot. A Tag awaiting publication returns
-`BadRequestError` (HTTP `400`). A missing Branch or Tag returns
+A Tag still waiting for its first snapshot can also be the rollback target.
+The response then carries `headSnapshot: null`: the Branch head becomes empty
+and the Branch inherits the Tag's captured writes, like a Branch created from
+that Tag. Until a build publishes them, ordinary Query, Fetch, and List reads
+of the Branch return no documents and `BranchDetails.headSnapshot` is `null`;
+`consistentRead` includes the eligible captured writes immediately. No snapshot
+records this rollback, so `branchSource(name, asOf)` on this Branch returns
+`BadRequestError` (HTTP `400`) for cutoffs between the Branch's last snapshot
+before the rollback and the first snapshot published after it.
+
+A missing Branch or Tag returns
 `ResourceNotFoundError` (HTTP `404`). Concurrent requests replacing the same
 write stream can return `CatalogConflictError` (HTTP `409`). Use `rollbackSafe`
 to receive these errors as a `Result`.
@@ -292,20 +306,44 @@ for await (const page of collection.docs.listPages({ size: 50, ref })) {
 }
 ```
 
-`listPages` and `listAll` preserve the selected ref on every request. Simple
-lists use the GET endpoint with paired `refKind` and `refName` query
-parameters. Lists with filters, partition filters, or field selection use the
-extended POST endpoint and put `ref` in its body.
+`listPages` and `listAll` repeat the selected ref and other options on every
+request. Simple lists use the GET endpoint with paired `refKind` and `refName`
+query parameters. Lists with filters, partition filters, field selection,
+`sort`, or `consistentRead` use the extended POST endpoint and put `ref` in its
+body.
 
-A page token is an opaque search position. Between pages, a Branch can advance,
-an Alias can move, and a Tag can publish writes it captured at creation. For a
-stable multi-page export, use the same Tag created with `asOf` and keep filters
-and projection unchanged.
+Documents are listed in ascending document ID order unless `sort` orders them
+by 1 to 4 keyword, long, double, or datetime fields
+(`ListDocsSortField[]`, each object naming one field with `"asc"` or `"desc"`).
+Ascending document ID breaks ties, and `sort: null` selects the default order.
+A direction other than `"asc"` or `"desc"` fails locally with
+`SDKValidationError`; the item count, one field per object, and the field's
+type are validated by the server (`BadRequestError`, HTTP `400`).
 
-Document listing reads only the currently published snapshot for every ref,
-including Tags and Aliases that target Tags. Pending writes become visible to
-listing only after a build publishes a snapshot; listing applies no pending
-overlay.
+A List read of a Branch uses its published snapshot. A List read of a Tag, or
+of an Alias that targets a Tag, also includes the ordinary writes the Tag
+captured. Set `consistentRead: true` to include a Branch's pending ordinary
+writes; it follows the same ref rules as Query and Fetch below. Pending bulk
+imports become visible to listing after publication.
+
+```typescript
+for await (const page of collection.docs.listPages({
+  size: 50,
+  sort: [{ category: "asc" }],
+  consistentRead: true,
+})) {
+  console.log(page.docs);
+}
+```
+
+A page token is an opaque position in the requested order, not a snapshot pin.
+Each page reads the data currently visible to the ref: documents added after
+the position can appear on later pages, deleted documents disappear, and a
+change to a sort value can return a document again or skip it. Between pages, a
+Branch can advance, an Alias can move, and a Tag can publish writes it captured
+at creation. A malformed token or a changed request condition returns
+`BadRequestError` (HTTP `400`). For a stable multi-page export, use the same
+Tag created with `asOf` on every page and keep the other options unchanged.
 
 `consistentRead: true` overlays eligible inherited and own pending writes on the
 selected Branch's committed snapshot; ordinary Branch reads use only the
@@ -313,13 +351,15 @@ snapshot. It is allowed for an omitted ref (implicit `main`), a Branch
 ref, or an Alias ref that currently targets a Branch; the server resolves the
 Alias to its Branch when the request is admitted. Tag reads and reads through an
 Alias that targets a Tag already include the Tag's eligible fixed inherited
-writes on Query and Fetch, but reject `consistentRead: true`: a Tag ref fails
-local validation, and an Alias that targets a Tag fails with `BadRequestError`
-(`400`). Pending bulk imports are excluded until a background build materializes
-them, and an oversized eligible pending overlay can return
-`TooManyRequestsError` (`429`). The public Query and Fetch input unions reject
-`consistentRead: true` with a Tag ref at compile time, and runtime validation
-protects JavaScript callers; Alias target resolution stays on the server.
+writes on Query, Fetch, and List, but reject `consistentRead: true`: a Tag ref
+fails local validation, and an Alias that targets a Tag fails with
+`BadRequestError` (`400`). Pending bulk imports are excluded until a background
+build materializes them, and an oversized eligible pending overlay can return
+`TooManyRequestsError` (`429`). The public Query, Fetch, and List input types
+reject `consistentRead: true` with a Tag ref at compile time, and runtime
+validation protects JavaScript callers; Alias target resolution stays on the
+server. `ListDocsInput` also accepts a `ReadRef` of unknown kind without
+`consistentRead: true`.
 
 ```typescript
 await collection.query({
