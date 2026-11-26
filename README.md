@@ -213,9 +213,11 @@ const page = await collection.tags.listPage({ size: 50 });
 See [Data Versioning](docs/data-versioning.md) for lifecycle methods, safe
 errors, point-in-time Branch sources, signed bulk uploads, and transfer-client
 configuration. The Data Versioning contract is pinned at lambdadb/docs commit
-[`054c799c7fac3f1220e675dddf599d4c48512c24`](https://github.com/lambdadb/docs/blob/054c799c7fac3f1220e675dddf599d4c48512c24/reference/api/openapi.json) (API 1.3.0). Use
-`branches.rollback(name, { tag })` to restore a Branch from a Tag with a published
-snapshot. Tags created before their first snapshot have `null` snapshot fields.
+[`9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8`](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi.json) (API 1.3.0). Use
+`branches.rollback(name, { tag })` to restore a Branch from a Tag. When the Tag
+has no published snapshot yet, the response's `headSnapshot` is `null` and the
+Branch inherits the Tag's captured writes. Tags created before their first
+snapshot have `null` snapshot fields.
 You can use `consistentRead: true` through an Alias that targets a Branch.
 Deleting a Branch or Tag referenced
 by an Alias fails with `CatalogConflictError` (HTTP `409`); delete or retarget
@@ -308,9 +310,18 @@ for supported queries, limits, and validation evidence.
 
 **Documents:** Use `listPages()` to iterate over all pages without loading everything into memory, or `listAll()` to fetch all docs into a single list. Each page is one API response; the API limits response size by **payload**, not by document count, so the number of docs per page may be less than the requested `size` and can vary from page to page. The methods `list()`, `query()`, and `fetch()` automatically resolve documents from the presigned URL when the API returns them via `docsUrl` (`isDocsInline: false`), so you always receive `docs` in the response.
 
-Page tokens are opaque search positions. For a stable multi-page export, use
-the same Tag created with `asOf` on every page and keep filters and field
-selection unchanged.
+Documents are listed in ascending document ID order unless `sort` orders them
+by up to four keyword, long, double, or datetime fields, for example
+`{ sort: [{ category: "asc" }] }`. Set `consistentRead: true` to include a
+Branch's pending ordinary writes; a Tag, or an Alias that targets a Tag,
+rejects it and already includes the writes the Tag captured. Either option
+sends the extended list request.
+
+Page tokens are opaque positions in the requested order, not snapshots: each
+page reads the data currently visible to the ref, and a changed request
+condition returns HTTP 400. `listPages()` and `listAll()` repeat the original
+options on every page. For a stable multi-page export, use the same Tag created
+with `asOf` on every page.
 
 ```typescript
 import { LambdaDBClient } from "@functional-systems/lambdadb";

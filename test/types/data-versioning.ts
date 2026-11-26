@@ -235,15 +235,18 @@ async function refOperations(): Promise<void> {
   if (safeUpdate.ok) void safeUpdate.value.branch.dataUpdatedAt?.getTime();
   const rolledBack: RollbackBranchResponse = await branches.rollback("candidate", rollback);
   const safeRollback = await branches.rollbackSafe("candidate", rollback);
-  const rollbackTime: Date = rolledBack.headSnapshot.snapshotCommittedAt;
-  if (safeRollback.ok) void safeRollback.value.headSnapshot.snapshotCommittedAt.getTime();
+  const rollbackTime: Date | null = rolledBack.headSnapshot?.snapshotCommittedAt ?? null;
+  if (safeRollback.ok) void safeRollback.value.headSnapshot?.snapshotCommittedAt.getTime();
   const tagCommitTime: Date | null = gotTag.snapshotCommittedAt;
-  void [rollbackTime, tagCommitTime];
-  // @ts-expect-error A rollback requires a non-null head snapshot.
-  const incompleteRollback: RollbackBranchResponse = { branchId: "branch-id", headSnapshot: null };
+  // @ts-expect-error A rollback to a Tag without a published snapshot returns a null head.
+  const uncheckedRollbackTime: Date = rolledBack.headSnapshot.snapshotCommittedAt;
+  void [rollbackTime, tagCommitTime, uncheckedRollbackTime];
+  const emptyHeadRollback: RollbackBranchResponse = { branchId: "branch-id", headSnapshot: null };
+  // @ts-expect-error headSnapshot is required, even when its value is null.
+  const incompleteRollback: RollbackBranchResponse = { branchId: "branch-id" };
   // @ts-expect-error A rollback requires the Tag name.
   void branches.rollback("candidate", {});
-  void incompleteRollback;
+  void [emptyHeadRollback, incompleteRollback];
 
   const branchPage = await branches.listPage(page);
   const tagPage = await tags.listPage({ size: 1 }, { timeoutMs: 1000 });

@@ -579,7 +579,9 @@ export class CollectionDocs {
       || params?.pageToken === null
       || params?.filter !== undefined
       || params?.partitionFilter != null
-      || params?.fields != null;
+      || params?.fields != null
+      || params?.sort !== undefined
+      || params?.consistentRead !== undefined;
     const result = await unwrapAsync(
       useExtendedList
         ? collectionsDocsListDocsExtended(
@@ -592,7 +594,9 @@ export class CollectionDocs {
               filter: params?.filter,
               partitionFilter: params?.partitionFilter,
               fields: params?.fields,
+              sort: params?.sort,
               includeVectors: params?.includeVectors,
+              consistentRead: params?.consistentRead,
               ref: params?.ref,
             },
           },
@@ -634,7 +638,9 @@ export class CollectionDocs {
       || params?.pageToken === null
       || params?.filter !== undefined
       || params?.partitionFilter != null
-      || params?.fields != null;
+      || params?.fields != null
+      || params?.sort !== undefined
+      || params?.consistentRead !== undefined;
     const result = useExtendedList
       ? await collectionsDocsListDocsExtended(
         this.client,
@@ -646,7 +652,9 @@ export class CollectionDocs {
             filter: params?.filter,
             partitionFilter: params?.partitionFilter,
             fields: params?.fields,
+            sort: params?.sort,
             includeVectors: params?.includeVectors,
+            consistentRead: params?.consistentRead,
             ref: params?.ref,
           },
         },
@@ -685,9 +693,10 @@ export class CollectionDocs {
    * Use this to process large result sets without loading everything into memory.
    *
    * Note: The API limits response size by payload, not by document count. The number of docs per page
-   * may be less than the requested `size` and can vary from page to page. A page token is a search
-   * position. For a stable export, use the same Tag created with `asOf` on each page and keep the
-   * filters and field selection unchanged.
+   * may be less than the requested `size` and can vary from page to page. A page token is a position in
+   * the requested order, not a snapshot: each page reads the data currently visible to the ref, and a
+   * changed request condition returns HTTP 400. For a stable export, use the same Tag created with
+   * `asOf` on each page.
    *
    * @example
    * for await (const page of collection.docs.listPages({ size: 50 })) {
@@ -699,15 +708,7 @@ export class CollectionDocs {
     options?: RequestOptions,
   ): AsyncGenerator<ListDocsResponse> {
     let pageToken: string | null | undefined = params?.pageToken;
-    const baseParams: ListDocsInput = {
-      size: params?.size,
-      pageToken,
-      filter: params?.filter,
-      partitionFilter: params?.partitionFilter,
-      fields: params?.fields,
-      includeVectors: params?.includeVectors,
-      ref: params?.ref,
-    };
+    const baseParams: ListDocsInput = params ?? {};
     while (true) {
       const page = await this.list({ ...baseParams, pageToken }, options);
       yield page;

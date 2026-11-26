@@ -49,17 +49,23 @@ export type FetchDocsInput = Omit<
   "ref" | "consistentRead"
 > & ConsistentReadForRef;
 
+/**
+ * Document listing accepts any read ref without a consistent read, and
+ * `consistentRead: true` only with a Branch, an Alias, or an omitted ref.
+ */
+type ListConsistentReadForRef =
+  | ConsistentReadForRef
+  | { ref?: ReadRef | undefined; consistentRead?: false | undefined };
+
 /** Parameters for listing documents, including extended list options. */
 export type ListDocsInput = Pick<
   ListDocsExtendedRequestBody,
-  "size" | "pageToken" | "includeVectors"
+  "size" | "pageToken" | "includeVectors" | "sort"
 > & {
   filter?: Record<string, unknown> | null | undefined;
   partitionFilter?: import("../models/index.js").PartitionFilter | undefined;
   fields?: import("../models/index.js").FieldsSelectorUnion | undefined;
-  /** Read target. Omitting it reads from main. */
-  ref?: ReadRef | undefined;
-};
+} & ListConsistentReadForRef;
 
 /** Parameters for listing collections (size, pageToken). */
 export type ListCollectionsInput = Pick<
@@ -79,6 +85,7 @@ export type {
 export type {
   ListDocsResponse,
   ListDocsDoc,
+  ListDocsSortField,
 } from "../models/operations/listdocs.js";
 export type { MessageResponse } from "../models/index.js";
 export type { FetchDocsResponse, FetchDocsDoc } from "../models/operations/fetchdocs.js";
@@ -164,14 +171,18 @@ export type GetBranchResponse = { branch: BranchDetails };
 export type UpdateBranchResponse = { branch: BranchDetails };
 
 export type RollbackBranchInput = {
-  /** Name of a Tag in this Collection with a published snapshot. */
+  /** Name of a Tag in this Collection, with or without a published snapshot. */
   tag: string;
 };
 
 export type RollbackBranchResponse = {
   branchId: string;
-  /** The new snapshot committed on the destination Branch. */
-  headSnapshot: SnapshotDetails;
+  /**
+   * The new snapshot committed on the destination Branch, or null when the Tag
+   * had no published snapshot. The Branch head is then empty and the Branch
+   * inherits the Tag's captured writes.
+   */
+  headSnapshot: SnapshotDetails | null;
 };
 
 /** Every Branch of the Collection. */

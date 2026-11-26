@@ -95,7 +95,7 @@ function collectionResponse() {
 }
 
 test("pins the public OpenAPI contract revision", () => {
-  assert.equal(DATA_VERSIONING_CONTRACT_REVISION, "054c799c7fac3f1220e675dddf599d4c48512c24");
+  assert.equal(DATA_VERSIONING_CONTRACT_REVISION, "9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8");
 });
 
 test("validates nonempty schemas and Java String.isBlank metadata tags", async () => {

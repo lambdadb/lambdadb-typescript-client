@@ -19,8 +19,9 @@ export type ListDocsRequest = {
    */
   size?: number | undefined;
   /**
-   * Opaque search position. For a stable export, use the same Tag created with
-   * `asOf` on each page and keep the filters and field selection unchanged.
+   * Opaque position returned as `nextPageToken`. Repeat the other parameters to
+   * continue from that position in the current data. A malformed token or a
+   * change to the request conditions returns HTTP 400.
    */
   pageToken?: string | undefined;
   /**
@@ -96,14 +97,22 @@ export function listDocsRequestToJSON(
   return JSON.stringify(ListDocsRequest$outboundSchema.parse(listDocsRequest));
 }
 
+/**
+ * One sort key of a document listing: exactly one field name mapped to its
+ * direction, for example `{ category: "asc" }`.
+ */
+export type ListDocsSortField = { [field: string]: "asc" | "desc" };
+
 export type ListDocsExtendedRequestBody = {
   /**
    * Max number of documents to return at once, from 1 to 1000. The server default is 100.
    */
   size?: number | null | undefined;
   /**
-   * Opaque search position. For a stable export, use the same Tag created with
-   * `asOf` on each page and keep the filters and field selection unchanged.
+   * Opaque position in the requested order. Repeat the original request with
+   * `nextPageToken` as `pageToken`. Each request resolves the current ref and
+   * reads the latest data visible to it. A malformed token, incompatible sort
+   * value, or change to the request conditions returns HTTP 400.
    */
   pageToken?: string | null | undefined;
   /**
@@ -116,9 +125,26 @@ export type ListDocsExtendedRequestBody = {
    */
   fields?: models.FieldsSelectorUnion | undefined;
   /**
+   * Order by 1 to 4 keyword, long, double, or datetime fields in the given
+   * order, each object naming one field with `asc` or `desc`. Ascending
+   * document ID breaks ties and is the default order when sort is omitted or
+   * null. For keyword arrays, asc selects the smallest indexed value and desc
+   * the largest. Missing keywords sort last for asc and first for desc; missing
+   * numeric and datetime values sort as zero (Unix epoch for datetime).
+   */
+  sort?: Array<ListDocsSortField> | null | undefined;
+  /**
    * Set to true to include vector values in the response. Defaults to false.
    */
   includeVectors?: boolean | undefined;
+  /**
+   * Include pending ordinary writes from the Branch and its inherited history
+   * as of this page request. Bulk imports become visible after publication.
+   * Allowed when ref selects a Branch directly or an Alias that targets a
+   * Branch; Tag reads already include their pending ordinary writes and reject
+   * true with HTTP 400. The server default is false.
+   */
+  consistentRead?: boolean | undefined;
   /** Read target. Omitting it reads from main. */
   ref?: models.ReadRef | undefined;
 };
@@ -138,7 +164,9 @@ export type ListDocsExtendedRequestBody$Outbound = {
   filter?: { [k: string]: any } | null | undefined;
   partitionFilter?: models.PartitionFilter$Outbound | undefined;
   fields?: models.FieldsSelectorUnion$Outbound | undefined;
+  sort?: Array<ListDocsSortField> | null | undefined;
   includeVectors: boolean;
+  consistentRead?: boolean | undefined;
   ref?: models.ReadRef | undefined;
 };
 
@@ -153,9 +181,19 @@ export const ListDocsExtendedRequestBody$outboundSchema: z.ZodType<
   filter: z.record(z.any()).nullable().optional(),
   partitionFilter: models.PartitionFilter$outboundSchema.optional(),
   fields: models.FieldsSelectorUnion$outboundSchema.optional(),
+  sort: z.array(z.record(z.enum(["asc", "desc"]))).nullable().optional(),
   includeVectors: z.boolean().default(false),
+  consistentRead: z.boolean().optional(),
   ref: models.ReadRef$schema.optional(),
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (value.consistentRead && value.ref?.kind === "tag") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "consistentRead is supported only for Branch reads or an Alias that targets a Branch",
+      path: ["consistentRead"],
+    });
+  }
+});
 
 export function listDocsExtendedRequestBodyToJSON(
   listDocsExtendedRequestBody: ListDocsExtendedRequestBody,
