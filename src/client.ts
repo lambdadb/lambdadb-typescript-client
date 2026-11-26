@@ -557,6 +557,14 @@ export class CollectionHandle {
 }
 
 /**
+ * The server binds a List page token to the HTTP method, and `consistentRead: false` is the server default.
+ * Treating it as omitted keeps a listing on the same endpoint whether the caller passes `false` or nothing.
+ */
+function omitDefaultConsistentRead(consistentRead: boolean | undefined): boolean | undefined {
+  return consistentRead === false ? undefined : consistentRead;
+}
+
+/**
  * Document operations scoped to a collection.
  */
 export class CollectionDocs {
@@ -575,13 +583,14 @@ export class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ) {
+    const consistentRead = omitDefaultConsistentRead(params?.consistentRead);
     const useExtendedList = params?.size === null
       || params?.pageToken === null
       || params?.filter !== undefined
       || params?.partitionFilter != null
       || params?.fields != null
       || params?.sort !== undefined
-      || params?.consistentRead !== undefined;
+      || consistentRead !== undefined;
     const result = await unwrapAsync(
       useExtendedList
         ? collectionsDocsListDocsExtended(
@@ -596,7 +605,7 @@ export class CollectionDocs {
               fields: params?.fields,
               sort: params?.sort,
               includeVectors: params?.includeVectors,
-              consistentRead: params?.consistentRead,
+              consistentRead,
               ref: params?.ref,
             },
           },
@@ -634,13 +643,14 @@ export class CollectionDocs {
     params?: ListDocsInput,
     options?: RequestOptions,
   ): Promise<Result<ListDocsResponse, ListDocsError>> {
+    const consistentRead = omitDefaultConsistentRead(params?.consistentRead);
     const useExtendedList = params?.size === null
       || params?.pageToken === null
       || params?.filter !== undefined
       || params?.partitionFilter != null
       || params?.fields != null
       || params?.sort !== undefined
-      || params?.consistentRead !== undefined;
+      || consistentRead !== undefined;
     const result = useExtendedList
       ? await collectionsDocsListDocsExtended(
         this.client,
@@ -654,7 +664,7 @@ export class CollectionDocs {
             fields: params?.fields,
             sort: params?.sort,
             includeVectors: params?.includeVectors,
-            consistentRead: params?.consistentRead,
+            consistentRead,
             ref: params?.ref,
           },
         },

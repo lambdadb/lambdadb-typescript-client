@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `list`, `listSafe`, `listPages`, and `listAll` treat `consistentRead: false`
+  as omitted. It no longer selects the POST endpoint on its own, so a listing
+  that passes `false` on one page and nothing on another stays on the same
+  endpoint. The server binds a page token to the HTTP method and rejects the
+  other one with HTTP 400.
+
 ## 0.15.0 - 2026-11-26
 
 Aligned with the public OpenAPI contract (API 1.3.0) at docs commit
