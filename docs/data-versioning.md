@@ -309,8 +309,9 @@ for await (const page of collection.docs.listPages({ size: 50, ref })) {
 `listPages` and `listAll` repeat the selected ref and other options on every
 request. Simple lists use the GET endpoint with paired `refKind` and `refName`
 query parameters. Lists with filters, partition filters, field selection,
-`sort`, or `consistentRead` use the extended POST endpoint and put `ref` in its
-body.
+`sort`, or `consistentRead: true` use the extended POST endpoint and put `ref`
+in its body. `consistentRead: false` is the server default and is sent as
+omitted.
 
 Documents are listed in ascending document ID order unless `sort` orders them
 by 1 to 4 keyword, long, double, or datetime fields

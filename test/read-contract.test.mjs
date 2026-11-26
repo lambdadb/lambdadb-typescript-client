@@ -80,7 +80,6 @@ for (const safe of [false, true]) {
       { sort },
       { sort: null },
       { consistentRead: true },
-      { consistentRead: false, ref: tagRef("release-001") },
       { size: 10, sort, consistentRead: true, ref: branchRef("candidate") },
       { consistentRead: true, ref: aliasRef("production") },
     ]) {
@@ -89,6 +88,21 @@ for (const safe of [false, true]) {
       assert.equal(calls.at(-1).method, "POST");
       assert.deepEqual(calls.at(-1).body, { ...input, includeVectors: false });
     }
+  });
+  test(`List sends consistentRead false as omitted (safe=${safe})`, async () => {
+    const { docs, calls } = setup();
+    const method = safe ? "listSafe" : "list";
+    const ref = tagRef("release-001");
+    for (const input of [{ ref }, { consistentRead: false, ref }]) {
+      const result = await docs[method](input);
+      if (safe) assert.equal(result.ok, true);
+      assert.equal(calls.at(-1).method, "GET");
+      assert.equal(calls.at(-1).url.searchParams.get("refName"), "release-001");
+    }
+    assert.equal(calls[1].url.href, calls[0].url.href);
+    await docs[method]({ sort: [{ category: "asc" }], consistentRead: false, ref });
+    assert.equal(calls.at(-1).method, "POST");
+    assert.deepEqual(calls.at(-1).body, { sort: [{ category: "asc" }], includeVectors: false, ref });
   });
   test(`List rejects consistentRead with a Tag ref and invalid sort directions locally (safe=${safe})`, async () => {
     const { docs, calls } = setup();

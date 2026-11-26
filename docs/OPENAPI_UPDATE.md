@@ -195,9 +195,11 @@ ascending document ID order, and a Tag listing includes its pending ordinary
 writes.
 
 - `ListDocsInput` and `ListDocsExtendedRequestBody` accept `sort`
-  (`ListDocsSortField[]` or null) and `consistentRead`. Supplying either routes
-  `list`/`listSafe` to POST, and both are sent only as supplied. `listPages`
-  repeats every option on each page.
+  (`ListDocsSortField[]` or null) and `consistentRead`. Supplying `sort` or
+  `consistentRead: true` routes `list`/`listSafe` to POST. `consistentRead:
+  false` is the server default and is sent as omitted, so it does not change the
+  endpoint a page token is bound to. `listPages` repeats every option on each
+  page.
 - The outbound schema checks only the `"asc"`/`"desc"` direction. The 1–4 item
   count, one field per object, the field name, and the field type stay server
   validations, like the List size bounds.
