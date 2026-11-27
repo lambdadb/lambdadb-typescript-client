@@ -58,9 +58,9 @@
     "@llamaindex/qdrant": "0.1.33",
     "eslint": "^9.19.0",
     "globals": "^15.14.0",
-    "tshy": "^2.0.0",
+    "tshy": "^4.1.4",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.26.0"
+    "typescript-eslint": "^8.73.0"
   },
   "dependencies": {
     "zod": "^3.25.0 || ^4.0.0"
