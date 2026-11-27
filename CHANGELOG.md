@@ -1,12 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.15.1 - 2026-11-27
+
+Uses the [LambdaDB API 1.3.0 contract](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi.json)
+(SHA-256 `269590b8addc8e25785c222938b84e737a9f9dee0a5e8b45c0dde4779bde1b6d`),
+synced from LambdaDB server commit `16c6e46854b13cebd20c501e541bb030b33ca805`.
 
 - `list`, `listSafe`, `listPages`, and `listAll` treat `consistentRead: false`
   as omitted. It no longer selects the POST endpoint on its own, so a listing
   that passes `false` on one page and nothing on another stays on the same
   endpoint. The server binds a page token to the HTTP method and rejects the
-  other one with HTTP 400.
+  other one with HTTP 400. [#82](https://github.com/lambdadb/lambdadb-typescript-client/pull/82)
+- Qdrant compatibility filters preserve exclusions and require a `should`
+  match alongside `must` in queries, scrolls, and deletes. `MatchAny` and
+  `HasIdCondition` match any supplied value or ID. `MatchText` requires every
+  whitespace-separated word or number on a scalar indexed `text` field with
+  a corresponding analyzer. Use `filter` for Qdrant JS-style scroll requests.
+  [#83](https://github.com/lambdadb/lambdadb-typescript-client/pull/83)
+- Filters with `MatchExcept`, geo, nested, `min_should`, or mixed field
+  predicates fail before dispatch. Deletes reject empty filters, combined ID
+  and filter selectors, and shard-key selectors. See the
+  [Qdrant filter support guide](https://github.com/lambdadb/lambdadb-typescript-client/blob/e2465a1eed9c1f1745e2a6a1e38c1bac19c0bba2/docs/compatibility/qdrant.md#filter-support).
 
 ## 0.15.0 - 2026-11-26
 
