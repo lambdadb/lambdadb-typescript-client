@@ -426,6 +426,195 @@ test("MatchText maps to LambdaDB text filter terms", async () => {
   );
 });
 
+test("query, scroll, and delete share the same grouped Qdrant filter", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  const filter = new models.Filter({
+    must: [new models.FieldCondition({
+      key: "color",
+      match: new models.MatchAny({ any: ["red", "blue"] }),
+    })],
+    should: [
+      { key: "body", match: { text: "red apple" } },
+      { key: "price", range: { gte: 1e-20, lt: 1e30 } },
+    ],
+    must_not: [new models.HasIdCondition({ has_id: [3, "point-4"] })],
+  });
+
+  await client.query("docs", { query: [0.1], filter });
+  await client.search("docs", { queryVector: [0.1], filter });
+  await client.scroll("docs", { filter });
+  await client.delete("docs", { points_selector: { filter } });
+
+  // (red OR blue) AND ((red apple) OR (1e-20 <= price < 1e30)) AND NOT (3 OR point-4)
+  const expected = {
+    bool: [
+      {
+        occur: "filter",
+        bool: [
+          { queryString: { query: "color:red" }, occur: "should" },
+          { queryString: { query: "color:blue" }, occur: "should" },
+        ],
+      },
+      {
+        occur: "filter",
+        bool: [
+          {
+            occur: "should",
+            bool: [
+              { queryString: { query: "body:red" }, occur: "filter" },
+              { queryString: { query: "body:apple" }, occur: "filter" },
+            ],
+          },
+          { queryString: { query: "price:[1E-20 TO 1E30}" }, occur: "should" },
+        ],
+      },
+      {
+        occur: "must_not",
+        bool: [
+          { queryString: { query: "id:3" }, occur: "should" },
+          { queryString: { query: "id:point-4" }, occur: "should" },
+        ],
+      },
+    ],
+  };
+  const collection = fake.collection("docs");
+  assert.deepEqual(collection.queries[0].query.knn.filter, expected);
+  assert.deepEqual(collection.queries[1].query.knn.filter, expected);
+  assert.deepEqual(collection.docs.lists[0].filter, expected);
+  assert.deepEqual(collection.docs.deletes, [{ filter: expected }]);
+});
+
+test("a single exclusion retains negation and treats wildcard characters literally", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  await client.delete("docs", {
+    filter: { must_not: [{ key: "name", match: { value: "*" } }] },
+  });
+  await client.queryPoints("docs", {
+    query: [0.1],
+    query_filter: { must_not: [{ key: "body", match: { text: "red apple" } }] },
+  });
+
+  const collection = fake.collection("docs");
+  assert.deepEqual(collection.docs.deletes, [{
+    filter: {
+      bool: [
+        { queryString: { query: "*:*" }, occur: "filter" },
+        { queryString: { query: 'name:"*"' }, occur: "must_not" },
+      ],
+    },
+  }]);
+  assert.deepEqual(collection.queries[0].query.knn.filter, {
+    bool: [
+      { queryString: { query: "*:*" }, occur: "filter" },
+      {
+        occur: "must_not",
+        bool: [
+          { queryString: { query: "body:red" }, occur: "filter" },
+          { queryString: { query: "body:apple" }, occur: "filter" },
+        ],
+      },
+    ],
+  });
+});
+
+test("datetime range bounds retain their literal timestamp and inclusivity", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+
+  await client.scroll("docs", {
+    scroll_filter: { must: [{ key: "timestamp", range: { gt: "2026-11-01T00:00:00.001Z" } }] },
+  });
+
+  assert.deepEqual(fake.collection("docs").docs.lists[0].filter, {
+    queryString: { query: 'timestamp:{"2026-11-01T00:00:00.001Z" TO *]' },
+  });
+});
+
+test("unsupported and ambiguous filters are rejected before query, scroll, or delete", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  const field = { key: "status", match: { value: "active" } };
+  const cases = [
+    [new models.Filter({ must: [field], min_should: { conditions: [field], min_count: 1 } }),
+      UnsupportedQdrantFeatureError],
+    [{ must: [new models.FieldCondition({ ...field, geo_radius: {} })] },
+      UnsupportedQdrantFeatureError],
+    [{ must: [{ ...field, range: { gt: 1 } }] }, UnsupportedQdrantFeatureError],
+    [{ must: [{ key: "timestamp", range: { gt: "2026-11-01T00:00:00.0001Z" } }] },
+      UnsupportedQdrantFeatureError],
+    [{ should: [field, { key: "status", match: new models.MatchExcept({ except_: ["inactive"] }) }] },
+      UnsupportedQdrantFeatureError],
+    [{ must_not: [{ key: "status", match: { except: ["active"] } }] }, UnsupportedQdrantFeatureError],
+    [{ must: [{ key: "status", match: { value: "active", any: ["inactive"] } }] },
+      QdrantCompatValidationError],
+    [{ must: [{ key: "status", match: { any: [] } }] }, QdrantCompatValidationError],
+    [{ must_not: [{ has_id: [] }] }, QdrantCompatValidationError],
+    [{ must: [field], should: [] }, QdrantCompatValidationError],
+    [{ must: field }, QdrantCompatValidationError],
+    [[], QdrantCompatValidationError],
+    [new models.Filter({ mustNot: [field], must_not: [] }), QdrantCompatValidationError],
+    [{ must: [new models.HasIdCondition({ hasId: [1], has_id: [2] })] }, QdrantCompatValidationError],
+  ];
+
+  for (const [filter, error] of cases) {
+    await assert.rejects(client.queryPoints("docs", { query: [0.1], queryFilter: filter }), error);
+    await assert.rejects(client.scroll("docs", { scrollFilter: filter }), error);
+    await assert.rejects(client.delete("docs", { filter }), error);
+  }
+
+  const filter = { must: [field] };
+  await assert.rejects(client.query("docs", { query: [0.1], filter, queryFilter: {} }), QdrantCompatValidationError);
+  await assert.rejects(client.scroll("docs", { filter, scroll_filter: {} }), QdrantCompatValidationError);
+
+  const collection = fake.collection("docs");
+  assert.deepEqual(collection.queries, []);
+  assert.deepEqual(collection.docs.lists, []);
+  assert.deepEqual(collection.docs.deletes, []);
+});
+
+test("an empty filter remains unfiltered for reads and cannot delete documents", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  const filter = new models.Filter({ must: [], must_not: [] });
+
+  await client.queryPoints("docs", { query: [0.1], queryFilter: filter });
+  await client.scroll("docs", { scrollFilter: {} });
+  await assert.rejects(client.delete("docs", { filter }), UnsupportedQdrantFeatureError);
+
+  const collection = fake.collection("docs");
+  assert.equal(collection.queries[0].query.knn.filter, undefined);
+  assert.equal(collection.docs.lists[0].filter, undefined);
+  assert.deepEqual(collection.docs.deletes, []);
+});
+
+test("delete rejects mixed, empty, and malformed point selectors before dispatch", async () => {
+  const fake = new FakeLambdaDB();
+  const client = new QdrantCompatClient(fake);
+  const filter = { must: [{ key: "tenant", match: { value: "acme" } }] };
+
+  for (const options of [
+    { points: [1], filter },
+    { pointsSelector: { ids: [1], filter } },
+    { pointsSelector: { filter }, points: [1] },
+    { pointsSelector: { filter }, filter: {} },
+    { pointsSelector: {}, filter },
+    { points: [], filter },
+    { points: [] },
+    { points: [null] },
+    { ids: [Number.MAX_SAFE_INTEGER + 1] },
+  ]) {
+    await assert.rejects(client.delete("docs", options), QdrantCompatValidationError);
+  }
+  for (const key of ["shardKey", "shard_key", "shardKeySelector", "shard_key_selector"]) {
+    await assert.rejects(client.delete("docs", { filter, [key]: "tenant-a" }), UnsupportedQdrantFeatureError);
+  }
+
+  assert.deepEqual(fake.collection("docs").docs.deletes, []);
+});
+
 test("payload and vector selectors map to LambdaDB fields and qdrant responses", async () => {
   const fake = new FakeLambdaDB();
   const collection = fake.collection("docs");
