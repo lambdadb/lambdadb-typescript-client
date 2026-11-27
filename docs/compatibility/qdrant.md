@@ -100,7 +100,7 @@ const result = await client.queryPoints("docs", {
 | `query()` | Supported | Qdrant JS package-style alias around `queryPoints()` using `filter`, `with_payload`, and `with_vector`. |
 | `search()` | Supported | Wrapper around `queryPoints()`. |
 | `delete()` | Supported | Point IDs and supported Qdrant filters. Accepts `{ points: [...] }`, `{ pointsSelector: [...] }`, `{ filter }`, and `{ pointsSelector: { filter } }`. |
-| `scroll()` | Limited | Unfiltered scroll with payload/vector response selectors. |
+| `scroll()` | Supported | Uses `filter`, `scrollFilter`, or `scroll_filter`. Supports payload/vector response selectors and LambdaDB page-token offsets. |
 | `count()` | Limited | Unfiltered collection count only. |
 
 ## Payload Indexes
@@ -197,17 +197,26 @@ selectors while shaping the response.
 
 | Qdrant filter | Status |
 | --- | --- |
-| `Filter.must` | Supported |
-| `Filter.should` | Supported through LambdaDB bool clauses |
-| `Filter.must_not` / `mustNot` | Supported |
-| `FieldCondition.match=MatchValue` | Supported |
-| `FieldCondition.match=MatchAny` | Supported |
-| `FieldCondition.match=MatchExcept` | Supported |
-| `FieldCondition.range` | Supported |
-| `HasIdCondition` | Supported |
-| `MatchText` | Unsupported in v1 |
-| Geo filters | Unsupported |
-| Nested object filters | Unsupported |
+| `Filter.must` | Requires every condition. |
+| `Filter.should` | Requires at least one condition, including when `must` is present. Supply a non-empty list. |
+| `Filter.must_not` / `mustNot` | Excludes points that match any condition. |
+| `MatchValue` | Matches a string, boolean, or safe integer on a corresponding indexed field. |
+| `MatchAny` | Matches any member of a non-empty list of strings or safe integers. |
+| `MatchText` | Requires every whitespace-separated word or number on a scalar indexed `text` field. Use corresponding text analyzers in both databases. |
+| `FieldCondition.range` | Supports finite numeric bounds and ISO 8601 datetime bounds with a time zone and up to millisecond precision. Supply one bound per side. Use `double` fields for fractional numeric bounds. |
+| `HasIdCondition` | Matches any ID in a non-empty list of strings or non-negative safe integers. |
+| `MatchExcept` | Unsupported because Qdrant can match an allowed array element alongside an excluded value. |
+| Geo, nested, and `min_should` conditions | Unsupported. |
+
+Use one predicate per field condition, one filter option per request, and one
+selector per delete request.
+`delete()` rejects an empty filter. `queryPoints()` and `scroll()` treat an
+empty filter as unfiltered. Unsupported conditions fail before a request is
+sent, including when combined with supported conditions. `delete()` also
+rejects shard-key selectors.
+
+Filter conversion uses the [LambdaDB API 1.3.0 contract](https://github.com/lambdadb/docs/blob/9a1f563b9b53bc29e5278105f8fc8c25a17e0cb8/reference/api/openapi.json),
+SHA-256 `269590b8addc8e25785c222938b84e737a9f9dee0a5e8b45c0dde4779bde1b6d`.
 
 ## Unsupported In v1
 
@@ -215,7 +224,6 @@ selectors while shaping the response.
 - Sparse vectors
 - Multi-vector comparators
 - Geo payload indexes and geo filters
-- Filtered scroll
 - Filtered count
 - `queryPoints()` offset
 - `scoreThreshold`

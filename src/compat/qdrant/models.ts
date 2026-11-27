@@ -182,7 +182,7 @@ export class HasIdCondition {
 
   constructor(init: { hasId?: PointId[] | undefined; has_id?: PointId[] | undefined }) {
     this.hasId = init.hasId ?? init.has_id ?? [];
-    this.has_id = this.hasId;
+    this.has_id = init.has_id ?? this.hasId;
     assignExtras(this, init as JsonObject);
   }
 }
@@ -204,7 +204,7 @@ export class Filter {
     this.must = init.must ?? undefined;
     this.should = init.should ?? undefined;
     this.mustNot = init.mustNot ?? init.must_not ?? undefined;
-    this.must_not = this.mustNot;
+    this.must_not = init.must_not ?? this.mustNot;
     assignExtras(this, init as JsonObject);
   }
 }

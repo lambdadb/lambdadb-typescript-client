@@ -19,7 +19,7 @@ import {
   vectorConfigToIndexConfigs,
   type IndexConfigs,
 } from "./conversions.js";
-import { filterToLambdaDB } from "./filters.js";
+import { assertSupportedKeys, filterToLambdaDB, pointIds, selectAlias } from "./filters.js";
 import * as models from "./models.js";
 import {
   QdrantCompatError,
@@ -86,6 +86,7 @@ type CreateCollectionOptions = {
 
 type QueryPointsOptions = {
   query: unknown;
+  filter?: models.Filter | JsonObject | null;
   queryFilter?: models.Filter | JsonObject | null;
   query_filter?: models.Filter | JsonObject | null;
   limit?: number | undefined;
@@ -465,11 +466,32 @@ export class QdrantCompatClient {
       wait,
       ...rest
     } = options;
+    if (["shardKey", "shard_key", "shardKeySelector", "shard_key_selector"].some((key) => rest[key] != null)) {
+      throw new UnsupportedQdrantFeatureError("Qdrant shard key routing is not supported for delete");
+    }
     warnIgnored(rest);
-    const selector = pointsSelector ?? pointsSelectorSnake ?? points ?? idsOption;
-    const ids = idsFromSelector(selector);
-    const convertedFilter = filterToLambdaDB(filterFromSelector(selector) ?? filter);
-    if (ids === undefined && Object.keys(convertedFilter).length === 0) {
+    const selector = selectAlias(
+      selectAlias(pointsSelector, pointsSelectorSnake, "pointsSelector", "points_selector"),
+      selectAlias(points, idsOption, "points", "ids"),
+      "pointsSelector",
+      "points or ids",
+    );
+    let ids = selector;
+    let selectorFilter: unknown;
+    if (isObject(selector)) {
+      assertSupportedKeys(selector, ["points", "ids", "filter"], "delete selector");
+      ids = selectAlias(selector["points"], selector["ids"], "points", "ids");
+      selectorFilter = selector["filter"];
+      if (ids == null && selectorFilter == null) {
+        throw new QdrantCompatValidationError("Qdrant delete selector must include point IDs or a filter");
+      }
+    }
+    const rawFilter = selectAlias(selectorFilter, filter, "pointsSelector.filter", "filter");
+    if (ids != null && rawFilter != null) {
+      throw new QdrantCompatValidationError("Qdrant delete cannot combine point IDs and a filter");
+    }
+    const convertedFilter = filterToLambdaDB(rawFilter);
+    if (ids == null && convertedFilter === undefined) {
       throw new UnsupportedQdrantFeatureError(
         "delete requires point IDs or a supported Qdrant filter",
       );
@@ -477,9 +499,7 @@ export class QdrantCompatClient {
     if (wait === false) {
       warn("wait=false is accepted but LambdaDB write visibility follows LambdaDB semantics");
     }
-    const body: { ids?: string[]; filter?: JsonObject } = {};
-    if (ids !== undefined) body.ids = ids.map(String);
-    if (Object.keys(convertedFilter).length > 0) body.filter = convertedFilter;
+    const body = convertedFilter === undefined ? { ids: pointIds(ids) } : { filter: convertedFilter };
     await this.client.collection(collectionName).docs.delete(body);
     return new models.UpdateResult({ status: models.UpdateStatus.COMPLETED });
   }
@@ -490,6 +510,7 @@ export class QdrantCompatClient {
   ): Promise<models.QueryResponse> {
     const {
       query,
+      filter,
       queryFilter,
       query_filter: queryFilterSnake,
       limit = 10,
@@ -537,8 +558,9 @@ export class QdrantCompatClient {
       k: limit,
       queryVector: vector,
     };
-    const convertedFilter = filterToLambdaDB(queryFilter ?? queryFilterSnake);
-    if (Object.keys(convertedFilter).length > 0) knn["filter"] = convertedFilter;
+    const queryFilterOption = selectAlias(queryFilter, queryFilterSnake, "queryFilter", "query_filter");
+    const convertedFilter = filterToLambdaDB(selectAlias(queryFilterOption, filter, "queryFilter", "filter"));
+    if (convertedFilter !== undefined) knn["filter"] = convertedFilter;
 
     const queryBody: JsonObject = {
       query: { knn },
@@ -570,6 +592,8 @@ export class QdrantCompatClient {
       query: unknown;
       limit?: number | undefined;
       filter?: models.Filter | JsonObject | null;
+      queryFilter?: models.Filter | JsonObject | null;
+      query_filter?: models.Filter | JsonObject | null;
       with_payload?: PayloadSelector | undefined;
       withPayload?: PayloadSelector | undefined;
       with_vector?: VectorSelector | undefined;
@@ -582,6 +606,8 @@ export class QdrantCompatClient {
       query,
       limit,
       filter,
+      queryFilter,
+      query_filter: queryFilterSnake,
       with_payload: withPayloadSnake,
       withPayload,
       with_vector: withVectorSnake,
@@ -593,7 +619,9 @@ export class QdrantCompatClient {
     const queryOptions: QueryPointsOptions = {
       query,
     };
-    if (filter !== undefined) queryOptions.queryFilter = filter;
+    if (filter !== undefined) queryOptions.filter = filter;
+    if (queryFilter !== undefined) queryOptions.queryFilter = queryFilter;
+    if (queryFilterSnake !== undefined) queryOptions.query_filter = queryFilterSnake;
     if (limit !== undefined) queryOptions.limit = limit;
     const payloadSelector = normalizeOptionalPayloadSelector(withPayload ?? withPayloadSnake);
     if (payloadSelector !== undefined) queryOptions.withPayload = payloadSelector;
@@ -621,6 +649,7 @@ export class QdrantCompatClient {
   async scroll(
     collectionName: string,
     options: {
+      filter?: models.Filter | JsonObject | null;
       scrollFilter?: models.Filter | JsonObject | null;
       scroll_filter?: models.Filter | JsonObject | null;
       offset?: string | number | undefined;
@@ -633,6 +662,7 @@ export class QdrantCompatClient {
     } = {},
   ): Promise<[models.Record[], string | undefined]> {
     const {
+      filter,
       scrollFilter,
       scroll_filter: scrollFilterSnake,
       offset,
@@ -652,13 +682,14 @@ export class QdrantCompatClient {
     const payloadSelector = normalizePayloadSelector(withPayload ?? withPayloadSnake ?? true);
     const vectorSelector = normalizeVectorSelector(withVectors ?? withVectorsSnake ?? false);
     const fields = fieldsForSelectors(payloadSelector, vectorSelector);
-    const convertedFilter = filterToLambdaDB(scrollFilter ?? scrollFilterSnake);
+    const scrollFilterOption = selectAlias(scrollFilter, scrollFilterSnake, "scrollFilter", "scroll_filter");
+    const convertedFilter = filterToLambdaDB(selectAlias(scrollFilterOption, filter, "scrollFilter", "filter"));
     const listBody: ListDocsBody = {
       size: limit,
       includeVectors: vectorSelector !== false,
     };
     if (offset !== undefined) listBody.pageToken = offset;
-    if (Object.keys(convertedFilter).length > 0) listBody.filter = convertedFilter;
+    if (convertedFilter !== undefined) listBody.filter = convertedFilter;
     if (fields !== undefined) listBody.fields = fields;
     const response = await this.client.collection(collectionName).docs.list(listBody);
     return [
@@ -862,25 +893,6 @@ function rejectResultChanging(body: JsonObject, allowed: Set<string>): void {
       `Unsupported Qdrant collection options: ${ignored.join(", ")}`,
     );
   }
-}
-
-function idsFromSelector(selector: unknown): models.PointId[] | undefined {
-  if (selector === undefined || selector === null) return undefined;
-  if (Array.isArray(selector)) return selector as models.PointId[];
-  if (isObject(selector)) {
-    const points = selector["points"];
-    const ids = selector["ids"];
-    if (Array.isArray(points)) return points as models.PointId[];
-    if (Array.isArray(ids)) return ids as models.PointId[];
-  }
-  return undefined;
-}
-
-function filterFromSelector(selector: unknown): models.Filter | JsonObject | null | undefined {
-  if (isObject(selector) && "filter" in selector) {
-    return selector["filter"] as models.Filter | JsonObject | null | undefined;
-  }
-  return undefined;
 }
 
 function hasSameIndexConfigs(existing: IndexConfigs, expected: IndexConfigs): boolean {
