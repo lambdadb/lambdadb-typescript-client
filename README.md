@@ -389,9 +389,11 @@ await client.createCollection("docs", {
 });
 ```
 
-The adapter covers the common dense-vector RAG subset and is not a full Qdrant
-client replacement. See [docs/compatibility/qdrant.md](docs/compatibility/qdrant.md)
-for supported methods, data mapping, and unsupported features.
+The adapter covers common dense-vector RAG workflows. Query, scroll, and delete
+share the supported filter types. Use `filter` in Qdrant JS-style query and
+scroll calls. Unsupported conditions such as `MatchExcept` fail before dispatch.
+See the [Qdrant compatibility guide](docs/compatibility/qdrant.md) for supported
+methods and data mapping.
 
 Live Qdrant compatibility smoke tests can load credentials from a local `.env`
 file:
